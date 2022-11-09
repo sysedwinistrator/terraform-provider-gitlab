@@ -4,8 +4,6 @@
 
 # Terraform Provider for GitLab
 
-[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/from-referrer/)
-
 - [Documentation](https://www.terraform.io/docs/providers/gitlab/index.html)
 - [Issues](https://github.com/gitlabhq/terraform-provider-gitlab/issues)
 - [Discord Server](https://discord.gg/gitlab)
