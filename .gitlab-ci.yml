@@ -1,0 +1,118 @@
+include:
+  - template: Workflows/MergeRequest-Pipelines.gitlab-ci.yml
+
+stages:
+  - lint
+  - build
+  - test
+  - acceptance-test
+  - release
+  - publish
+
+variables:
+  # TODO(@timofurrer): verify if there is an option to read this version from either .go-version or go.mod
+  GO_VERSION: '1.19'
+  # NOTE(@timofurrer): used for caching, see `cache.paths` settings
+  GOPATH: ${CI_PROJECT_DIR}/.go
+
+default:
+  image: golang:${GO_VERSION}
+  tags:
+    - saas-linux-large-amd64
+
+cache:
+  key:
+    files:
+      - go.sum
+      - GNUMakefile
+  paths:
+    - .go/pkg/mod
+
+code_navigation:
+  needs: []
+  stage: release
+  image: sourcegraph/lsif-go:v1
+  allow_failure: true # recommended
+  script:
+    - lsif-go
+  artifacts:
+    reports:
+      lsif: dump.lsif
+  rules:
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_REF_NAME
+
+make:lint:
+  needs: []
+  stage: lint
+  script:
+    - make ${TARGET}
+  parallel:
+    matrix:
+      - TARGET: [lint-golangci, lint-examples-tf, lint-examples-sh, lint-generated, lint-custom]
+
+go:build:
+  needs: []
+  stage: build
+  script:
+    - make build
+
+go:test:
+  needs: []
+  stage: test
+  script:
+    - make test
+
+.testacc:
+  needs: []
+  stage: acceptance-test
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376/
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    GITLAB_BASE_URL: http://docker:8080/api/v4
+  before_script:
+    # FIXME(@timofurrer): refactor into prepared image for pipeline
+    - |
+      apt update
+      apt install --yes --no-install-recommends ca-certificates curl gnupg lsb-release
+      mkdir -p /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+        $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      apt update
+      apt install --yes --no-install-recommends docker-ce docker-ce-cli containerd.io docker-compose-plugin
+      echo 'docker compose "$@"' > /bin/docker-compose
+      chmod +x /bin/docker-compose
+    - docker info
+    # FIXME(@timofurrer): refactor into prepared image for pipeline
+    #                     see https://www.terraform.io/plugin/sdkv2/testing/acceptance-tests#requirements-and-recommendations and
+    #                     https://github.com/hashicorp/terraform-plugin-sdk/issues/629 why we install terraform
+    - |
+      wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /usr/share/keyrings/hashicorp-archive-keyring.gpg
+      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
+      apt update
+      apt install terraform
+    - terraform version
+    - test -f "${GITLAB_LICENSE}" && cp "${GITLAB_LICENSE}" "${CI_PROJECT_DIR}/Gitlab-license.txt"
+    - make testacc-up SERVICE=gitlab-${GITLAB_EDITION} GITLAB_$(echo "${GITLAB_EDITION}" | tr '[:lower:]' '[:upper:]')_VERSION=${GITLAB_VERSION}
+  script:
+    - make testacc
+  parallel:
+    matrix:
+      - GITLAB_VERSION: ["15.1.6-${GITLAB_EDITION}.0", "15.2.4-${GITLAB_EDITION}.0", "15.3.3-${GITLAB_EDITION}.0"]
+
+testacc:ce:
+  extends: .testacc
+  variables:
+    GITLAB_EDITION: ce
+
+testacc:ee:
+  extends: .testacc
+  variables:
+    GITLAB_EDITION: ee
+  rules:
+    - if: $ENABLE_EE_ACCEPTANCE_TESTS == "true"
