@@ -67,7 +67,7 @@ GITLAB_BASE_URL ?= http://127.0.0.1:8080/api/v4
 
 testacc-up: | certs ## Launch a GitLab instance.
 	docker-compose up -d $(SERVICE)
-	./scripts/await-healthy.sh
+	GITLAB_BASE_URL=$(GITLAB_BASE_URL) ./scripts/await-healthy.sh
 
 testacc-down: ## Teardown a GitLab instance.
 	docker-compose down --volumes
