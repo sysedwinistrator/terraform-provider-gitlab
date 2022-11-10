@@ -53,70 +53,9 @@ func TestAccGitlabProject_basic(t *testing.T) {
 	var received, defaults, defaultsMainBranch gitlab.Project
 	rInt := acctest.RandInt()
 
-	defaults = gitlab.Project{
-		Namespace:                        &gitlab.ProjectNamespace{ID: 0},
-		Name:                             fmt.Sprintf("foo-%d", rInt),
-		Path:                             fmt.Sprintf("foo.%d", rInt),
-		Description:                      "Terraform acceptance tests",
-		TagList:                          []string{"foo", "bar"},
-		RequestAccessEnabled:             true,
-		IssuesEnabled:                    true,
-		MergeRequestsEnabled:             true,
-		JobsEnabled:                      true,
-		ApprovalsBeforeMerge:             0,
-		WikiEnabled:                      true,
-		SnippetsEnabled:                  true,
-		ContainerRegistryEnabled:         true,
-		LFSEnabled:                       true,
-		SharedRunnersEnabled:             true,
-		Visibility:                       gitlab.PublicVisibility,
-		MergeMethod:                      gitlab.FastForwardMerge,
-		OnlyAllowMergeIfPipelineSucceeds: true,
-		OnlyAllowMergeIfAllDiscussionsAreResolved: true,
-		SquashOption:                    gitlab.SquashOptionDefaultOff,
-		AllowMergeOnSkippedPipeline:     false,
-		Archived:                        false, // needless, but let's make this explicit
-		PackagesEnabled:                 true,
-		PrintingMergeRequestLinkEnabled: true,
-		PagesAccessLevel:                gitlab.PublicAccessControl,
-		IssuesTemplate:                  "",
-		MergeRequestsTemplate:           "",
-		CIConfigPath:                    ".gitlab-ci.yml@mynamespace/myproject",
-		CIForwardDeploymentEnabled:      true,
-		ResolveOutdatedDiffDiscussions:  true,
-		AnalyticsAccessLevel:            gitlab.EnabledAccessControl,
-		AutoCancelPendingPipelines:      "enabled",
-		AutoDevopsDeployStrategy:        "continuous",
-		AutoDevopsEnabled:               true,
-		AutocloseReferencedIssues:       true,
-		BuildGitStrategy:                "fetch",
-		BuildTimeout:                    42 * 60,
-		BuildsAccessLevel:               gitlab.EnabledAccessControl,
-		ContainerExpirationPolicy: &gitlab.ContainerExpirationPolicy{
-			Enabled:   true,
-			Cadence:   "1month",
-			KeepN:     10,
-			OlderThan: "10d",
-		},
-		ContainerRegistryAccessLevel:     gitlab.EnabledAccessControl,
-		EmailsDisabled:                   true,
-		ForkingAccessLevel:               gitlab.EnabledAccessControl,
-		IssuesAccessLevel:                gitlab.EnabledAccessControl,
-		MergeRequestsAccessLevel:         gitlab.EnabledAccessControl,
-		OperationsAccessLevel:            gitlab.EnabledAccessControl,
-		PublicBuilds:                     false,
-		RepositoryAccessLevel:            gitlab.EnabledAccessControl,
-		RepositoryStorage:                "default",
-		SecurityAndComplianceAccessLevel: gitlab.EnabledAccessControl,
-		SnippetsAccessLevel:              gitlab.EnabledAccessControl,
-		SuggestionCommitMessage:          "hello suggestion",
-		Topics:                           []string{"foo", "bar"},
-		WikiAccessLevel:                  gitlab.EnabledAccessControl,
-		SquashCommitTemplate:             "hello squash",
-		MergeCommitTemplate:              "hello merge",
-	}
+	defaults = testProjectDefaults(rInt)
 
-	defaultsMainBranch = defaults
+	defaultsMainBranch = testProjectDefaults(rInt)
 	defaultsMainBranch.DefaultBranch = "main"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -314,12 +253,21 @@ max_file_size = 1234
 					BranchNameRegex: `(feature|hotfix)\/*`,
 				}),
 			},
-			// Destroy the project so we can next test creating a project with push rules simultaneously
-			{
-				Config:  testAccGitlabProjectConfigDefaultBranch(rInt, "main"),
-				Destroy: true,
-				Check:   testAccCheckGitlabProjectDestroy,
-			},
+		},
+	})
+}
+
+func TestAccGitlabProject_SubObjects(t *testing.T) {
+	var received, defaultsMainBranch gitlab.Project
+	rInt := acctest.RandInt()
+
+	defaultsMainBranch = testProjectDefaults(rInt)
+	defaultsMainBranch.DefaultBranch = "main"
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
 			// Create a new project with push rules
 			{
 				SkipFunc: isRunningInCE,
@@ -406,6 +354,7 @@ max_file_size = 123
 			},
 		},
 	})
+
 }
 
 func TestAccGitlabProject_initializeWithReadme(t *testing.T) {
@@ -2210,4 +2159,69 @@ resource "gitlab_project" "foo" {
   # mirror = true
 }
 	`, rInt, rInt)
+}
+
+func testProjectDefaults(rInt int) gitlab.Project {
+	return gitlab.Project{
+		Namespace:                        &gitlab.ProjectNamespace{ID: 0},
+		Name:                             fmt.Sprintf("foo-%d", rInt),
+		Path:                             fmt.Sprintf("foo.%d", rInt),
+		Description:                      "Terraform acceptance tests",
+		TagList:                          []string{"foo", "bar"},
+		RequestAccessEnabled:             true,
+		IssuesEnabled:                    true,
+		MergeRequestsEnabled:             true,
+		JobsEnabled:                      true,
+		ApprovalsBeforeMerge:             0,
+		WikiEnabled:                      true,
+		SnippetsEnabled:                  true,
+		ContainerRegistryEnabled:         true,
+		LFSEnabled:                       true,
+		SharedRunnersEnabled:             true,
+		Visibility:                       gitlab.PublicVisibility,
+		MergeMethod:                      gitlab.FastForwardMerge,
+		OnlyAllowMergeIfPipelineSucceeds: true,
+		OnlyAllowMergeIfAllDiscussionsAreResolved: true,
+		SquashOption:                    gitlab.SquashOptionDefaultOff,
+		AllowMergeOnSkippedPipeline:     false,
+		Archived:                        false, // needless, but let's make this explicit
+		PackagesEnabled:                 true,
+		PrintingMergeRequestLinkEnabled: true,
+		PagesAccessLevel:                gitlab.PublicAccessControl,
+		IssuesTemplate:                  "",
+		MergeRequestsTemplate:           "",
+		CIConfigPath:                    ".gitlab-ci.yml@mynamespace/myproject",
+		CIForwardDeploymentEnabled:      true,
+		ResolveOutdatedDiffDiscussions:  true,
+		AnalyticsAccessLevel:            gitlab.EnabledAccessControl,
+		AutoCancelPendingPipelines:      "enabled",
+		AutoDevopsDeployStrategy:        "continuous",
+		AutoDevopsEnabled:               true,
+		AutocloseReferencedIssues:       true,
+		BuildGitStrategy:                "fetch",
+		BuildTimeout:                    42 * 60,
+		BuildsAccessLevel:               gitlab.EnabledAccessControl,
+		ContainerExpirationPolicy: &gitlab.ContainerExpirationPolicy{
+			Enabled:   true,
+			Cadence:   "1month",
+			KeepN:     10,
+			OlderThan: "10d",
+		},
+		ContainerRegistryAccessLevel:     gitlab.EnabledAccessControl,
+		EmailsDisabled:                   true,
+		ForkingAccessLevel:               gitlab.EnabledAccessControl,
+		IssuesAccessLevel:                gitlab.EnabledAccessControl,
+		MergeRequestsAccessLevel:         gitlab.EnabledAccessControl,
+		OperationsAccessLevel:            gitlab.EnabledAccessControl,
+		PublicBuilds:                     false,
+		RepositoryAccessLevel:            gitlab.EnabledAccessControl,
+		RepositoryStorage:                "default",
+		SecurityAndComplianceAccessLevel: gitlab.EnabledAccessControl,
+		SnippetsAccessLevel:              gitlab.EnabledAccessControl,
+		SuggestionCommitMessage:          "hello suggestion",
+		Topics:                           []string{"foo", "bar"},
+		WikiAccessLevel:                  gitlab.EnabledAccessControl,
+		SquashCommitTemplate:             "hello squash",
+		MergeCommitTemplate:              "hello merge",
+	}
 }
