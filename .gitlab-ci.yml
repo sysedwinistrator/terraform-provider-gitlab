@@ -18,7 +18,7 @@ variables:
 default:
   image: golang:${GO_VERSION}
   tags:
-    - saas-linux-large-amd64
+    - saas-linux-medium-amd64
 
 cache:
   key:
