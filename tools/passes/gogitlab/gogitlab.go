@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/gitlabhq/terraform-provider-gitlab/tools/passes"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes"
 	"golang.org/x/tools/go/analysis"
 )
 

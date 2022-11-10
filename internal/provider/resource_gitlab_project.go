@@ -341,7 +341,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		ValidateFunc: validation.StringInSlice([]string{"public", "private", "enabled", "disabled"}, true),
 	},
 	// The GitLab API requires that import_url is also set when mirror options are used
-	// Ref: https://github.com/gitlabhq/terraform-provider-gitlab/pull/449#discussion_r549729230
+	// Ref: https://gitlab.com/gitlab-org/terraform-provider-gitlab/pull/449#discussion_r549729230
 	"mirror": {
 		Description:  "Enable project pull mirror.",
 		Type:         schema.TypeBool,
@@ -1144,7 +1144,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		if waitForDefaultBranchProtection {
 			// Branch protection for a newly created branch is an async action, so use WaitForState to ensure it's protected
 			// before we continue. Note this check should only be required when there is a custom default branch set
-			// See issue 800: https://github.com/gitlabhq/terraform-provider-gitlab/issues/800
+			// See issue 800: https://gitlab.com/gitlab-org/terraform-provider-gitlab/issues/800
 			stateConf := &resource.StateChangeConf{
 				Pending: []string{"false"},
 				Target:  []string{"true"},
