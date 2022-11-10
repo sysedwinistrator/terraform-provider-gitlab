@@ -1,3 +1,24 @@
+## 3.19.0 (2022-11-10)
+
+This release was tested against GitLab 15.1, 15.2 and 15.3 for both CE and EE.
+
+This is the first release from the [new project on GitLab](https://gitlab.com/gitlab-org/terraform-provider-gitlab).
+
+FEATURES
+
+* **New Resource:** `gitlab_service_emails_on_push` ([#1305](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1305))
+
+IMPROVEMENTS:
+
+* resource/gitlab_project: Add `suggestion_commit_message` attribute ([#1249](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/))
+* datasource/gitlab_project: Add `suggestion_commit_message` attribute ([#1249](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1249))
+* datasource/gitlab_projects: Add `suggestion_commit_message` attribute ([#1249](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1249))
+* resource/gitlab_branch_protection: Support `no one` in `unprotect_access_level` ([#1287](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1287))
+
+BUGFIXES:
+
+* resource/gitlab_repository_file: Fix check if file exists during read ([#1260](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1260))
+
 ## 3.18.0 (2022-09-05)
 
 This release was tested against GitLab 15.1, 15.2 and 15.3 for both CE and EE.
