@@ -172,7 +172,7 @@ github-for-terraform-registry:
       git push
       cd -
       rm -rf /tmp/github-repo
-    # create a release on GitHub
+    # create a pre-release Release on GitHub
     # see https://docs.github.com/en/rest/releases/releases#create-a-release
     - |
       gh_release=$(curl --silent --show-error --fail-with-body -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token $GITHUB_TOKEN_FOR_SYNC" \
@@ -183,12 +183,13 @@ github-for-terraform-registry:
           "name":"'$CI_COMMIT_TAG'",
           "body":"This release hosted on GitHub only exists because it is the only way to publish to the Terraform Provider Registry.\n\nSee the official release page on GitLab here: **'$CI_PROJECT_URL'/-/releases/'$CI_COMMIT_TAG'**",
           "draft":false,
-          "prerelease":false,
+          "prerelease":true,
           "generate_release_notes":false
         }'
       )
-    # NOTE(tuxtimo): cannot use `.upload_url` from `$gh_release`, because it contains the query parameters in some weird unusable way ...
-    - gh_release_upload_url="https://uploads.github.com/repos/$GITHUB_ORG/$GITHUB_REPO/releases/$(echo $gh_release | jq -r '.id')/assets"
+    - gh_release_id=$(echo $gh_release | jq -r '.id')
+    # NOTE(@timofurrer): cannot use `.upload_url` from `$gh_release`, because it contains the query parameters in some weird unusable way ...
+    - gh_release_upload_url="https://uploads.github.com/repos/$GITHUB_ORG/$GITHUB_REPO/releases/$gh_release_id/assets"
     - 'echo "GitHub Release URL: $gh_release_upload_url"'
     # uploading release assets for GitHub release created in previous step
     # see https://docs.github.com/en/rest/releases/assets#upload-a-release-asset
@@ -204,3 +205,11 @@ github-for-terraform-registry:
           --data-binary "@$asset"
         echo " done."
       done
+    # now that all assets are uploaded we can "release" the "pre-release" created earlier.
+    - |
+      curl --silent --show-error --fail-with-body \
+        -X PATCH \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: token $GITHUB_TOKEN_FOR_SYNC" \
+        https://api.github.com/repos/$GITHUB_ORG/$GITHUB_REPO/releases/$gh_release_id \
+        -d '{"prerelease":false}'
