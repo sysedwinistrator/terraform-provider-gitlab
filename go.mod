@@ -1,4 +1,4 @@
-module github.com/gitlabhq/terraform-provider-gitlab
+module gitlab.com/gitlab-org/terraform-provider-gitlab
 
 go 1.19
 

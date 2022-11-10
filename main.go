@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
-	"github.com/gitlabhq/terraform-provider-gitlab/internal/provider"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider"
 )
 
 var (

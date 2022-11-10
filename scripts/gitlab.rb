@@ -13,7 +13,7 @@ gitlab_rails['initial_shared_runners_registration_token'] = "ACCTEST123456789012
 # This setting is required to disable caching for application settings
 # which is required to test different scenarios in the acceptance tests.
 # see https://gitlab.com/gitlab-org/gitlab/-/issues/364812#note_986366898
-# see https://github.com/gitlabhq/terraform-provider-gitlab/pull/1128
+# see https://gitlab.com/gitlab-org/terraform-provider-gitlab/pull/1128
 gitlab_rails['application_settings_cache_seconds'] = 0
 gitlab_rails['env'] = {
     'IN_MEMORY_APPLICATION_SETTINGS' => 'false'

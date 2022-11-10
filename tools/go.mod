@@ -1,4 +1,4 @@
-module github.com/gitlabhq/terraform-provider-gitlab/tools
+module gitlab.com/gitlab-org/terraform-provider-gitlab/tools
 
 go 1.16
 

@@ -16,7 +16,7 @@ var _ = registerResource("gitlab_application_settings", func() *schema.Resource 
 		Description: `The ` + "`" + `gitlab_application_settings` + "`" + ` resource allows to manage the GitLabLab application settings.
 
 ~> This is an **experimental resource**. By nature it doesn't properly fit into how Terraform resources are meant to work.
-   Feel free to join the [discussion](https://github.com/gitlabhq/terraform-provider-gitlab/issues/957) if you have any
+   Feel free to join the [discussion](https://gitlab.com/gitlab-org/terraform-provider-gitlab/issues/957) if you have any
    ideas or questions regarding this resource.
 
 ~> All ` + "`" + `gitlab_application_settings` + "`" + ` use the same ID ` + "`" + `gitlab` + "`" + `.

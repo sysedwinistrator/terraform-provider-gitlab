@@ -5,7 +5,7 @@
 # Terraform Provider for GitLab
 
 - [Documentation](https://www.terraform.io/docs/providers/gitlab/index.html)
-- [Issues](https://github.com/gitlabhq/terraform-provider-gitlab/issues)
+- [Issues](https://gitlab.com/gitlab-org/terraform-provider-gitlab/issues)
 - [Discord Server](https://discord.gg/gitlab)
 - [Terraform Provider Office Hour Call](https://www.meetup.com/gitlab-virtual-meetups/)
 
