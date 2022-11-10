@@ -2,7 +2,8 @@
 
 Thank you for contributing to this provider! :tada: :heart: :trophy:
 
-Generally we accept any change that adds or changes a Terraform resource that is in line with the [GitLab API](https://docs.gitlab.com/ee/api/api_resources.html). It is always best to [open an issue](https://github.com/gitlabhq/terraform-provider-gitlab/issues/new/choose) before starting on a change.
+Generally we accept any change that adds or changes a Terraform resource that is in line with the [GitLab API](https://docs.gitlab.com/ee/api/api_resources.html). 
+It is always best to [open an issue](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/new) before starting on a change.
 
 ## Getting Started
 
@@ -231,3 +232,53 @@ $ make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v
 
   Refer to [HashiCorp's testing guide](https://www.terraform.io/docs/extend/testing/index.html)
   and [HashiCorp's testing best practices](https://www.terraform.io/docs/extend/best-practices/testing.html).
+
+## GitLab Terraform Provider Release Setup
+
+This chapter describes the setup we have in place to successfully release a Terraform Provider release built on GitLab.com to the official [Terraform Provider Registry](https://registry.terraform.io/).
+
+### Rational
+
+The "normal" process to release and publish a Terraform Provider to the Terraform Registry is documented by HashiCorp [here](https://developer.hashicorp.com/terraform/tutorials/providers/provider-release-publish). 
+The problem we are facing is that publishing to the Terraform Registry is _only_ possible from GitHub, because the Terraform Registry fetches the release assets from a GitHub release and partly from the source code (the documentation).
+
+The GitLab Terraform Provider is naturally hosted on GitLab.com, thus we are not able to use the "normal" process from HashiCorp, but a little additional workaround.
+
+### Setup
+
+As outlined in the [Rational](#Retional) only GitHub is supported to publish to the Terraform Registry. 
+Given that limitation, we still use the old GitHub repository at https://gitlab.com/gitlab-org/terraform-provider-gitlab as a proxy to release the provider. 
+The setup looks like this:
+
+<div class="center">
+
+```mermaid
+sequenceDiagram
+    GitLab->>GitHub: push release and docs
+    GitHub->>Registry: webhook to notify about new release
+    Registry-->>GitHub: fetch release and docs and make available
+```
+</div>
+
+#### GitLab repository
+
+The GitLab repository is a complete Terraform Provider source code repository, including the provider code itself, 
+acceptance tests and a GitLab pipeline configuration to lint, build, test and release the provider. 
+During a provider release not only a release in the GitLab project is created, but it's also pushed via REST API to GitHub. 
+In addition, the documentation is committed and pushed to the GitHub repository.
+The GitLab pipeline is authenticated using the `GITHUB_TOKEN_FOR_SYNC` environment variable. 
+It contains a [fine-grainted personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token) 
+which only has `Contents` `read-write` permissions to the GitHub repository.
+
+#### GitHub repository
+
+The GitHub repository only contains a [`README.md`](https://gitlab.com/gitlab-org/terraform-provider-gitlab/blob/main/README.md) 
+file with an information that the actual provider is located on GitLab, a GitHub Action workflow to lock down the repository, 
+and the committed release documentation. As described in the [GitLab repository](#GitLab-repository) section the GitHub repository 
+also contains proxy releases and has a webhook installed to notify the Terraform Registry about new releases.
+
+##### GitHub repository lock down
+
+The GitHub repository is locked down which means that generally every option to contribute to it is disabled. 
+Unfortunately, Pull Requests cannot be disabled so that we have to use the [`repo-lockdown`](https://github.com/marketplace/actions/repo-lockdown) action. 
+It'll auto-close every PR with a comment that we only accept contributions in our GitLab.com repository.
