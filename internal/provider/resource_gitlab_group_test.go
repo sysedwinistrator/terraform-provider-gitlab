@@ -5,13 +5,11 @@ package provider
 
 import (
 	"fmt"
-	"testing"
-	"time"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"testing"
 )
 
 func TestAccGitlabGroup_basic(t *testing.T) {
@@ -241,26 +239,6 @@ func TestAccGitlabGroup_nested(t *testing.T) {
 	})
 }
 
-func TestAccGitlabGroup_disappears(t *testing.T) {
-	var group gitlab.Group
-	rInt := acctest.RandInt()
-
-	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccGitlabGroupConfig(rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabGroupExists("gitlab_group.foo", &group),
-					testAccCheckGitlabGroupDisappears(&group),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func TestAccGitlabGroup_PreventForkingOutsideGroup(t *testing.T) {
 	var group gitlab.Group
 	rInt := acctest.RandInt()
@@ -287,30 +265,6 @@ func TestAccGitlabGroup_PreventForkingOutsideGroup(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccCheckGitlabGroupDisappears(group *gitlab.Group) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		_, err := testGitlabClient.Groups.DeleteGroup(group.ID)
-		if err != nil {
-			return err
-		}
-		// Fixes groups API async deletion issue
-		// https://github.com/gitlabhq/terraform-provider-gitlab/issues/319
-		for start := time.Now(); time.Since(start) < 15*time.Second; {
-			g, _, err := testGitlabClient.Groups.GetGroup(group.ID, nil)
-			if is404(err) {
-				return nil
-			}
-			if g != nil && g.MarkedForDeletionOn != nil {
-				return nil
-			}
-			if err != nil {
-				return err
-			}
-		}
-		return fmt.Errorf("waited for more than 15 seconds for group to be asynchronously deleted")
-	}
 }
 
 func TestAccGitlabGroup_SetDefaultFalseBooleansOnCreate(t *testing.T) {
