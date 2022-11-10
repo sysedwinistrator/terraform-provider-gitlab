@@ -30,7 +30,7 @@ cache:
 
 code_navigation:
   needs: []
-  stage: release
+  stage: build
   image: sourcegraph/lsif-go:v1
   allow_failure: true # recommended
   script:
