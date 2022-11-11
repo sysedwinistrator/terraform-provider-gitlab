@@ -152,6 +152,7 @@ resource "gitlab_application_settings" "this" {
 - `grafana_enabled` (Boolean) Enable Grafana.
 - `grafana_url` (String) Grafana URL.
 - `gravatar_enabled` (Boolean) Enable Gravatar.
+- `group_owners_can_manage_default_branch_protection` (Boolean) Prevent overrides of default branch protection.
 - `hashed_storage_enabled` (Boolean) Create new projects using hashed storage paths: Enable immutable, hash-based paths and repository names to store repositories on disk. This prevents repositories from having to be moved or renamed when the Project URL changes and may improve disk I/O performance. (Always enabled in GitLab versions 13.0 and later, configuration is scheduled for removal in 14.0).
 - `help_page_hide_commercial_content` (Boolean) Hide marketing-related entries from help.
 - `help_page_support_url` (String) Alternate support URL for help page and help dropdown.
