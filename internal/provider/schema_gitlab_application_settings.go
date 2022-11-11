@@ -731,6 +731,13 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 			Computed:    true,
 		},
 
+		"group_owners_can_manage_default_branch_protection": {
+			Description: "Prevent overrides of default branch protection.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Computed:    true,
+		},
+
 		"hashed_storage_enabled": {
 			Description: "Create new projects using hashed storage paths: Enable immutable, hash-based paths and repository names to store repositories on disk. This prevents repositories from having to be moved or renamed when the Project URL changes and may improve disk I/O performance. (Always enabled in GitLab versions 13.0 and later, configuration is scheduled for removal in 14.0).",
 			Type:        schema.TypeBool,
@@ -1821,6 +1828,7 @@ func gitlabApplicationSettingsToStateMap(settings *gitlab.Settings) map[string]i
 	stateMap["grafana_enabled"] = settings.GrafanaEnabled
 	stateMap["grafana_url"] = settings.GrafanaURL
 	stateMap["gravatar_enabled"] = settings.GravatarEnabled
+	stateMap["group_owners_can_manage_default_branch_protection"] = settings.GroupOwnersCanManageDefaultBranchProtection
 	stateMap["hashed_storage_enabled"] = settings.HashedStorageEnabled
 	stateMap["help_page_hide_commercial_content"] = settings.HelpPageHideCommercialContent
 	stateMap["help_page_support_url"] = settings.HelpPageSupportURL
@@ -2369,6 +2377,10 @@ func gitlabApplicationSettingsToUpdateOptions(d *schema.ResourceData) *gitlab.Up
 
 	if d.HasChange("gravatar_enabled") {
 		options.GravatarEnabled = gitlab.Bool(d.Get("gravatar_enabled").(bool))
+	}
+
+	if d.HasChanges("group_owners_can_manage_default_branch_protection") {
+		options.GroupOwnersCanManageDefaultBranchProtection = gitlab.Bool(d.Get("group_owners_can_manage_default_branch_protection").(bool))
 	}
 
 	if d.HasChange("hashed_storage_enabled") {
