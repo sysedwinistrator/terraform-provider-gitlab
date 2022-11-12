@@ -18,8 +18,8 @@ func TestAccGitlabPersonalAccessToken_basic(t *testing.T) {
 	user := testAccCreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabPersonalAccessTokenDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabPersonalAccessTokenDestroy,
 		Steps: []resource.TestStep{
 			// Create a basic access token.
 			{

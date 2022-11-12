@@ -20,8 +20,8 @@ func TestAccGitlabGroupBadge_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupBadgeDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupBadgeDestroy,
 		Steps: []resource.TestStep{
 			// Create a group and badge
 			{

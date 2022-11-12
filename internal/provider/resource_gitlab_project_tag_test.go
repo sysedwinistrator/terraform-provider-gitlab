@@ -22,8 +22,8 @@ func TestAccGitlabProjectTag_basic(t *testing.T) {
 	branches := testAccCreateBranches(t, project, 1)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectTagDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectTagDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabProjectTagConfig(rInt, rInt2, project.PathWithNamespace, branches[0].Name),

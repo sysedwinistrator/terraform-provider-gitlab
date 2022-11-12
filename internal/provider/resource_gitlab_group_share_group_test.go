@@ -17,8 +17,8 @@ func TestAccGitlabGroupShareGroup_basic(t *testing.T) {
 	sharedGroup := testAccCreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabShareGroupDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabShareGroupDestroy,
 		Steps: []resource.TestStep{
 			// Share a new group with another group
 			{

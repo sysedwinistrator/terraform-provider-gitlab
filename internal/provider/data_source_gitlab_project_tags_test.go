@@ -16,7 +16,7 @@ func TestAccDataGitlabProjectTags_basic(t *testing.T) {
 	project := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabProjectTags(countTags, project.PathWithNamespace),

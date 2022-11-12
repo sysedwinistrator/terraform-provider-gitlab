@@ -19,8 +19,8 @@ func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
 	teamsResourceName := "gitlab_service_microsoft_teams.teams"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabServiceMicrosoftTeamsDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServiceMicrosoftTeamsDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and a teams service
 			{

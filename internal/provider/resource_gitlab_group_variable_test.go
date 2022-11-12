@@ -20,8 +20,8 @@ func TestAccGitlabGroupVariable_basic(t *testing.T) {
 	rString := acctest.RandString(5)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupVariableDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupVariableDestroy,
 		Steps: []resource.TestStep{
 			// Create a group and variable with default options
 			{
@@ -115,8 +115,8 @@ func TestAccGitlabGroupVariable_scope(t *testing.T) {
 	defaultValueA := fmt.Sprintf("value-%s-a", rString)
 	defaultValueB := fmt.Sprintf("value-%s-b", rString)
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupVariableDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupVariableDestroy,
 		Steps: []resource.TestStep{
 			// Create a group and variables with same keys, different scopes
 			{

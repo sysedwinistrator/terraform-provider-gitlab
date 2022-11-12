@@ -20,8 +20,8 @@ func TestAccGitlabClusterAgent_basic(t *testing.T) {
 	var sutClusterAgent gitlab.Agent
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabClusterAgentDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabClusterAgentDestroy,
 		Steps: []resource.TestStep{
 			// Verify creation
 			{

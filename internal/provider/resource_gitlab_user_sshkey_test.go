@@ -24,8 +24,8 @@ func TestAccGitlabUserSSHKey_basic(t *testing.T) {
 	testUser := testAccCreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabUserSSHKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabUserSSHKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a user + sshkey
 			{
@@ -84,8 +84,8 @@ func TestAccGitlabUserSSHKey_ignoreTrailingWhitespaces(t *testing.T) {
 	testUser := testAccCreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabUserSSHKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabUserSSHKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a user + sshkey
 			{

@@ -14,7 +14,7 @@ import (
 func TestAccDataGitlabRepositoryFile_basic(t *testing.T) {
 	project := testAccCreateProject(t)
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabRepositoryFile(project.PathWithNamespace),

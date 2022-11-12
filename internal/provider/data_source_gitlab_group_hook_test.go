@@ -17,7 +17,7 @@ func TestAccDataSourceGitlabGroupHook_basic(t *testing.T) {
 	testHook := testAccCreateGroupHooks(t, testGroup.ID, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

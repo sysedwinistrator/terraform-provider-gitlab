@@ -76,8 +76,8 @@ func TestAccGitlabProjectVariable_basic(t *testing.T) {
 	ctx := testAccGitlabProjectStart(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccGitlabProjectVariableCheckAllVariablesDestroyed(ctx),
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccGitlabProjectVariableCheckAllVariablesDestroyed(ctx),
 		Steps: []resource.TestStep{
 			// Create a project variable from a project name.
 			{
@@ -177,7 +177,7 @@ func TestAccGitlabProjectVariable_scoped(t *testing.T) {
 	ctx := testAccGitlabProjectStart(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy: func(state *terraform.State) error {
 			// Destroy behavior is nondeterministic for variables with scopes in GitLab versions prior to 13.4
 			// ref: https://gitlab.com/gitlab-org/gitlab/-/merge_requests/39209

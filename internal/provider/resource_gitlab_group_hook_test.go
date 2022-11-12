@@ -17,8 +17,8 @@ func TestAccGitlabGroupHook_basic(t *testing.T) {
 	testGroup := testAccCreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupHookDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupHookDestroy,
 		Steps: []resource.TestStep{
 			// Create a Group Hook with required attributes only
 			{

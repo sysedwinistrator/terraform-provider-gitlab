@@ -21,8 +21,8 @@ func TestAccGitlabDeployToken_basic(t *testing.T) {
 	testGroup := testAccCreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabDeployTokenDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabDeployTokenDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabDeployTokenConfig(testProject.ID, testGroup.ID),
@@ -56,8 +56,8 @@ func TestAccGitlabDeployToken_pagination(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabDeployTokenDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabDeployTokenDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabDeployTokenPaginationConfig(25, testGroup.ID, testProject.ID),

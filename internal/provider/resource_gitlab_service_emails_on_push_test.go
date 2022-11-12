@@ -23,8 +23,8 @@ func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
 	var emailsOnPushResourceName = "gitlab_service_emails_on_push.this"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabServiceEmailsOnPushDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServiceEmailsOnPushDestroy,
 		Steps: []resource.TestStep{
 			// Create an Emails on Push service
 			{

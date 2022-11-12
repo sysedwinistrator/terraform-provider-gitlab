@@ -12,7 +12,7 @@ import (
 func TestAccGitlabApplicationSettings_basic(t *testing.T) {
 	// lintignore:AT001
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			// Verify empty application settings
 			{

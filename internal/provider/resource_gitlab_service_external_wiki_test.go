@@ -23,8 +23,8 @@ func TestAccGitlabServiceExternalWiki_basic(t *testing.T) {
 	var externalWikiResourceName = "gitlab_service_external_wiki.this"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabServiceExternalWikiDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServiceExternalWikiDestroy,
 		Steps: []resource.TestStep{
 			// Create an External Wiki service
 			{

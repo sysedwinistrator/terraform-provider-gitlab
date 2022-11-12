@@ -19,8 +19,8 @@ func TestAccGitlabPipelineTrigger_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabPipelineTriggerDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabPipelineTriggerDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and pipeline trigger with default options
 			{

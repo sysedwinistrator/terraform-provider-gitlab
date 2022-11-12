@@ -20,8 +20,8 @@ func TestAccGitlabProjectMirror_basic(t *testing.T) {
 	var miror gitlab.ProjectMirror
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectMirrorDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectMirrorDestroy,
 		Steps: []resource.TestStep{
 			// Create with default options
 			{
@@ -76,8 +76,8 @@ func TestAccGitlabProjectMirror_withPassword(t *testing.T) {
 	ctx := testAccGitlabProjectStart(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectMirrorDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectMirrorDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and mirror with a username / password.
 			{

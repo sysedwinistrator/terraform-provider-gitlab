@@ -29,8 +29,8 @@ func TestAccGitlabProjectIssue_basic(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectIssueDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectIssueDestroy,
 		Steps: []resource.TestStep{
 			// create Issue with required values only
 			{
@@ -156,8 +156,8 @@ func TestAccGitlabProjectIssue_basicEE(t *testing.T) {
 	testMilestone := testAccAddProjectMilestones(t, testProject, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectIssueDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectIssueDestroy,
 		Steps: []resource.TestStep{
 			// create Issue with EE features set
 			{
@@ -178,8 +178,8 @@ func TestAccGitlabProjectIssue_deleteOnDestroy(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectIssueDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectIssueDestroy,
 		Steps: []resource.TestStep{
 			// create Issue with required values only
 			{

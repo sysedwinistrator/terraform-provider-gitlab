@@ -15,7 +15,7 @@ func TestAccDataGitlabProjectProtectedBranch_search(t *testing.T) {
 	projectName := fmt.Sprintf("tf-%s", acctest.RandString(5))
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabProjectProtectedBranchConfigGetProjectSearch(projectName),

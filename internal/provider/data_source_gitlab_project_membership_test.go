@@ -17,7 +17,7 @@ func TestAccDataSourceGitlabProjectMembership_basic(t *testing.T) {
 	testAccAddProjectMembers(t, project.ID, users)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceGitlabProjectMembership(project.ID),
@@ -40,7 +40,7 @@ func TestAccDataSourceGitlabProjectMembership_pagination(t *testing.T) {
 	testAccAddProjectMembers(t, project.ID, users)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceGitlabProjectMembership(project.ID),

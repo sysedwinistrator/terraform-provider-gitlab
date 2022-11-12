@@ -18,8 +18,8 @@ func TestAccGitlabLabel_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabLabelDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabLabelDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and label with default options
 			{

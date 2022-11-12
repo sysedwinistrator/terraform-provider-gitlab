@@ -22,8 +22,8 @@ func TestAccGitlabProjectIssueBoard_basic(t *testing.T) {
 	testAccCreateProjectIssueBoard(t, testProject.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectIssueBoardDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectIssueBoardDestroy,
 		Steps: []resource.TestStep{
 			// Verify creation
 			{
@@ -78,8 +78,8 @@ func TestAccGitlabProjectIssueBoard_AllOnCreateEE(t *testing.T) {
 	testAccCreateProjectIssueBoard(t, testProject.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectIssueBoardDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectIssueBoardDestroy,
 		Steps: []resource.TestStep{
 			// Verify creation with all attributes set (some are only available in the update API)
 			{
@@ -150,8 +150,8 @@ func TestAccGitlabProjectIssueBoard_Lists(t *testing.T) {
 	testAccCreateProjectIssueBoard(t, testProject.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectIssueBoardDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectIssueBoardDestroy,
 		Steps: []resource.TestStep{
 			// Create Board with 2 lists with core features
 			{

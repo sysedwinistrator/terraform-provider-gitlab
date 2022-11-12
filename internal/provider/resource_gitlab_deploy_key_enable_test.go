@@ -27,8 +27,8 @@ func TestAccGitlabDeployKeyEnable_basic(t *testing.T) {
 	parentProjectDeployKey := testAccCreateDeployKey(t, testProjectParent.ID, &canPushDeployKeyOptions)
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabDeployKeyEnableDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabDeployKeyEnableDestroy,
 		Steps: []resource.TestStep{
 			// Enable a deployKey on project with default options
 			{

@@ -16,7 +16,7 @@ func TestAccDataGitlabReleaseLinks_basic(t *testing.T) {
 	releases := testAccCreateReleases(t, project, 2)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				// get release link used Project ID

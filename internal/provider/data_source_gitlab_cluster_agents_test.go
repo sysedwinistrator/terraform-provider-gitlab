@@ -17,7 +17,7 @@ func TestAccDataSourceGitlabClusterAgents_basic(t *testing.T) {
 	testClusterAgents := testAccCreateClusterAgents(t, testProject.ID, 25)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

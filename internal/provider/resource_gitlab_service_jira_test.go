@@ -19,8 +19,8 @@ func TestAccGitlabServiceJira_basic(t *testing.T) {
 	jiraResourceName := "gitlab_service_jira.jira"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabServiceJiraDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServiceJiraDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and a jira service
 			{

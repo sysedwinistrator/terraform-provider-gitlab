@@ -19,8 +19,8 @@ func TestAccGitlabInstanceVariable_basic(t *testing.T) {
 	rString := acctest.RandString(5)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabInstanceVariableDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabInstanceVariableDestroy,
 		Steps: []resource.TestStep{
 			// Create a variable with default options
 			{

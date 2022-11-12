@@ -18,8 +18,8 @@ func TestAccGitlabDeployKey_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabDeployKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabDeployKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and deployKey with default options
 			{
@@ -63,8 +63,8 @@ func TestAccGitlabDeployKey_suppressTrailingSpace(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabDeployKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabDeployKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and deployKey with space as suffix
 			{

@@ -19,8 +19,8 @@ func TestAccGitlabProjectLevelMRApprovals_basic(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectLevelMRApprovalsDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectLevelMRApprovalsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

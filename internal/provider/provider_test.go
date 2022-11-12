@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"os"
 	"testing"
 
@@ -15,9 +16,13 @@ import (
 // providerFactories are used to instantiate a provider during acceptance testing.
 // The factory function will be invoked for every Terraform CLI command executed
 // to create a provider server to which the CLI can reattach.
-var providerFactories = map[string]func() (*schema.Provider, error){
-	"gitlab": func() (*schema.Provider, error) {
-		return New("dev")(), nil
+var providerFactoriesV6 = map[string]func() (tfprotov6.ProviderServer, error){
+	"gitlab": func() (tfprotov6.ProviderServer, error) {
+		serverFactory, err := NewProviderServer(context.Background(), "test")
+		if err != nil {
+			return nil, err
+		}
+		return serverFactory(), nil
 	},
 }
 
