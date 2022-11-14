@@ -326,6 +326,43 @@ func TestAccGitlabUser_basic(t *testing.T) {
 	})
 }
 
+// Test that the fix for suppressing skip_confirmation works appropriately.
+func TestAccGitlabUser_user_skip_confirmation(t *testing.T) {
+	var user gitlab.User
+	rInt := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckGitlabGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_user" "example_user" {
+					name             = "Example User"
+					username         = "exampleuser"
+					email            = "user%d@example.com"
+					is_admin         = true
+					projects_limit   = 0
+					can_create_group = false
+					is_external      = false
+					note             = "Ipsum Lorem."
+					password         = "Dolor Sit Amet"
+				  }
+				`, rInt),
+				Check: testAccCheckGitlabUserExists("gitlab_user.example_user", &user),
+			},
+			{
+				ResourceName:      "gitlab_user.example_user",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"password",
+				},
+			},
+		},
+	})
+}
+
 func TestAccGitlabUser_password_reset(t *testing.T) {
 	var user gitlab.User
 	rInt := acctest.RandInt()
