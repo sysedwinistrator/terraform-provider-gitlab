@@ -81,9 +81,6 @@ func TestAccGitlabProjectProtectedEnvironment_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("gitlab_project_protected_environment.this", "deploy_access_levels.0.access_level_description"),
 					resource.TestCheckResourceAttrSet("gitlab_project_protected_environment.this", "deploy_access_levels.1.access_level_description"),
 					resource.TestCheckResourceAttrSet("gitlab_project_protected_environment.this", "deploy_access_levels.2.access_level_description"),
-					// access_level is computed when not specified.
-					resource.TestCheckResourceAttrSet("gitlab_project_protected_environment.this", "deploy_access_levels.1.access_level"),
-					resource.TestCheckResourceAttrSet("gitlab_project_protected_environment.this", "deploy_access_levels.2.access_level"),
 					// required_approval_count is set.
 					resource.TestCheckResourceAttrSet("gitlab_project_protected_environment.this", "required_approval_count"),
 				),

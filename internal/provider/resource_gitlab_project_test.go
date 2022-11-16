@@ -7,14 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
-	"testing"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	gitlab "github.com/xanzy/go-gitlab"
+	"regexp"
+	"strings"
+	"testing"
 )
 
 type testAccGitlabProjectExpectedAttributes struct {
@@ -258,11 +257,11 @@ max_file_size = 1234
 }
 
 func TestAccGitlabProject_templates(t *testing.T) {
-	var received, defaultsMainBranch gitlab.Project
+	var received gitlab.Project
 	rInt := acctest.RandInt()
 
-	defaultsMainBranch = testProjectDefaults(rInt)
-	defaultsMainBranch.DefaultBranch = "main"
+	templateFileName := "test.txt"
+	templateProject := testAccGitLabProjectCreateTemplateProject(t, templateFileName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: providerFactories,
@@ -270,19 +269,16 @@ func TestAccGitlabProject_templates(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create a project using custom template name
 			{
-				Config:   testAccGitlabProjectConfigTemplateNameCustom(rInt),
+				Config:   testAccGitlabProjectConfigTemplateNameCustom(rInt, templateProject.Name),
 				SkipFunc: isRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.template-name-custom", &received),
-					testAccCheckGitlabProjectDefaultBranch(&received, &testAccGitlabProjectExpectedAttributes{
-						DefaultBranch: "master",
-					}),
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.template-name-custom"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "Gemfile", &gitlab.GetFileOptions{Ref: gitlab.String("master")}, nil)
+						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, templateFileName, &gitlab.GetFileOptions{Ref: gitlab.String(received.DefaultBranch)}, nil)
 						if err != nil {
-							return fmt.Errorf("failed to get 'Gemfile' file from template project: %w", err)
+							return fmt.Errorf("failed to get %s' file from template project: %w", templateFileName, err)
 						}
 
 						return nil
@@ -291,19 +287,16 @@ func TestAccGitlabProject_templates(t *testing.T) {
 			},
 			// Create a project using custom template project id
 			{
-				Config:   testAccGitlabProjectConfigTemplateProjectID(rInt),
+				Config:   testAccGitlabProjectConfigTemplateProjectID(rInt, templateProject.ID),
 				SkipFunc: isRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.template-id", &received),
-					testAccCheckGitlabProjectDefaultBranch(&received, &testAccGitlabProjectExpectedAttributes{
-						DefaultBranch: "master",
-					}),
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.template-id"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "Rakefile", &gitlab.GetFileOptions{Ref: gitlab.String("master")}, nil)
+						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, templateFileName, &gitlab.GetFileOptions{Ref: gitlab.String(received.DefaultBranch)}, nil)
 						if err != nil {
-							return fmt.Errorf("failed to get 'Rakefile' file from template project: %w", err)
+							return fmt.Errorf("failed to get '%s' file from template project: %w", templateFileName, err)
 						}
 
 						return nil
@@ -315,11 +308,7 @@ func TestAccGitlabProject_templates(t *testing.T) {
 }
 
 func TestAccGitlabProject_subObjects(t *testing.T) {
-	var received, defaultsMainBranch gitlab.Project
 	rInt := acctest.RandInt()
-
-	defaultsMainBranch = testProjectDefaults(rInt)
-	defaultsMainBranch.DefaultBranch = "main"
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: providerFactories,
@@ -342,27 +331,6 @@ max_file_size = 123
 				SkipFunc:    isRunningInEE,
 				Config:      testAccGitlabProjectConfigPushRules(rInt, `author_email_regex = "foo_author"`),
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta("Project push rules are not supported in your version of GitLab")),
-			},
-			// Create a project using custom template project id
-			{
-				Config:   testAccGitlabProjectConfigTemplateProjectID(rInt),
-				SkipFunc: isRunningInCE,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabProjectExists("gitlab_project.template-id", &received),
-					testAccCheckGitlabProjectDefaultBranch(&received, &testAccGitlabProjectExpectedAttributes{
-						DefaultBranch: "master",
-					}),
-					func(state *terraform.State) error {
-						projectID := state.RootModule().Resources["gitlab_project.template-id"].Primary.ID
-
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "Rakefile", &gitlab.GetFileOptions{Ref: gitlab.String("master")}, nil)
-						if err != nil {
-							return fmt.Errorf("failed to get 'Rakefile' file from template project: %w", err)
-						}
-
-						return nil
-					},
-				),
 			},
 			// Update to original project config
 			{
@@ -1978,43 +1946,41 @@ resource "gitlab_project" "foo" {
 // 2020-09-07: Currently Gitlab (version 13.3.6 ) doesn't allow in admin API
 // ability to set a group as instance level templates.
 // To test resource_gitlab_project_test template features we add
-// group, project myrails and admin settings directly in scripts/healthcheck-and-setup.sh
-// Once Gitlab add admin template in API we could manage group/project/settings
+// group, admin settings directly in scripts/healthcheck-and-setup.sh
+// Once Gitlab add admin template in API we could manage group/settings
 // directly in tests like TestAccGitlabProject_basic.
-func testAccGitlabProjectConfigTemplateNameCustom(rInt int) string {
+func testAccGitlabProjectConfigTemplateNameCustom(rInt int, templateName string) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "template-name-custom" {
   name = "template-name-custom-%d"
   path = "template-name-custom.%d"
   description = "Terraform acceptance tests"
-  template_name = "myrails"
+  template_name = "%s"
   use_custom_template = true
-  default_branch = "master"
   skip_wait_for_default_branch_protection = "false"
 
   # So that acceptance tests can be run in a gitlab organization
   # with no billing
   visibility_level = "public"
 }
-	`, rInt, rInt)
+	`, rInt, rInt, templateName)
 }
 
-func testAccGitlabProjectConfigTemplateProjectID(rInt int) string {
+func testAccGitlabProjectConfigTemplateProjectID(rInt int, templateProjectID int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "template-id" {
   name = "template-id-%d"
   path = "template-id.%d"
   description = "Terraform acceptance tests"
-  template_project_id = 999
+  template_project_id = %d
   use_custom_template = true
-  default_branch = "master"
   skip_wait_for_default_branch_protection = "false"
 
   # So that acceptance tests can be run in a gitlab organization
   # with no billing
   visibility_level = "public"
 }
-	`, rInt, rInt)
+	`, rInt, rInt, templateProjectID)
 }
 
 func testAccCheckMutualExclusiveNameAndID(rInt int) string {
@@ -2226,4 +2192,15 @@ func testProjectDefaults(rInt int) gitlab.Project {
 		SquashCommitTemplate:             "hello squash",
 		MergeCommitTemplate:              "hello merge",
 	}
+}
+
+func testAccGitLabProjectCreateTemplateProject(t *testing.T, templateFileName string) *gitlab.Project {
+	// Create template project in template group called `terraform` (created in `healthcheck-and-setup.sh`).
+	templateGroup, _, err := testGitlabClient.Groups.GetGroup("terraform", nil)
+	if err != nil {
+		t.Fatalf("Unable to find template group `terraform` - must be a bug when creating it in `scripts/healthcheck-and-setup.sh`: %+v", err)
+	}
+	templateProject := testAccCreateProjectWithNamespace(t, templateGroup.ID)
+	testAccCreateProjectFile(t, templateProject.ID, "meow", templateFileName, templateProject.DefaultBranch)
+	return templateProject
 }

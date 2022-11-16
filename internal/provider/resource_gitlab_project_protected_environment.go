@@ -62,7 +62,7 @@ var _ = registerResource("gitlab_project_protected_environment", func() *schema.
 							Type:         schema.TypeString,
 							ForceNew:     true,
 							Optional:     true,
-							Computed:     true, // When user_id or group_id is specified, the GitLab API still returns an access_level in the response.
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice(validProtectedEnvironmentDeploymentLevelNames, false),
 						},
 						"access_level_description": {
