@@ -31,8 +31,8 @@ test -f $done || {
   # 2020-09-07: Currently Gitlab (version 13.3.6 ) doesn't allow in admin API
   # ability to set a group as instance level templates.
   # To test resource_gitlab_project_test template features we add
-  # group, project myrails and admin settings directly in scripts/start-gitlab.sh
-  # Once Gitlab add admin template in API we could manage group/project/settings
+  # group and admin settings directly in scripts/start-gitlab.sh
+  # Once Gitlab add admin template in API we could manage group/settings
   # directly in tests like TestAccGitlabProject_basic.
   # Works on CE too
 
@@ -45,14 +45,6 @@ test -f $done || {
     printf 'application_settings = ApplicationSetting.find_by "";'
     printf 'application_settings.custom_project_templates_group_id = group_template.id;'
     printf 'application_settings.save!;'
-    printf 'attrs = {'
-    printf 'name: :myrails, '
-    printf 'path: :myrails, '
-    printf 'namespace_id: group_template.id, '
-    printf 'template_name: :rails, '
-    printf 'id: 999};'
-    printf 'project = ::Projects::CreateService.new(User.find_by_username("root"), attrs).execute;'
-    printf 'project.saved?;'
   ) | gitlab-rails console
 
   touch $done

@@ -337,7 +337,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description:  "Enable pages access control",
 		Type:         schema.TypeString,
 		Optional:     true,
-		Default:      "private",
+		Computed:     true,
 		ValidateFunc: validation.StringInSlice([]string{"public", "private", "enabled", "disabled"}, true),
 	},
 	// The GitLab API requires that import_url is also set when mirror options are used
