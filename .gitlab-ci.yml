@@ -15,6 +15,17 @@ variables:
   # NOTE(@timofurrer): used for caching, see `cache.paths` settings
   GOPATH: ${CI_PROJECT_DIR}/.go
 
+workflow:
+  rules:
+    - changes: 
+      - .gitlab/ci/Dockerfile
+      - .go-version
+      variables:
+        IMAGE_TAG: ${CI_COMMIT_REF_SLUG}
+    - variables:
+        IMAGE_TAG: latest
+
+
 default:
   image: golang:${GO_VERSION}
   tags:
@@ -71,7 +82,7 @@ acctest:image:
         - .gitlab/ci/Dockerfile
         - .go-version
       variables:
-        DOCKER_TAG: $CI_COMMIT_SHORT_SHA
+        DOCKER_TAG: $CI_COMMIT_REF_SLUG
     # If we're on our main branch, tag with "latest" 
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes: 
@@ -88,6 +99,7 @@ acctest:image:
     # Build the docker image
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}/.gitlab/ci"
+      --cache=true
       --dockerfile "${CI_PROJECT_DIR}/.gitlab/ci/Dockerfile"
       --destination "${CI_REGISTRY_IMAGE}:${DOCKER_TAG}"
       --build-arg GO_VERSION=$GO_VERSION
@@ -116,30 +128,9 @@ go:test:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
     GITLAB_BASE_URL: http://docker:8080/api/v4
+  # Use the CI container we build
+  image: registry.gitlab.com/gitlab-org/terraform-provider-gitlab:${IMAGE_TAG}
   before_script:
-    # FIXME(@timofurrer): refactor into prepared image for pipeline
-    - |
-      apt update
-      apt install --yes --no-install-recommends ca-certificates curl gnupg lsb-release
-      mkdir -p /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-        $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-      apt update
-      apt install --yes --no-install-recommends docker-ce docker-ce-cli containerd.io docker-compose-plugin
-      echo 'docker compose "$@"' > /bin/docker-compose
-      chmod +x /bin/docker-compose
-    - docker info
-    # FIXME(@timofurrer): refactor into prepared image for pipeline
-    #                     see https://www.terraform.io/plugin/sdkv2/testing/acceptance-tests#requirements-and-recommendations and
-    #                     https://github.com/hashicorp/terraform-plugin-sdk/issues/629 why we install terraform
-    - |
-      wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /usr/share/keyrings/hashicorp-archive-keyring.gpg
-      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-      apt update
-      apt install terraform
-    - terraform version
     - export GITLAB_$(echo "${GITLAB_EDITION}" | tr '[:lower:]' '[:upper:]')_VERSION=${GITLAB_VERSION}
     - docker-compose pull 2>"${GITLAB_EDITION}-${GITLAB_VERSION}-docker-compose-pull-logs.txt"
     - test -f "${GITLAB_LICENSE}" && cp "${GITLAB_LICENSE}" "${CI_PROJECT_DIR}/Gitlab-license.txt"
