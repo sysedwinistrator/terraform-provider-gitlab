@@ -1,7 +1,7 @@
 data "gitlab_project_branches" "example" {
-  project_id = 30
+  project = 30
 }
 
 data "gitlab_project_branches" "example" {
-  project_id = "foo/bar/baz"
+  project = "foo/bar/baz"
 }
