@@ -233,7 +233,33 @@ $ make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v
   Refer to [HashiCorp's testing guide](https://www.terraform.io/docs/extend/testing/index.html)
   and [HashiCorp's testing best practices](https://www.terraform.io/docs/extend/best-practices/testing.html).
 
-## GitLab Terraform Provider Release Setup
+## Release Workflow
+
+After the migration of the GitLab Terraform Provider to GitLab, 
+[we've decided](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/1331) to
+use the same release cadence as [GitLab](https://about.gitlab.com/releases/).
+
+Which means that:
+
+* Every 22nd of the month a new minor (`X.Y+1`) release is published.
+* Security and Bug Fix releases (`X.Y.Z+1`) will be publish on demand.
+* Once a year on 22nd of May a new major (`X+1`) release is published.
+
+Note, that the compatibility between a provider release and GitLab itself **cannot** be inferred from the 
+release version. That is, a release `15.7` of the provider might be compatible with `15.4`, `15.5`, `15.6` 
+and even future GitLab releases.
+
+This workflow has been introduced with the GitLab %15.7 Milestone in December 2022.
+
+### Release Scoping 
+
+The actions in the bullet points below allow us to plan the scope of releases and track changes over time.
+
+* Issues and Merge Requests are assigned with a Milestone that they were implemented in. 
+* Every [Release](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/releases) has a Milestone assigned.
+
+
+## Release Setup
 
 This chapter describes the setup we have in place to successfully release a Terraform Provider release built on GitLab.com to the official [Terraform Provider Registry](https://registry.terraform.io/).
 
