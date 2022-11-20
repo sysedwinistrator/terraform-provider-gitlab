@@ -5,7 +5,8 @@ version: '3'
 services:
   gitlab-ce:
     image: gitlab/gitlab-ce:${GITLAB_CE_VERSION:-latest}
-    restart: always
+    platform: linux/amd64
+    shm_size: 256m
     ports:
       - 8080:80
     environment:
@@ -21,12 +22,13 @@ services:
       - ${PWD}/certs:/etc/gitlab/ssl:ro
     healthcheck:
       test: /healthcheck-and-setup.sh
-      interval: 10s
-      timeout: 2m
+      interval: 60s
+      timeout: 10m
 
   gitlab-ee:
     image: gitlab/gitlab-ee:${GITLAB_EE_VERSION:-latest}
-    restart: always
+    platform: linux/amd64
+    shm_size: 256m
     ports:
       - 8080:80
     environment:
@@ -44,8 +46,8 @@ services:
       - ${PWD}/certs:/etc/gitlab/ssl:ro
     healthcheck:
       test: /healthcheck-and-setup.sh
-      interval: 10s
-      timeout: 2m
+      interval: 60s
+      timeout: 10m
 
 volumes:
   config-ce:
