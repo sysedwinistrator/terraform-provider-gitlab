@@ -529,6 +529,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description: "If true, jobs can be viewed by non-project members.",
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 	},
 	"repository_access_level": {
 		Description:      fmt.Sprintf("Set the repository access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
@@ -768,7 +769,10 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("issues_access_level", string(project.IssuesAccessLevel))
 	d.Set("merge_requests_access_level", string(project.MergeRequestsAccessLevel))
 	d.Set("operations_access_level", string(project.OperationsAccessLevel))
-	d.Set("public_builds", project.PublicBuilds)
+
+	//(PatrickRice): In 16.0, we need to rename this to "public_jobs"
+	d.Set("public_builds", project.PublicJobs)
+
 	d.Set("repository_access_level", string(project.RepositoryAccessLevel))
 	d.Set("repository_storage", project.RepositoryStorage)
 	d.Set("requirements_access_level", string(project.RequirementsAccessLevel))
