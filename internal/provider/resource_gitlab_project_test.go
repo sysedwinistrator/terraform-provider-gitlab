@@ -7,13 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
+	"testing"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	gitlab "github.com/xanzy/go-gitlab"
-	"regexp"
-	"strings"
-	"testing"
 )
 
 type testAccGitlabProjectExpectedAttributes struct {
@@ -1319,6 +1320,26 @@ func TestAccGitlabProject_SetDefaultFalseBooleansOnCreate(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"initialize_with_readme"},
+			},
+		},
+	})
+}
+
+// Ensure fix for https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/1233
+func TestAccGitlabProject_PublicBuilds(t *testing.T) {
+	rInt := acctest.RandInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "this" {
+						name             = "foo-%d"
+						public_builds       = true
+					  
+					}`, rInt),
 			},
 		},
 	})
