@@ -100,10 +100,11 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Default:     true,
 	},
 	"pipelines_enabled": {
-		Description: "Enable pipelines for the project.",
+		Description: "Enable pipelines for the project. The `pipelines_enabled` field is being sent as `jobs_enabled` in the GitLab API calls.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
+		Deprecated:  "Deprecated in favor of `builds_access_level`",
 	},
 	"approvals_before_merge": {
 		Description: `Number of merge request approvals required for merging. Default is 0.
@@ -802,7 +803,6 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		RequestAccessEnabled:             gitlab.Bool(d.Get("request_access_enabled").(bool)),
 		IssuesEnabled:                    gitlab.Bool(d.Get("issues_enabled").(bool)),
 		MergeRequestsEnabled:             gitlab.Bool(d.Get("merge_requests_enabled").(bool)),
-		JobsEnabled:                      gitlab.Bool(d.Get("pipelines_enabled").(bool)),
 		ApprovalsBeforeMerge:             gitlab.Int(d.Get("approvals_before_merge").(int)),
 		WikiEnabled:                      gitlab.Bool(d.Get("wiki_enabled").(bool)),
 		SnippetsEnabled:                  gitlab.Bool(d.Get("snippets_enabled").(bool)),
@@ -850,6 +850,12 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if v, ok := d.GetOkExists("initialize_with_readme"); ok {
 		options.InitializeWithReadme = gitlab.Bool(v.(bool))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("pipelines_enabled"); ok {
+		options.JobsEnabled = gitlab.Bool(v.(bool))
 	}
 
 	if v, ok := d.GetOk("import_url"); ok {
