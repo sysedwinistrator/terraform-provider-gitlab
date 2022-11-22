@@ -124,7 +124,7 @@ resource "gitlab_project" "peters_repo" {
 - `packages_enabled` (Boolean) Enable packages repository for the project.
 - `pages_access_level` (String) Enable pages access control
 - `path` (String) The path of the repository.
-- `pipelines_enabled` (Boolean) Enable pipelines for the project.
+- `pipelines_enabled` (Boolean, Deprecated) Enable pipelines for the project. The `pipelines_enabled` field is being sent as `jobs_enabled` in the GitLab API calls.
 - `printing_merge_request_link_enabled` (Boolean) Show link to create/view merge request when pushing from the command line
 - `public_builds` (Boolean) If true, jobs can be viewed by non-project members.
 - `push_rules` (Block List, Max: 1) Push rules for the project. (see [below for nested schema](#nestedblock--push_rules))
