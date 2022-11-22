@@ -147,6 +147,8 @@ go:test:
   artifacts:
     paths:
       - $GITLAB_EDITION-$GITLAB_VERSION-docker-compose-pull-logs.txt
+    when: always
+      
 testacc:ce:
   extends: .testacc
   variables:
