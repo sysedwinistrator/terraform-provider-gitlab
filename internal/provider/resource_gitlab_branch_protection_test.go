@@ -5,7 +5,6 @@ package provider
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -110,7 +109,7 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 					}),
 				),
 			},
-			// Update the the Branch Protection code owner approval setting
+			// Update the Branch Protection code owner approval setting
 			{
 				SkipFunc: isRunningInCE,
 				Config:   testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
@@ -123,22 +122,6 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 						MergeAccessLevel:          accessLevelValueToName[gitlab.MaintainerPermissions],
 						UnprotectAccessLevel:      accessLevelValueToName[gitlab.MaintainerPermissions],
 						CodeOwnerApprovalRequired: true,
-					}),
-				),
-			},
-			// Attempting to update code owner approval setting on CE should fail safely and with an informative error message
-			{
-				SkipFunc:    isRunningInEE,
-				Config:      testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
-				ExpectError: regexp.MustCompile("feature unavailable: code owner approvals"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionAttributes(&pb, &testAccGitlabBranchProtectionExpectedAttributes{
-						Name:                 fmt.Sprintf("BranchProtect-%d", rInt),
-						PushAccessLevel:      accessLevelValueToName[gitlab.MaintainerPermissions],
-						MergeAccessLevel:     accessLevelValueToName[gitlab.MaintainerPermissions],
-						UnprotectAccessLevel: accessLevelValueToName[gitlab.MaintainerPermissions],
 					}),
 				),
 			},
@@ -200,22 +183,25 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 				),
 			},
 			// Attempting to update code owner approval setting on CE should fail safely and with an informative error message
-			{
-				SkipFunc:    isRunningInEE,
-				Config:      testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
-				ExpectError: regexp.MustCompile("feature unavailable: code owner approvals"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionAttributes(&pb, &testAccGitlabBranchProtectionExpectedAttributes{
-						Name:                      fmt.Sprintf("BranchProtect-%d", rInt),
-						PushAccessLevel:           accessLevelValueToName[gitlab.MaintainerPermissions],
-						MergeAccessLevel:          accessLevelValueToName[gitlab.MaintainerPermissions],
-						UnprotectAccessLevel:      accessLevelValueToName[gitlab.MaintainerPermissions],
-						CodeOwnerApprovalRequired: true,
-					}),
-				),
-			},
+			// The error message was removed, see https://gitlab.com/gitlab-org/gitlab/-/merge_requests/101903#note_1182962674
+			// instead the `code_owner_approval_required` field is just swallowed.
+			// We may re-enable that check in case the bavhior is changed back again.
+			//{
+			//	SkipFunc: isRunningInEE,
+			//	Config:   testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
+			//	//ExpectError: regexp.MustCompile("feature unavailable: code owner approvals"),
+			//	//Check: resource.ComposeTestCheckFunc(
+			//	//	testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
+			//	//	testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
+			//	//	testAccCheckGitlabBranchProtectionAttributes(&pb, &testAccGitlabBranchProtectionExpectedAttributes{
+			//	//		Name:                      fmt.Sprintf("BranchProtect-%d", rInt),
+			//	//		PushAccessLevel:           accessLevelValueToName[gitlab.MaintainerPermissions],
+			//	//		MergeAccessLevel:          accessLevelValueToName[gitlab.MaintainerPermissions],
+			//	//		UnprotectAccessLevel:      accessLevelValueToName[gitlab.MaintainerPermissions],
+			//	//		CodeOwnerApprovalRequired: false,
+			//	//	}),
+			//	//),
+			//},
 			// Update the Branch Protection to get back to initial settings
 			{
 				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),

@@ -109,7 +109,7 @@ var _ = registerResource("gitlab_branch_protection", func() *schema.Resource {
 			"allowed_to_merge":     schemaAllowedTo(),
 			"allowed_to_unprotect": schemaAllowedTo(),
 			"code_owner_approval_required": {
-				Description: "Can be set to true to require code owner approval before merging.",
+				Description: "Can be set to true to require code owner approval before merging. Only available own Premium and Ultimate instances.",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,

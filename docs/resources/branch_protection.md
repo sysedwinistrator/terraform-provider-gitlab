@@ -93,7 +93,7 @@ resource "gitlab_branch_protection" "main" {
 - `allowed_to_merge` (Block Set) Defines permissions for action. (see [below for nested schema](#nestedblock--allowed_to_merge))
 - `allowed_to_push` (Block Set) Defines permissions for action. (see [below for nested schema](#nestedblock--allowed_to_push))
 - `allowed_to_unprotect` (Block Set) Defines permissions for action. (see [below for nested schema](#nestedblock--allowed_to_unprotect))
-- `code_owner_approval_required` (Boolean) Can be set to true to require code owner approval before merging.
+- `code_owner_approval_required` (Boolean) Can be set to true to require code owner approval before merging. Only available own Premium and Ultimate instances.
 - `merge_access_level` (String) Access levels allowed to merge. Valid values are: `no one`, `developer`, `maintainer`.
 - `push_access_level` (String) Access levels allowed to push. Valid values are: `no one`, `developer`, `maintainer`.
 - `unprotect_access_level` (String) Access levels allowed to unprotect. Valid values are: `no one`, `developer`, `maintainer`.
