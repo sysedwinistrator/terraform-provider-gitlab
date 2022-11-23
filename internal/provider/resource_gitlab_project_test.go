@@ -871,10 +871,12 @@ func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 				Config: ` `, // requires a space for empty config
 			},
 			// With explicit default branch set to instance-wide default
+			// NOTE(@timofurrer): we create the project with a `-2` suffix,
+			// because of the deletion delay, see https://gitlab.com/gitlab-org/gitlab/-/issues/383245
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "foo" {
-						name                   = "foo-%d"
+						name                   = "foo-%d-2"
 						description            = "Terraform acceptance tests"
 						visibility_level       = "public"
 						default_branch         = "main"
@@ -894,6 +896,8 @@ func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 				Config: ` `, // requires a space for empty config
 			},
 			// With custom default branch
+			// NOTE(@timofurrer): we create the project with a `-custom-default-branch` suffix,
+			// because of the deletion delay, see https://gitlab.com/gitlab-org/gitlab/-/issues/383245
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "foo" {
@@ -917,10 +921,12 @@ func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 				Config: ` `, // requires a space for empty config
 			},
 			// With `skip_wait_for_default_branch_protection` enabled
+			// NOTE(@timofurrer): we create the project with a `-custom-default-branch-2` suffix,
+			// because of the deletion delay, see https://gitlab.com/gitlab-org/gitlab/-/issues/383245
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "foo" {
-						name                   = "foo-%d-custom-default-branch"
+						name                   = "foo-%d-custom-default-branch-2"
 						description            = "Terraform acceptance tests"
 						visibility_level       = "public"
 						initialize_with_readme = true
@@ -940,10 +946,12 @@ func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 			{
 				Config: ` `, // requires a space for empty config
 			},
+			// NOTE(@timofurrer): we create the project with a `-custom-default-branch-3` suffix,
+			// because of the deletion delay, see https://gitlab.com/gitlab-org/gitlab/-/issues/383245
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "foo" {
-						name                   = "foo-%d-custom-default-branch"
+						name                   = "foo-%d-custom-default-branch-3"
 						description            = "Terraform acceptance tests"
 						visibility_level       = "public"
 						initialize_with_readme = true
@@ -956,7 +964,7 @@ func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "foo" {
-						name                   = "foo-%d-custom-default-branch"
+						name                   = "foo-%d-custom-default-branch-3"
 						description            = "Terraform acceptance tests"
 						visibility_level       = "public"
 						initialize_with_readme = true
