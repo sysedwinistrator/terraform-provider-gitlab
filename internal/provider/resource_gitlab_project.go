@@ -34,6 +34,11 @@ var (
 		"manual",
 		"timed_incremental",
 	}
+	validMergeMethods = []string{
+		"merge",
+		"rebase_merge",
+		"ff",
+	}
 )
 
 var resourceGitLabProjectSchema = map[string]*schema.Schema{
@@ -148,10 +153,10 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Default:      "private",
 	},
 	"merge_method": {
-		Description:  "Set to `ff` to create fast-forward merges",
+		Description:  fmt.Sprintf("Set the merge method. Valid values are %s.", renderValueListForDocs(validMergeMethods)),
 		Type:         schema.TypeString,
 		Optional:     true,
-		ValidateFunc: validation.StringInSlice([]string{"merge", "rebase_merge", "ff"}, true),
+		ValidateFunc: validation.StringInSlice(validMergeMethods, true),
 		Default:      "merge",
 	},
 	"only_allow_merge_if_pipeline_succeeds": {

@@ -107,7 +107,7 @@ resource "gitlab_project" "peters_repo" {
 - `issues_template` (String) Sets the template for new issues in the project.
 - `lfs_enabled` (Boolean) Enable LFS for the project.
 - `merge_commit_template` (String) Template used to create merge commit message in merge requests. (Introduced in GitLab 14.5.)
-- `merge_method` (String) Set to `ff` to create fast-forward merges
+- `merge_method` (String) Set the merge method. Valid values are `merge`, `rebase_merge`, `ff`.
 - `merge_pipelines_enabled` (Boolean) Enable or disable merge pipelines.
 - `merge_requests_access_level` (String) Set the merge requests access level. Valid values are `disabled`, `private`, `enabled`.
 - `merge_requests_enabled` (Boolean) Enable merge requests for the project.
