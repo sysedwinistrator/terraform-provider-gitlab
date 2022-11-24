@@ -472,6 +472,19 @@ func testAccAddGroupMembers(t *testing.T, gid interface{}, users []*gitlab.User)
 	}
 }
 
+// testAccProjectShareGroup is a test helper for sharing a project with a group.
+func testAccProjectShareGroup(t *testing.T, pid interface{}, gid int) {
+	t.Helper()
+
+	_, err := testGitlabClient.Projects.ShareProjectWithGroup(pid, &gitlab.ShareWithGroupOptions{
+		GroupID:     gitlab.Int(gid),
+		GroupAccess: gitlab.AccessLevel(gitlab.DeveloperPermissions),
+	})
+	if err != nil {
+		t.Fatalf("could not share project %v with group %d: %v", pid, gid, err)
+	}
+}
+
 // testAccAddProjectMilestones is a test helper for adding milestones to project.
 // It assumes the group will be destroyed at the end of the test and will not cleanup milestones.
 func testAccAddProjectMilestones(t *testing.T, project *gitlab.Project, n int) []*gitlab.Milestone {

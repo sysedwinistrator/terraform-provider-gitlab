@@ -303,51 +303,139 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 }
 
 func TestAccGitlabBranchProtection_createWithMultipleAccessLevels(t *testing.T) {
+	testAccCheckEE(t)
+
+	// Set up the project for the protected branch
+	testProject := testAccCreateProject(t)
+	// Set up the groups to share the `testProject` with
+	testGroups := testAccCreateGroups(t, 2)
+	// Set up the users to add as members to the `testProject`
+	testUsers := testAccCreateUsers(t, 2)
+	// Add users as members to project
+	testAccAddProjectMembers(t, testProject.ID, testUsers)
+	// Add users to groups
+	testAccAddGroupMembers(t, testGroups[0].ID, []*gitlab.User{testUsers[0]})
+	testAccAddGroupMembers(t, testGroups[1].ID, []*gitlab.User{testUsers[1]})
+	// Share project with groups
+	testAccProjectShareGroup(t, testProject.ID, testGroups[0].ID)
+	testAccProjectShareGroup(t, testProject.ID, testGroups[1].ID)
+
 	var pb gitlab.ProtectedBranch
-	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: providerFactories,
-		PreCheck:          func() { testAccCheckEE(t) },
 		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Create a project, groups, users and Branch Protection with advanced allowed_to blocks
 			{
-				Config: testAccGitlabBranchProtectionConfigMultipleAccessLevels(rInt),
+				Config: fmt.Sprintf(`
+					resource "gitlab_branch_protection" "test" {
+						project                = %d
+						branch                 = "test-branch"
+						push_access_level      = "maintainer"
+						merge_access_level     = "maintainer"
+						unprotect_access_level = "maintainer"
+
+						allowed_to_push {
+							user_id = %[3]d
+						}
+						allowed_to_push {
+							group_id = %[4]d
+						}
+						allowed_to_push {
+							group_id = %[5]d
+						}
+
+						allowed_to_merge {
+							user_id = %[2]d
+						}
+						allowed_to_merge {
+							group_id = %[4]d
+						}
+						allowed_to_merge {
+							user_id = %[3]d
+						}
+						allowed_to_merge {
+							group_id = %[5]d
+						}
+
+						allowed_to_unprotect {
+							user_id = %[2]d
+						}
+						allowed_to_unprotect {
+							group_id = %[4]d
+						}
+						allowed_to_unprotect {
+							user_id = %[3]d
+						}
+						allowed_to_unprotect {
+							group_id = %[5]d
+						}
+					}
+				`, testProject.ID, testUsers[0].ID, testUsers[1].ID, testGroups[0].ID, testGroups[1].ID),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
+					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.test", &pb),
+					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.test", &pb),
 					testAccCheckGitlabBranchProtectionAttributes(&pb, &testAccGitlabBranchProtectionExpectedAttributes{
-						Name:                     fmt.Sprintf("BranchProtect-%d", rInt),
+						Name:                     "test-branch",
 						PushAccessLevel:          accessLevelValueToName[gitlab.MaintainerPermissions],
 						MergeAccessLevel:         accessLevelValueToName[gitlab.MaintainerPermissions],
 						UnprotectAccessLevel:     accessLevelValueToName[gitlab.MaintainerPermissions],
-						UsersAllowedToPush:       []string{fmt.Sprintf("listest2%d", rInt)},
-						UsersAllowedToMerge:      []string{fmt.Sprintf("listest%d", rInt), fmt.Sprintf("listest2%d", rInt)},
-						UsersAllowedToUnprotect:  []string{fmt.Sprintf("listest%d", rInt), fmt.Sprintf("listest2%d", rInt)},
-						GroupsAllowedToPush:      []string{fmt.Sprintf("test-%d", rInt), fmt.Sprintf("test2-%d", rInt)},
-						GroupsAllowedToMerge:     []string{fmt.Sprintf("test-%d", rInt), fmt.Sprintf("test2-%d", rInt)},
-						GroupsAllowedToUnprotect: []string{fmt.Sprintf("test-%d", rInt), fmt.Sprintf("test2-%d", rInt)},
+						UsersAllowedToPush:       []string{testUsers[1].Username},
+						UsersAllowedToMerge:      []string{testUsers[0].Username, testUsers[1].Username},
+						UsersAllowedToUnprotect:  []string{testUsers[0].Username, testUsers[1].Username},
+						GroupsAllowedToPush:      []string{testGroups[0].Name, testGroups[1].Name},
+						GroupsAllowedToMerge:     []string{testGroups[0].Name, testGroups[1].Name},
+						GroupsAllowedToUnprotect: []string{testGroups[0].Name, testGroups[1].Name},
 					}),
 				),
 			},
 			// Update to remove some allowed_to blocks and update access levels
 			{
-				Config: testAccGitlabBranchProtectionConfigMultipleAccessLevelsUpdate(rInt),
+				Config: fmt.Sprintf(`
+					resource "gitlab_branch_protection" "test" {
+						project                = %d
+						branch                 = "test-branch"
+						push_access_level      = "developer"
+						merge_access_level     = "developer"
+						unprotect_access_level = "developer"
+
+						allowed_to_push {
+							user_id = %[3]d
+						}
+						allowed_to_push {
+							group_id = %[4]d
+						}
+
+						allowed_to_merge {
+							user_id = %[2]d
+						}
+						allowed_to_merge {
+							group_id = %[4]d
+						}
+
+						allowed_to_unprotect {
+							user_id = %[2]d
+						}
+						allowed_to_unprotect {
+							group_id = %[5]d
+						}
+					}
+				`, testProject.ID, testUsers[0].ID, testUsers[1].ID, testGroups[0].ID, testGroups[1].ID),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
+					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.test", &pb),
+					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.test", &pb),
 					testAccCheckGitlabBranchProtectionAttributes(&pb, &testAccGitlabBranchProtectionExpectedAttributes{
-						Name:                     fmt.Sprintf("BranchProtect-%d", rInt),
+						Name:                     "test-branch",
 						PushAccessLevel:          accessLevelValueToName[gitlab.DeveloperPermissions],
 						MergeAccessLevel:         accessLevelValueToName[gitlab.DeveloperPermissions],
 						UnprotectAccessLevel:     accessLevelValueToName[gitlab.DeveloperPermissions],
-						UsersAllowedToPush:       []string{fmt.Sprintf("listest%d", rInt)},
-						UsersAllowedToMerge:      []string{fmt.Sprintf("listest2%d", rInt)},
-						UsersAllowedToUnprotect:  []string{fmt.Sprintf("listest%d", rInt)},
-						GroupsAllowedToPush:      []string{fmt.Sprintf("test2-%d", rInt)},
-						GroupsAllowedToMerge:     []string{fmt.Sprintf("test-%d", rInt)},
-						GroupsAllowedToUnprotect: []string{fmt.Sprintf("test2-%d", rInt)},
+						UsersAllowedToPush:       []string{testUsers[1].Username},
+						UsersAllowedToMerge:      []string{testUsers[0].Username},
+						UsersAllowedToUnprotect:  []string{testUsers[0].Username},
+						GroupsAllowedToPush:      []string{testGroups[0].Name},
+						GroupsAllowedToMerge:     []string{testGroups[0].Name},
+						GroupsAllowedToUnprotect: []string{testGroups[1].Name},
 					}),
 				),
 			},
@@ -780,251 +868,6 @@ resource "gitlab_branch_protection" "branch_protect" {
   project                      = gitlab_project.foo.id
   branch                       = "BranchProtect-%[1]d"
   code_owner_approval_required = true
-}
-	`, rInt)
-}
-
-func testAccGitlabBranchProtectionConfigMultipleAccessLevels(rInt int) string {
-	return fmt.Sprintf(`
-resource "gitlab_project" "test" {
-  name = "test-%[1]d"
-  description = "Terraform acceptance tests"
-
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
-  visibility_level = "public"
-}
-
-resource "gitlab_group" "test" {
-  name = "test-%[1]d"
-  path = "test-%[1]d"
-}
-
-resource "gitlab_group" "test2" {
-  name = "test2-%[1]d"
-  path = "test2-%[1]d"
-}
-
-resource "gitlab_user" "test" {
-  name             = "foo %[1]d"
-  username         = "listest%[1]d"
-  password         = "test%[1]dtt"
-  email            = "listest%[1]d@ssss.com"
-  is_admin         = false
-  projects_limit   = 0
-  can_create_group = false
-  is_external      = false
-}
-
-resource "gitlab_user" "test2" {
-  name             = "foo2 %[1]d"
-  username         = "listest2%[1]d"
-  password         = "test2%[1]dtt"
-  email            = "listest2%[1]d@ssss.com"
-  is_admin         = false
-  projects_limit   = 0
-  can_create_group = false
-  is_external      = false
-}
-
-resource "gitlab_project_share_group" "test" {
-  project_id   = gitlab_project.test.id
-  group_id     = gitlab_group.test.id
-  group_access = "developer"
-}
-
-resource "gitlab_project_share_group" "test2" {
-  project_id   = gitlab_project.test.id
-  group_id     = gitlab_group.test2.id
-  group_access = "developer"
-}
-
-resource "gitlab_project_membership" "test" {
-  project_id   = gitlab_project.test.id
-  user_id      = gitlab_user.test.id
-  access_level = "developer"
-}
-
-resource "gitlab_project_membership" "test2" {
-  project_id   = gitlab_project.test.id
-  user_id      = gitlab_user.test2.id
-  access_level = "developer"
-}
-
-resource "gitlab_group_membership" "test" {
-  depends_on   = [gitlab_project_share_group.test]
-  group_id     = gitlab_group.test.id
-  user_id      = gitlab_user.test.id
-  access_level = "developer"
-}
-
-resource "gitlab_group_membership" "test2" {
-  depends_on   = [gitlab_project_share_group.test2]
-  group_id     = gitlab_group.test2.id
-  user_id      = gitlab_user.test2.id
-  access_level = "developer"
-}
-
-resource "gitlab_branch_protection" "branch_protect" {
-  depends_on = [
-	gitlab_group_membership.test,
-	gitlab_group_membership.test2,
-	gitlab_project_membership.test,
-	gitlab_project_membership.test2,
-  ]
-  project                = gitlab_project.test.id
-  branch                 = "BranchProtect-%[1]d"
-  push_access_level      = "maintainer"
-  merge_access_level     = "maintainer"
-  unprotect_access_level = "maintainer"
-  allowed_to_push {
-    user_id = gitlab_user.test2.id
-  }
-  allowed_to_push {
-    group_id = gitlab_group.test.id
-  }
-  allowed_to_push {
-    group_id = gitlab_group.test2.id
-  }
-  allowed_to_merge {
-    user_id = gitlab_user.test.id
-  }
-  allowed_to_merge {
-    group_id = gitlab_group.test.id
-  }
-  allowed_to_merge {
-    user_id = gitlab_user.test2.id
-  }
-  allowed_to_merge {
-    group_id = gitlab_group.test2.id
-  }
-  allowed_to_unprotect {
-    user_id = gitlab_user.test.id
-  }
-  allowed_to_unprotect {
-    group_id = gitlab_group.test.id
-  }
-  allowed_to_unprotect {
-    user_id = gitlab_user.test2.id
-  }
-  allowed_to_unprotect {
-    group_id = gitlab_group.test2.id
-  }
-}
-	`, rInt)
-}
-
-func testAccGitlabBranchProtectionConfigMultipleAccessLevelsUpdate(rInt int) string {
-	return fmt.Sprintf(`
-resource "gitlab_project" "test" {
-  name = "test-%[1]d"
-  description = "Terraform acceptance tests"
-
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
-  visibility_level = "public"
-}
-
-resource "gitlab_group" "test" {
-  name = "test-%[1]d"
-  path = "test-%[1]d"
-}
-
-resource "gitlab_group" "test2" {
-  name = "test2-%[1]d"
-  path = "test2-%[1]d"
-}
-
-resource "gitlab_user" "test" {
-  name             = "test %[1]d"
-  username         = "listest%[1]d"
-  password         = "test%[1]dtt"
-  email            = "listest%[1]d@ssss.com"
-  is_admin         = false
-  projects_limit   = 0
-  can_create_group = false
-  is_external      = false
-}
-
-resource "gitlab_user" "test2" {
-  name             = "test2 %[1]d"
-  username         = "listest2%[1]d"
-  password         = "test2%[1]dtt"
-  email            = "listest2%[1]d@ssss.com"
-  is_admin         = false
-  projects_limit   = 0
-  can_create_group = false
-  is_external      = false
-}
-
-resource "gitlab_project_share_group" "test" {
-  project_id   = gitlab_project.test.id
-  group_id     = gitlab_group.test.id
-  group_access = "developer"
-}
-
-resource "gitlab_project_share_group" "test2" {
-  project_id   = gitlab_project.test.id
-  group_id     = gitlab_group.test2.id
-  group_access = "developer"
-}
-
-resource "gitlab_project_membership" "test" {
-  project_id   = gitlab_project.test.id
-  user_id      = gitlab_user.test.id
-  access_level = "developer"
-}
-
-resource "gitlab_project_membership" "test2" {
-  project_id   = gitlab_project.test.id
-  user_id      = gitlab_user.test2.id
-  access_level = "developer"
-}
-
-resource "gitlab_group_membership" "test" {
-  depends_on   = [gitlab_project_share_group.test]
-  group_id     = gitlab_group.test.id
-  user_id      = gitlab_user.test.id
-  access_level = "developer"
-}
-
-resource "gitlab_group_membership" "test2" {
-  depends_on   = [gitlab_project_share_group.test2]
-  group_id     = gitlab_group.test2.id
-  user_id      = gitlab_user.test2.id
-  access_level = "developer"
-}
-
-resource "gitlab_branch_protection" "branch_protect" {
-  depends_on = [
-	gitlab_group_membership.test,
-	gitlab_group_membership.test2,
-	gitlab_project_membership.test,
-	gitlab_project_membership.test2,
-  ]
-  project                = gitlab_project.test.id
-  branch                 = "BranchProtect-%[1]d"
-  push_access_level      = "developer"
-  merge_access_level     = "developer"
-  unprotect_access_level = "developer"
-  allowed_to_push {
-    user_id = gitlab_user.test.id
-  }
-  allowed_to_push {
-    group_id = gitlab_group.test2.id
-  }
-  allowed_to_merge {
-    user_id = gitlab_user.test2.id
-  }
-  allowed_to_merge {
-    group_id = gitlab_group.test.id
-  }
-  allowed_to_unprotect {
-    user_id = gitlab_user.test.id
-  }
-  allowed_to_unprotect {
-    group_id = gitlab_group.test2.id
-  }
 }
 	`, rInt)
 }
