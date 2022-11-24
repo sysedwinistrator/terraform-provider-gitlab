@@ -109,7 +109,7 @@ var _ = registerResource("gitlab_branch_protection", func() *schema.Resource {
 			"allowed_to_merge":     schemaAllowedTo(),
 			"allowed_to_unprotect": schemaAllowedTo(),
 			"code_owner_approval_required": {
-				Description: "Can be set to true to require code owner approval before merging.",
+				Description: "Can be set to true to require code owner approval before merging. Only available own Premium and Ultimate instances.",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
@@ -180,7 +180,7 @@ func resourceGitlabBranchProtectionCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	if !pb.CodeOwnerApprovalRequired && codeOwnerApprovalRequired {
-		return diag.Errorf("feature unavailable: code owner approvals")
+		return diag.Errorf("feature unavailable: `code_owner_approval_required`, Premium or Ultimate license required.")
 	}
 
 	d.SetId(buildTwoPartID(&project, &pb.Name))
@@ -266,15 +266,23 @@ func resourceGitlabBranchProtectionUpdate(ctx context.Context, d *schema.Resourc
 	options := &gitlab.RequireCodeOwnerApprovalsOptions{
 		CodeOwnerApprovalRequired: &codeOwnerApprovalRequired,
 	}
-
+	featureNotAvailableError := diag.Errorf("feature unavailable: `code_owner_approval_required`, Premium or Ultimate license required.")
 	if _, err := client.ProtectedBranches.RequireCodeOwnerApprovals(project, branch, options, gitlab.WithContext(ctx)); err != nil {
 		// The user might be running a version of GitLab that does not support this feature.
 		// We enhance the generic 404 error with a more informative message.
-		if errResponse, ok := err.(*gitlab.ErrorResponse); ok && errResponse.Response.StatusCode == 404 {
-			return diag.Errorf("feature unavailable: code owner approvals: %v", err)
+		if is404(err) {
+			return featureNotAvailableError
 		}
-
 		return diag.FromErr(err)
+	}
+
+	// since 15.6 the endpoint is available, but `code_owner_approval_required` is still an enterprise feature
+	pb, _, err := client.ProtectedBranches.GetProtectedBranch(project, branch, gitlab.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if !pb.CodeOwnerApprovalRequired && codeOwnerApprovalRequired {
+		return featureNotAvailableError
 	}
 
 	return resourceGitlabBranchProtectionRead(ctx, d, meta)

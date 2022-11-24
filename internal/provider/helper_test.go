@@ -166,13 +166,17 @@ func testAccCreateProjectWithNamespace(t *testing.T, namespaceID int) *gitlab.Pr
 
 // testAccCreateUsers is a test helper for creating a specified number of users.
 func testAccCreateUsers(t *testing.T, n int) []*gitlab.User {
+	return testAccCreateUsersWithPrefix(t, n, "acctest-user")
+}
+
+func testAccCreateUsersWithPrefix(t *testing.T, n int, prefix string) []*gitlab.User {
 	t.Helper()
 
 	users := make([]*gitlab.User, n)
 
 	for i := range users {
 		var err error
-		username := acctest.RandomWithPrefix("acctest-user")
+		username := acctest.RandomWithPrefix(prefix)
 		users[i], _, err = testGitlabClient.Users.CreateUser(&gitlab.CreateUserOptions{
 			Name:             gitlab.String(username),
 			Username:         gitlab.String(username),
@@ -465,6 +469,19 @@ func testAccAddGroupMembers(t *testing.T, gid interface{}, users []*gitlab.User)
 		if err != nil {
 			t.Fatalf("could not add test group member: %v", err)
 		}
+	}
+}
+
+// testAccProjectShareGroup is a test helper for sharing a project with a group.
+func testAccProjectShareGroup(t *testing.T, pid interface{}, gid int) {
+	t.Helper()
+
+	_, err := testGitlabClient.Projects.ShareProjectWithGroup(pid, &gitlab.ShareWithGroupOptions{
+		GroupID:     gitlab.Int(gid),
+		GroupAccess: gitlab.AccessLevel(gitlab.DeveloperPermissions),
+	})
+	if err != nil {
+		t.Fatalf("could not share project %v with group %d: %v", pid, gid, err)
 	}
 }
 

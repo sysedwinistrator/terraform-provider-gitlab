@@ -232,22 +232,19 @@ func dataSourceGitlabUsersRead(ctx context.Context, d *schema.ResourceData, meta
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	page := 1
-	userslen := 0
+
 	var users []*gitlab.User
-	for page == 1 || userslen != 0 {
-		listUsersOptions.Page = page
-		paginatedUsers, _, err := client.Users.ListUsers(listUsersOptions, gitlab.WithContext(ctx))
+	for listUsersOptions.Page != 0 {
+		paginatedUsers, resp, err := client.Users.ListUsers(listUsersOptions, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
 		}
 		users = append(users, paginatedUsers...)
-		userslen = len(paginatedUsers)
-		page = page + 1
+		listUsersOptions.Page = resp.NextPage
 	}
 
-	d.Set("users", flattenGitlabUsers(users)) // lintignore: XR004 // TODO: Resolve this tfproviderlint issue
 	d.SetId(fmt.Sprintf("%d", id))
+	d.Set("users", flattenGitlabUsers(users)) // lintignore: XR004 // TODO: Resolve this tfproviderlint issue
 
 	return nil
 }
@@ -301,6 +298,8 @@ func flattenGitlabUsers(users []*gitlab.User) []interface{} {
 
 func expandGitlabUsersOptions(d *schema.ResourceData) (*gitlab.ListUsersOptions, int, error) {
 	listUsersOptions := &gitlab.ListUsersOptions{}
+	listUsersOptions.PerPage = 20
+	listUsersOptions.Page = 1
 	var optionsHash strings.Builder
 
 	if data, ok := d.GetOk("order_by"); ok {
