@@ -98,6 +98,7 @@ func TestAccGitlabProject_basic(t *testing.T) {
 						PackagesEnabled:                false,
 						PagesAccessLevel:               gitlab.DisabledAccessControl,
 						CIForwardDeploymentEnabled:     false,
+						CISeperateCache:                false,
 						ResolveOutdatedDiffDiscussions: false,
 						AnalyticsAccessLevel:           gitlab.DisabledAccessControl,
 						AutoCancelPendingPipelines:     "disabled",
@@ -658,6 +659,7 @@ func TestAccGitlabProject_transfer(t *testing.T) {
 		PrintingMergeRequestLinkEnabled: true,
 		PagesAccessLevel:                gitlab.PrivateAccessControl,
 		CIForwardDeploymentEnabled:      true,
+		CISeperateCache:                 true,
 	}
 
 	pathBeforeTransfer := fmt.Sprintf("foogroup-%d/foo-%d", rInt, rInt)
@@ -1792,6 +1794,7 @@ resource "gitlab_project" "foo" {
   packages_enabled = false
   pages_access_level = "disabled"
   ci_forward_deployment_enabled = false
+  ci_separated_caches = false
   merge_pipelines_enabled = false
   merge_trains_enabled = false
   resolve_outdated_diff_discussions = false
@@ -2189,6 +2192,7 @@ func testProjectDefaults(rInt int) gitlab.Project {
 		MergeRequestsTemplate:           "",
 		CIConfigPath:                    ".gitlab-ci.yml@mynamespace/myproject",
 		CIForwardDeploymentEnabled:      true,
+		CISeperateCache:                 true,
 		ResolveOutdatedDiffDiscussions:  true,
 		AnalyticsAccessLevel:            gitlab.EnabledAccessControl,
 		AutoCancelPendingPipelines:      "enabled",

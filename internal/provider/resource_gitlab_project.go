@@ -408,6 +408,12 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Default:     true,
 	},
+	"ci_separated_caches": {
+		Description: "Use separate caches for protected branches.",
+		Type:        schema.TypeBool,
+		Optional:    true,
+		Computed:    true,
+	},
 	"merge_pipelines_enabled": {
 		Description: "Enable or disable merge pipelines.",
 		Type:        schema.TypeBool,
@@ -754,6 +760,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("merge_requests_template", project.MergeRequestsTemplate)
 	d.Set("ci_config_path", project.CIConfigPath)
 	d.Set("ci_forward_deployment_enabled", project.CIForwardDeploymentEnabled)
+	d.Set("ci_separated_caches", project.CISeperateCache)
 	d.Set("merge_pipelines_enabled", project.MergePipelinesEnabled)
 	d.Set("merge_trains_enabled", project.MergeTrainsEnabled)
 	d.Set("resolve_outdated_diff_discussions", project.ResolveOutdatedDiffDiscussions)
@@ -1234,6 +1241,12 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		editProjectOptions.CIForwardDeploymentEnabled = gitlab.Bool(v.(bool))
 	}
 
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("ci_separated_caches"); ok {
+		editProjectOptions.CISeperateCache = gitlab.Bool(v.(bool))
+	}
+
 	if (editProjectOptions != gitlab.EditProjectOptions{}) {
 		if _, _, err := client.Projects.EditProject(d.Id(), &editProjectOptions, gitlab.WithContext(ctx)); err != nil {
 			return diag.Errorf("Could not update project %q: %s", d.Id(), err)
@@ -1561,6 +1574,10 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if d.HasChange("ci_default_git_depth") {
 		options.CIDefaultGitDepth = gitlab.Int(d.Get("ci_default_git_depth").(int))
+	}
+
+	if d.HasChange("ci_separated_caches") {
+		options.CISeperateCache = gitlab.Bool(d.Get("ci_separated_caches").(bool))
 	}
 
 	if *options != (gitlab.EditProjectOptions{}) {
