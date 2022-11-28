@@ -160,9 +160,10 @@ func resourceGitlabProjectShareGroupDelete(ctx context.Context, d *schema.Resour
 }
 
 func resourceGitlabProjectShareGroupSetToState(d *schema.ResourceData, group struct {
-	GroupID          int    "json:\"group_id\""
-	GroupName        string "json:\"group_name\""
-	GroupAccessLevel int    "json:\"group_access_level\""
+	GroupID          int    `json:"group_id"`
+	GroupName        string `json:"group_name"`
+	GroupFullPath    string `json:"group_full_path"`
+	GroupAccessLevel int    `json:"group_access_level"`
 }, projectId *string) {
 
 	//This cast is needed due to an inconsistency in the upstream API
