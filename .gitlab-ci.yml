@@ -132,6 +132,12 @@ go:test:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
     GITLAB_BASE_URL: http://docker:8080/api/v4
+    # Debug logging of the test suite
+    TF_LOG_PATH: "$CI_PROJECT_DIR/$GITLAB_EDITION-$GITLAB_VERSION-acctest.jsonl"
+    # NOTE: the test command will complain about that `JSON` value with:
+    #       `[WARN] Invalid log level: "JSON". Defaulting to level: TRACE. Valid levels are: [TRACE DEBUG INFO WARN ERROR]`
+    #       But it actually works ¯\_(ツ)_/¯
+    TF_LOG: JSON
   # Use the CI container we build
   image: registry.gitlab.com/gitlab-org/terraform-provider-gitlab:${IMAGE_TAG}
   before_script:
@@ -147,6 +153,8 @@ go:test:
   artifacts:
     paths:
       - $GITLAB_EDITION-$GITLAB_VERSION-docker-compose-pull-logs.txt
+      - $CI_PROJECT_DIR/$GITLAB_EDITION-$GITLAB_VERSION-acctest.jsonl
+    expire_in: 2 days
     when: always
 
 testacc:ce:
