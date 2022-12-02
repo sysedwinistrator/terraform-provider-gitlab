@@ -39,6 +39,8 @@ func TestAccGitlabUser_basic(t *testing.T) {
 						External:       false,
 						State:          "active",
 					}),
+					// If there is no value in the config, this should be true
+					resource.TestCheckResourceAttr("gitlab_user.foo", "skip_confirmation", "true"),
 				),
 			},
 			{
@@ -326,7 +328,7 @@ func TestAccGitlabUser_basic(t *testing.T) {
 	})
 }
 
-// Test that the fix for suppressing skip_confirmation works appropriately.
+// Test that the fix for suppressing skip_confirmation works appropriately, and doesn't suppress create
 func TestAccGitlabUser_user_skip_confirmation(t *testing.T) {
 	var user gitlab.User
 	rInt := acctest.RandInt()
@@ -338,18 +340,22 @@ func TestAccGitlabUser_user_skip_confirmation(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 				resource "gitlab_user" "example_user" {
-					name             = "Example User"
-					username         = "exampleuser"
-					email            = "user%d@example.com"
-					is_admin         = true
-					projects_limit   = 0
-					can_create_group = false
-					is_external      = false
-					note             = "Ipsum Lorem."
-					password         = "Dolor Sit Amet"
+					name               = "Example User"
+					username           = "exampleuser"
+					email              = "user%d@example.com"
+					is_admin           = true
+					projects_limit     = 0
+					can_create_group   = false
+					is_external        = false
+					note               = "Ipsum Lorem."
+					password           = "Dolor Sit Amet"
+					skip_confirmation  = false
 				  }
 				`, rInt),
-				Check: testAccCheckGitlabUserExists("gitlab_user.example_user", &user),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("gitlab_user.example_user", "skip_confirmation", "false"),
+					testAccCheckGitlabUserExists("gitlab_user.example_user", &user),
+				),
 			},
 			{
 				ResourceName:      "gitlab_user.example_user",
@@ -357,7 +363,41 @@ func TestAccGitlabUser_user_skip_confirmation(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"password",
+					"skip_confirmation",
 				},
+			},
+			{
+				Config: fmt.Sprintf(`
+				  resource "gitlab_user" "example_user" {
+					name               = "Example User"
+					username           = "exampleuser"
+					email              = "user%d@example.com"
+					is_admin           = true
+					projects_limit     = 0
+					can_create_group   = false
+					is_external        = false
+					note               = "Ipsum Lorem."
+					password           = "Dolor Sit Amet"
+					skip_confirmation  = true 
+				  }
+				  resource "gitlab_user" "example_user_new" {
+					name               = "Example User"
+					username           = "exampleusernew"
+					email              = "user-new%d@example.com"
+					is_admin           = true
+					projects_limit     = 0
+					can_create_group   = false
+					is_external        = false
+					note               = "Ipsum Lorem."
+					password           = "Dolor Sit Amet"
+					skip_confirmation  = true
+				  }
+				`, rInt, rInt),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("gitlab_user.example_user_new", "skip_confirmation", "true"),
+					// Even though "Skip_confirmation" is set to true above, our diff should be ignored
+					resource.TestCheckResourceAttr("gitlab_user.example_user", "skip_confirmation", "false"),
+				),
 			},
 		},
 	})
