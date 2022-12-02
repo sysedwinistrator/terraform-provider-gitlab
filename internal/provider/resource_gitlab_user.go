@@ -81,7 +81,10 @@ var _ = registerResource("gitlab_user", func() *schema.Resource {
 				ForceNew:    true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					// Skip Confirmation doesn't come back from the API, so this will always return a diff unless this skips.
-					return true
+
+					// Should only return true on non-create actions (I.e., after the ID is set). Otherwise the schema always
+					// gets "false" instead of whatever is set.
+					return d.Id() != ""
 				},
 			},
 			"projects_limit": {
