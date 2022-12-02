@@ -99,6 +99,7 @@ resource "gitlab_project" "peters_repo" {
 - `description` (String) A description of the project.
 - `emails_disabled` (Boolean) Disable email notifications.
 - `external_authorization_classification_label` (String) The classification label for the project.
+- `forked_from_project_id` (Number) The id of the project to fork. During create the project is forked and during an update the fork relation is changed.
 - `forking_access_level` (String) Set the forking access level. Valid values are `disabled`, `private`, `enabled`.
 - `group_with_project_templates_id` (Number) For group-level custom templates, specifies ID of group from which all the custom project templates are sourced. Leave empty for instance-level templates. Requires use_custom_template to be true (enterprise edition).
 - `import_url` (String) Git URL to a repository to be imported.

@@ -1400,6 +1400,110 @@ func TestAccGitlabProject_PublicBuilds(t *testing.T) {
 	})
 }
 
+func TestAccGitlabProject_ForkProject(t *testing.T) {
+	// Create project to fork
+	testProjectToFork := testAccCreateProject(t)
+	testProjectToFork2 := testAccCreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			// Create a new `gitlab_project` resource by forking an existing project
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+						name                   = "forked-%[1]s"
+						path                   = "forked-%[3]s"
+						description            = "Forked from %[1]s"
+						visibility_level       = "public"
+
+						# fork options
+						forked_from_project_id = %[2]d
+						#mr_default_target_self = true
+
+						# Set some attributes which are not part of the fork API
+						topics = ["foo", "bar"]
+				   }
+				`, testProjectToFork.Name, testProjectToFork.ID, testProjectToFork.Path),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Remove fork relationship
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+						name             = "forked-%[1]s"
+						path             = "forked-%[3]s"
+						description      = "No longer forked from %[1]s"
+						visibility_level = "public"
+
+						# Set some attributes which are not part of the fork API
+						topics = ["foo"]
+				   }
+				`, testProjectToFork.Name, testProjectToFork.ID, testProjectToFork.Path),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Add fork relationship
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+						name                   = "forked-%[1]s"
+						path                   = "forked-%[3]s"
+						description            = "Forked from %[1]s"
+						visibility_level       = "public"
+
+						# fork options
+						forked_from_project_id = %[2]d
+						#mr_default_target_self = true
+
+						# Set some attributes which are not part of the fork API
+						topics = ["foo", "bar", "readded"]
+				   }
+				`, testProjectToFork.Name, testProjectToFork.ID, testProjectToFork.Path),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Change fork relationship
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+						name                   = "forked-%[1]s"
+						path                   = "forked-%[3]s"
+						description            = "Forked from %[1]s"
+						visibility_level       = "public"
+
+						# fork options
+						forked_from_project_id = %[2]d
+
+						# Set some attributes which are not part of the fork API
+						topics = ["foo", "bar", "changed"]
+				   }
+				`, testProjectToFork.Name, testProjectToFork2.ID, testProjectToFork.Path),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckGitlabProjectExists(n string, project *gitlab.Project) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		var err error
