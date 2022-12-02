@@ -94,7 +94,7 @@ resource "gitlab_project" "peters_repo" {
 - `ci_separated_caches` (Boolean) Use separate caches for protected branches.
 - `container_expiration_policy` (Block List, Max: 1) Set the image cleanup policy for this project. **Note**: this field is sometimes named `container_expiration_policy_attributes` in the GitLab Upstream API. (see [below for nested schema](#nestedblock--container_expiration_policy))
 - `container_registry_access_level` (String) Set visibility of container registry, for this project. Valid values are `disabled`, `private`, `enabled`.
-- `container_registry_enabled` (Boolean) Enable container registry for the project.
+- `container_registry_enabled` (Boolean, Deprecated) Enable container registry for the project.
 - `default_branch` (String) The default branch for the project.
 - `description` (String) A description of the project.
 - `emails_disabled` (Boolean) Disable email notifications.
