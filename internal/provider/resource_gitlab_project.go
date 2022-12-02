@@ -90,19 +90,19 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description: "Allow users to request member access.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"issues_enabled": {
 		Description: "Enable issue tracking for the project.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"merge_requests_enabled": {
 		Description: "Enable merge requests for the project.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"pipelines_enabled": {
 		Description: "Enable pipelines for the project. The `pipelines_enabled` field is being sent as `jobs_enabled` in the GitLab API calls.",
@@ -119,63 +119,63 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 `,
 		Type:     schema.TypeInt,
 		Optional: true,
-		Default:  0,
 	},
 	"wiki_enabled": {
 		Description: "Enable wiki for the project.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"snippets_enabled": {
 		Description: "Enable snippets for the project.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"container_registry_enabled": {
 		Description: "Enable container registry for the project.",
+		Deprecated:  "Use `container_registry_access_level` instead.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"lfs_enabled": {
 		Description: "Enable LFS for the project.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"visibility_level": {
 		Description:  "Set to `public` to create a public project.",
 		Type:         schema.TypeString,
 		Optional:     true,
+		Computed:     true,
 		ValidateFunc: validation.StringInSlice([]string{"private", "internal", "public"}, true),
-		Default:      "private",
 	},
 	"merge_method": {
 		Description:  fmt.Sprintf("Set the merge method. Valid values are %s.", renderValueListForDocs(validMergeMethods)),
 		Type:         schema.TypeString,
 		Optional:     true,
+		Computed:     true,
 		ValidateFunc: validation.StringInSlice(validMergeMethods, true),
-		Default:      "merge",
 	},
 	"only_allow_merge_if_pipeline_succeeds": {
 		Description: "Set to true if you want allow merges only if a pipeline succeeds.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     false,
+		Computed:    true,
 	},
 	"only_allow_merge_if_all_discussions_are_resolved": {
 		Description: "Set to true if you want allow merges only if all discussions are resolved.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     false,
+		Computed:    true,
 	},
 	"allow_merge_on_skipped_pipeline": {
 		Description: "Set to true if you want to treat skipped pipelines as if they finished with success.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     false,
+		Computed:    true,
 	},
 	"ssh_url_to_repo": {
 		Description: "URL that can be provided to `git clone` to clone the",
@@ -217,7 +217,6 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description: "Whether the project is in read-only mode (archived). Repositories can be archived/unarchived by toggling this parameter.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     false,
 	},
 	"initialize_with_readme": {
 		Description: "Create main branch with first commit containing a README.md file.",
@@ -228,25 +227,26 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description:  "Squash commits when merge request. Valid values are `never`, `always`, `default_on`, or `default_off`. The default value is `default_off`. [GitLab >= 14.1]",
 		Type:         schema.TypeString,
 		Optional:     true,
-		Default:      "default_off",
+		Computed:     true,
 		ValidateFunc: validation.StringInSlice([]string{"never", "default_on", "always", "default_off"}, true),
 	},
 	"remove_source_branch_after_merge": {
 		Description: "Enable `Delete source branch` option by default for all new merge requests.",
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 	},
 	"printing_merge_request_link_enabled": {
 		Description: "Show link to create/view merge request when pushing from the command line",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"packages_enabled": {
 		Description: "Enable packages repository for the project.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"push_rules": {
 		Description: "Push rules for the project.",
@@ -352,28 +352,27 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description:  "Enable project pull mirror.",
 		Type:         schema.TypeBool,
 		Optional:     true,
-		Default:      false,
 		RequiredWith: []string{"import_url"},
 	},
 	"mirror_trigger_builds": {
 		Description:  "Enable trigger builds on pushes for a mirrored project.",
 		Type:         schema.TypeBool,
 		Optional:     true,
-		Default:      false,
+		Computed:     true,
 		RequiredWith: []string{"import_url"},
 	},
 	"mirror_overwrites_diverged_branches": {
 		Description:  "Enable overwrite diverged branches for a mirrored project.",
 		Type:         schema.TypeBool,
 		Optional:     true,
-		Default:      false,
+		Computed:     true,
 		RequiredWith: []string{"import_url"},
 	},
 	"only_mirror_protected_branches": {
 		Description:  "Enable only mirror protected branches for a mirrored project.",
 		Type:         schema.TypeBool,
 		Optional:     true,
-		Default:      false,
+		Computed:     true,
 		RequiredWith: []string{"import_url"},
 	},
 	"build_coverage_regex": {
@@ -406,7 +405,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description: "When a new deployment job starts, skip older deployment jobs that are still pending.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     true,
+		Computed:    true,
 	},
 	"ci_separated_caches": {
 		Description: "Use separate caches for protected branches.",
@@ -418,13 +417,13 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description: "Enable or disable merge pipelines.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     false,
+		Computed:    true,
 	},
 	"merge_trains_enabled": {
 		Description: "Enable or disable merge trains. Requires `merge_pipelines_enabled` to be set to `true` to take effect.",
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Default:     false,
+		Computed:    true,
 	},
 	"resolve_outdated_diff_discussions": {
 		Description: "Automatically resolve merge request diffs discussions on lines changed with a push.",
@@ -811,27 +810,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	client := meta.(*gitlab.Client)
 
 	options := &gitlab.CreateProjectOptions{
-		Name:                             gitlab.String(d.Get("name").(string)),
-		RequestAccessEnabled:             gitlab.Bool(d.Get("request_access_enabled").(bool)),
-		IssuesEnabled:                    gitlab.Bool(d.Get("issues_enabled").(bool)),
-		MergeRequestsEnabled:             gitlab.Bool(d.Get("merge_requests_enabled").(bool)),
-		ApprovalsBeforeMerge:             gitlab.Int(d.Get("approvals_before_merge").(int)),
-		WikiEnabled:                      gitlab.Bool(d.Get("wiki_enabled").(bool)),
-		SnippetsEnabled:                  gitlab.Bool(d.Get("snippets_enabled").(bool)),
-		ContainerRegistryEnabled:         gitlab.Bool(d.Get("container_registry_enabled").(bool)),
-		LFSEnabled:                       gitlab.Bool(d.Get("lfs_enabled").(bool)),
-		Visibility:                       stringToVisibilityLevel(d.Get("visibility_level").(string)),
-		MergeMethod:                      stringToMergeMethod(d.Get("merge_method").(string)),
-		OnlyAllowMergeIfPipelineSucceeds: gitlab.Bool(d.Get("only_allow_merge_if_pipeline_succeeds").(bool)),
-		OnlyAllowMergeIfAllDiscussionsAreResolved: gitlab.Bool(d.Get("only_allow_merge_if_all_discussions_are_resolved").(bool)),
-		AllowMergeOnSkippedPipeline:               gitlab.Bool(d.Get("allow_merge_on_skipped_pipeline").(bool)),
-		SharedRunnersEnabled:                      gitlab.Bool(d.Get("shared_runners_enabled").(bool)),
-		RemoveSourceBranchAfterMerge:              gitlab.Bool(d.Get("remove_source_branch_after_merge").(bool)),
-		PackagesEnabled:                           gitlab.Bool(d.Get("packages_enabled").(bool)),
-		PrintingMergeRequestLinkEnabled:           gitlab.Bool(d.Get("printing_merge_request_link_enabled").(bool)),
-		Mirror:                                    gitlab.Bool(d.Get("mirror").(bool)),
-		MirrorTriggerBuilds:                       gitlab.Bool(d.Get("mirror_trigger_builds").(bool)),
-		CIConfigPath:                              gitlab.String(d.Get("ci_config_path").(string)),
+		Name: gitlab.String(d.Get("name").(string)),
 	}
 
 	if v, ok := d.GetOk("build_coverage_regex"); ok {
@@ -856,6 +835,12 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 
 	if v, ok := d.GetOk("tags"); ok {
 		options.TagList = stringSetToStringSlice(v.(*schema.Set))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("container_registry_enabled"); ok {
+		options.ContainerRegistryEnabled = gitlab.Bool(v.(bool))
 	}
 
 	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
@@ -1020,6 +1005,100 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 
 	if v, ok := d.GetOk("merge_commit_template"); ok {
 		options.MergeCommitTemplate = gitlab.String(v.(string))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("request_access_enabled"); ok {
+		options.RequestAccessEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("issues_enabled"); ok {
+		options.IssuesEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("merge_requests_enabled"); ok {
+		options.MergeRequestsEnabled = gitlab.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("approvals_before_merge"); ok {
+		options.ApprovalsBeforeMerge = gitlab.Int(v.(int))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("wiki_enabled"); ok {
+		options.WikiEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("snippets_enabled"); ok {
+		options.SnippetsEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("lfs_enabled"); ok {
+		options.LFSEnabled = gitlab.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("visibility_level"); ok {
+		options.Visibility = stringToVisibilityLevel(v.(string))
+	}
+
+	if v, ok := d.GetOk("merge_method"); ok {
+		options.MergeMethod = stringToMergeMethod(v.(string))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("only_allow_merge_if_pipeline_succeeds"); ok {
+		options.OnlyAllowMergeIfPipelineSucceeds = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("only_allow_merge_if_all_discussions_are_resolved"); ok {
+		options.OnlyAllowMergeIfAllDiscussionsAreResolved = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("allow_merge_on_skipped_pipeline"); ok {
+		options.AllowMergeOnSkippedPipeline = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("shared_runners_enabled"); ok {
+		options.SharedRunnersEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("remove_source_branch_after_merge"); ok {
+		options.RemoveSourceBranchAfterMerge = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("packages_enabled"); ok {
+		options.PackagesEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("printing_merge_request_link_enabled"); ok {
+		options.PrintingMergeRequestLinkEnabled = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("mirror"); ok {
+		options.Mirror = gitlab.Bool(v.(bool))
+	}
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("mirror_trigger_builds"); ok {
+		options.MirrorTriggerBuilds = gitlab.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("ci_config_path"); ok {
+		options.CIConfigPath = gitlab.String(v.(string))
 	}
 
 	if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
