@@ -28,8 +28,6 @@ workflow:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-
-
 default:
   image: golang:${GO_VERSION}
   tags:
@@ -55,6 +53,7 @@ code_navigation:
       lsif: dump.lsif
   rules:
     - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_REF_NAME
+    - if: $CI_COMMIT_TAG
 
 make:lint:
   needs: []
@@ -66,6 +65,14 @@ make:lint:
       - TARGET: [lint-golangci, lint-examples-tf, lint-examples-sh, lint-generated, lint-custom]
 
 go:build:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - "**/*.go"
+        - go.mod
+        - go.sum
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
   needs: []
   stage: build
   script:
@@ -111,18 +118,20 @@ acctest:image:
       # TODO(PatrickRice): Ensure that the dependency proxy is enabled properly on the project
       #--build-arg DOCKER_REGISTRY_IMAGE_PREFIX="${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}/"
 
-
-
-
-
 go:test:
-  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - "**/*.go"
+        - go.mod
+        - go.sum
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
   stage: test
   script:
     - make test
 
 .testacc:
-  needs: []
   stage: acceptance-test
   services:
     - docker:20.10.16-dind
@@ -159,6 +168,14 @@ go:test:
 
 testacc:ce:
   extends: .testacc
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - "**/*.go"
+        - go.mod
+        - go.sum
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
   variables:
     GITLAB_EDITION: ce
 
@@ -167,7 +184,15 @@ testacc:ee:
   variables:
     GITLAB_EDITION: ee
   rules:
-    - if: $ENABLE_EE_ACCEPTANCE_TESTS == "true"
+  # If we're on a merge request, only run the tests if go files have changed.
+  # Otherwise, run them on the default branch as long as EE is enabled.
+    - if: $CI_MERGE_REQUEST_IID && $ENABLE_EE_ACCEPTANCE_TESTS == "true"
+      changes:
+        - "**/*.go"
+        - go.mod
+        - go.sum
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $ENABLE_EE_ACCEPTANCE_TESTS == "true" 
+    - if: $CI_COMMIT_TAG && $ENABLE_EE_ACCEPTANCE_TESTS == "true" 
 
 goreleaser:
   stage: release
