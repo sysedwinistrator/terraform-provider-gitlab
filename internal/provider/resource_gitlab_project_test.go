@@ -309,7 +309,7 @@ func TestAccGitlabProject_templates(t *testing.T) {
 	})
 }
 
-func TestAccGitlabProject_subObjects(t *testing.T) {
+func TestAccGitlabProject_PushRules(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -328,15 +328,30 @@ max_file_size = 123
 					MaxFileSize:      123,
 				}),
 			},
+			// Verify import
+			{
+				SkipFunc:          isRunningInCE,
+				ResourceName:      "gitlab_project.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update to original project config
+			{
+				SkipFunc: isRunningInCE,
+				Config:   testAccGitlabProjectConfig(rInt),
+			},
+			// Verify import
+			{
+				SkipFunc:          isRunningInCE,
+				ResourceName:      "gitlab_project.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 			// Try to create a new project with all push rules in CE
 			{
 				SkipFunc:    isRunningInEE,
 				Config:      testAccGitlabProjectConfigPushRules(rInt, `author_email_regex = "foo_author"`),
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta("Project push rules are not supported in your version of GitLab")),
-			},
-			// Update to original project config
-			{
-				Config: testAccGitlabProjectConfig(rInt),
 			},
 		},
 	})
