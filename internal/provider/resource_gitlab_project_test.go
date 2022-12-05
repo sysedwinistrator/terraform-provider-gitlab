@@ -805,6 +805,36 @@ resource "gitlab_project" "foo" {
 	})
 }
 
+func TestAccGitlabProject_restirctUserDefinedVariables(t *testing.T) {
+	rInt := acctest.RandInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+resource "gitlab_project" "foo" {
+  name        = "foo-%d"
+  description = "Terraform acceptance tests"
+
+  # So that acceptance tests can be run in a gitlab organization
+  # with no billing
+  visibility_level = "public"
+
+  restrict_user_defined_variables = true
+}`, rInt),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_project.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabProject_CreateProjectInUserNamespace(t *testing.T) {
 	var project gitlab.Project
 	rInt := acctest.RandInt()
@@ -1709,6 +1739,7 @@ resource "gitlab_project" "foo" {
   squash_option = "default_off"
   pages_access_level = "public"
   allow_merge_on_skipped_pipeline = false
+  restrict_user_defined_variables = false
   ci_config_path = ".gitlab-ci.yml@mynamespace/myproject"
   resolve_outdated_diff_discussions = true
   analytics_access_level = "enabled"
@@ -1794,7 +1825,7 @@ resource "gitlab_project" "foo" {
   only_allow_merge_if_all_discussions_are_resolved = true
   squash_option = "default_on"
   allow_merge_on_skipped_pipeline = true
-
+  restrict_user_defined_variables = false
   request_access_enabled = false
   issues_enabled = false
   merge_requests_enabled = false
@@ -2133,6 +2164,7 @@ resource "gitlab_project" "foo" {
   squash_option = "default_off"
   pages_access_level = "public"
   allow_merge_on_skipped_pipeline = false
+  restrict_user_defined_variables = false
   ci_config_path = ".gitlab-ci.yml@mynamespace/myproject"
   resolve_outdated_diff_discussions = true
   analytics_access_level = "enabled"

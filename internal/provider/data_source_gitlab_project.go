@@ -136,6 +136,11 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"restrict_user_defined_variables": {
+				Description: "Allow only users with the Maintainer role to pass user-defined variables when triggering a pipeline.",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"printing_merge_request_link_enabled": {
 				Description: "Show link to create/view merge request when pushing from the command line",
 				Type:        schema.TypeBool,
@@ -417,6 +422,7 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 	d.Set("runners_token", found.RunnersToken)
 	d.Set("archived", found.Archived)
 	d.Set("remove_source_branch_after_merge", found.RemoveSourceBranchAfterMerge)
+	d.Set("restrict_user_defined_variables", found.RestrictUserDefinedVariables)
 	d.Set("merge_pipelines_enabled", found.MergePipelinesEnabled)
 	d.Set("merge_trains_enabled", found.MergeTrainsEnabled)
 	d.Set("resolve_outdated_diff_discussions", found.ResolveOutdatedDiffDiscussions)

@@ -177,6 +177,11 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Computed:    true,
 	},
+	"restrict_user_defined_variables": {
+		Description: "Allow only users with the Maintainer role to pass user-defined variables when triggering a pipeline.",
+		Type:        schema.TypeBool,
+		Optional:    true,
+	},
 	"ssh_url_to_repo": {
 		Description: "URL that can be provided to `git clone` to clone the",
 		Type:        schema.TypeString,
@@ -732,6 +737,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("only_allow_merge_if_pipeline_succeeds", project.OnlyAllowMergeIfPipelineSucceeds)
 	d.Set("only_allow_merge_if_all_discussions_are_resolved", project.OnlyAllowMergeIfAllDiscussionsAreResolved)
 	d.Set("allow_merge_on_skipped_pipeline", project.AllowMergeOnSkippedPipeline)
+	d.Set("restrict_user_defined_variables", project.RestrictUserDefinedVariables)
 	d.Set("namespace_id", project.Namespace.ID)
 	d.Set("ssh_url_to_repo", project.SSHURLToRepo)
 	d.Set("http_url_to_repo", project.HTTPURLToRepo)
@@ -1326,6 +1332,12 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		editProjectOptions.CISeperateCache = gitlab.Bool(v.(bool))
 	}
 
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("restrict_user_defined_variables"); ok {
+		editProjectOptions.RestrictUserDefinedVariables = gitlab.Bool(v.(bool))
+	}
+
 	if (editProjectOptions != gitlab.EditProjectOptions{}) {
 		if _, _, err := client.Projects.EditProject(d.Id(), &editProjectOptions, gitlab.WithContext(ctx)); err != nil {
 			return diag.Errorf("Could not update project %q: %s", d.Id(), err)
@@ -1423,6 +1435,10 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if d.HasChange("allow_merge_on_skipped_pipeline") {
 		options.AllowMergeOnSkippedPipeline = gitlab.Bool(d.Get("allow_merge_on_skipped_pipeline").(bool))
+	}
+
+	if d.HasChange("restrict_user_defined_variables") {
+		options.RestrictUserDefinedVariables = gitlab.Bool(d.Get("restrict_user_defined_variables").(bool))
 	}
 
 	if d.HasChange("request_access_enabled") {
