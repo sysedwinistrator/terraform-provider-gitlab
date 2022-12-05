@@ -54,6 +54,11 @@ func gitlabRepositoryFileGetSchema() map[string]*schema.Schema {
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
+		"overwrite_on_create": {
+			Description: "Enable overwriting existing files, defaults to `false`. This attribute is only used during `create` and must be use carefully. We suggest to use `imports` whenever possible and limit the use of this attribute for when the project was imported on the same `apply`. This attribute is not supported during a resource import.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+		},
 		"blob_id": {
 			Description: "The blob id.",
 			Type:        schema.TypeString,

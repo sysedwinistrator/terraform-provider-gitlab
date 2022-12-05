@@ -131,6 +131,63 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 		options.ExecuteFilemode = gitlab.Bool(executeFilemode.(bool))
 	}
 
+	if overwriteOnCreate, ok := d.GetOk("overwrite_on_create"); ok && overwriteOnCreate.(bool) {
+		readOptions := &gitlab.GetFileOptions{
+			Ref: gitlab.String(*options.Branch),
+		}
+		var existingRepositoryFile *gitlab.File
+		// Try to get the file to check if it exists
+		err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			var err error
+			existingRepositoryFile, _, err = client.RepositoryFiles.GetFile(project, filePath, readOptions, gitlab.WithContext(ctx))
+			if err != nil {
+				if isRefreshError(err) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+
+			if existingRepositoryFile != nil {
+				log.Printf("[DEBUG] %s already exists and overwrite_on_create is true. File will be overwritten.", filePath)
+
+				updateOptions := &gitlab.UpdateFileOptions{
+					Branch:        gitlab.String(*options.Branch),
+					Encoding:      gitlab.String(encoding),
+					AuthorEmail:   gitlab.String(d.Get("author_email").(string)),
+					AuthorName:    gitlab.String(d.Get("author_name").(string)),
+					Content:       gitlab.String(content),
+					CommitMessage: gitlab.String(d.Get("commit_message").(string)),
+				}
+				if startBranch, ok := d.GetOk("start_branch"); ok {
+					updateOptions.StartBranch = gitlab.String(startBranch.(string))
+				}
+				if executeFilemode, ok := d.GetOk("execute_filemode"); ok {
+					updateOptions.ExecuteFilemode = gitlab.Bool(executeFilemode.(bool))
+				}
+
+				updateOptions.LastCommitID = gitlab.String(existingRepositoryFile.LastCommitID)
+				_, _, err := client.RepositoryFiles.UpdateFile(project, filePath, updateOptions, gitlab.WithContext(ctx))
+				if err != nil {
+					if isRefreshError(err) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+
+			}
+			return nil
+		})
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		if existingRepositoryFile != nil {
+			d.SetId(resourceGitLabRepositoryFileBuildId(project, *options.Branch, existingRepositoryFile.FilePath))
+			return resourceGitlabRepositoryFileRead(ctx, d, meta)
+		}
+	}
+
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		repositoryFile, _, err := client.RepositoryFiles.CreateFile(project, filePath, options, gitlab.WithContext(ctx))
 		if err != nil {

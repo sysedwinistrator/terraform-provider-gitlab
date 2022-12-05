@@ -415,7 +415,7 @@ func attributeNamesFromSchema(schema map[string]*schema.Schema) []string {
 // - all attributes have ForceNew, Required = false
 // - Validation funcs and attributes (e.g. MaxItems) are not copied
 // Adapted from https://github.com/hashicorp/terraform-provider-google/blob/1a72f93a8dcf6f1e59d5f25aefcb6d794a116bf5/google/datasource_helpers.go#L13
-func datasourceSchemaFromResourceSchema(rs map[string]*schema.Schema, arguments []string, optionalArguments []string) map[string]*schema.Schema {
+func datasourceSchemaFromResourceSchema(rs map[string]*schema.Schema, arguments []string, optionalArguments []string, excludedElements ...string) map[string]*schema.Schema {
 	ds := make(map[string]*schema.Schema, len(rs))
 	for k, v := range rs {
 		dv := &schema.Schema{
@@ -461,7 +461,20 @@ func datasourceSchemaFromResourceSchema(rs map[string]*schema.Schema, arguments 
 		ds[k] = dv
 
 	}
-	return ds
+
+	datasourceSchema := excludeElementsFromSchema(ds, excludedElements)
+
+	return datasourceSchema
+}
+
+func excludeElementsFromSchema(oldSchema map[string]*schema.Schema, excludedElements []string) map[string]*schema.Schema {
+	newSchema := make(map[string]*schema.Schema, len(oldSchema))
+	for k, v := range oldSchema {
+		if !contains(excludedElements, k) {
+			newSchema[k] = v
+		}
+	}
+	return newSchema
 }
 
 func setStateMapInResourceData(stateMap map[string]interface{}, d *schema.ResourceData) error {

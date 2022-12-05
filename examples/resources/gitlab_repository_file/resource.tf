@@ -28,3 +28,15 @@ resource "gitlab_repository_file" "readme" {
   author_name    = "Terraform"
   commit_message = "feature: add readme file"
 }
+
+resource "gitlab_repository_file" "readme_for_dogs" {
+  project        = gitlab_project.this.id
+  file_path      = "readme.txt"
+  branch         = "main"
+  content        = "Bark goes the dog"
+  author_email   = "terraform@example.com"
+  author_name    = "Terraform"
+  commit_message = "feature: update readme file"
+  // file will be overwritten if it already exists and added to state
+  overwrite_on_create = true
+}

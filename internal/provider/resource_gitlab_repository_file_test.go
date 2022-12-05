@@ -58,6 +58,58 @@ func TestAccGitlabRepositoryFile_basic(t *testing.T) {
 	})
 }
 
+func TestAccGitlabRepositoryFile_overwriteOnCreate(t *testing.T) {
+	var file gitlab.File
+	testProject := testAccCreateProject(t)
+	options := &gitlab.CreateFileOptions{
+		Branch:        gitlab.String("main"),
+		Encoding:      gitlab.String("base64"),
+		AuthorEmail:   gitlab.String("meow@catnip.com"),
+		AuthorName:    gitlab.String("Meow Meowington"),
+		Content:       gitlab.String("bWVvdyBtZW93IG1lb3c="),
+		CommitMessage: gitlab.String("feature: cat"),
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					if _, _, err := testGitlabClient.RepositoryFiles.CreateFile(testProject.ID, "animal-noise.txt", options); err != nil {
+						t.Fatalf("failed to create file: %v", err)
+					}
+				},
+				Config: fmt.Sprintf(`
+				resource "gitlab_repository_file" "this" {
+				  project = %d
+				  file_path = "animal-noise.txt"
+				  branch = "main"
+				  content = "d29vZiB3b29mIHdvb2YK"
+				  author_email = "bark@dogbone.com"
+				  author_name = "Bark Woofman"
+				  commit_message = "feature: dog"
+				  overwrite_on_create = true
+				}
+					`, testProject.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabRepositoryFileExists("gitlab_repository_file.this", &file),
+					testAccCheckGitlabRepositoryFileAttributes(&file, &testAccGitlabRepositoryFileAttributes{
+						FilePath: "animal-noise.txt",
+						Content:  "d29vZiB3b29mIHdvb2YK",
+					}),
+				),
+			},
+			{
+				ResourceName:            "gitlab_repository_file.this",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"author_email", "author_name", "commit_message", "overwrite_on_create"},
+			},
+		},
+	})
+}
+
 func TestAccGitlabRepositoryFile_createSameFileDifferentRepository(t *testing.T) {
 	var fooFile gitlab.File
 	var barFile gitlab.File
