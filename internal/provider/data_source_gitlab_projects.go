@@ -146,6 +146,7 @@ func flattenProjects(projects []*gitlab.Project) (values []map[string]interface{
 				"only_allow_merge_if_pipeline_succeeds": project.OnlyAllowMergeIfPipelineSucceeds,
 				"only_allow_merge_if_all_discussions_are_resolved": project.OnlyAllowMergeIfAllDiscussionsAreResolved,
 				"allow_merge_on_skipped_pipeline":                  project.AllowMergeOnSkippedPipeline,
+				"restrict_user_defined_variables":                  project.RestrictUserDefinedVariables,
 				"lfs_enabled":                                      project.LFSEnabled,
 				"request_access_enabled":                           project.RequestAccessEnabled,
 				"merge_method":                                     project.MergeMethod,
@@ -650,6 +651,11 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 						},
 						"allow_merge_on_skipped_pipeline": {
 							Description: "Whether allow_merge_on_skipped_pipeline is enabled for the project.",
+							Type:        schema.TypeBool,
+							Computed:    true,
+						},
+						"restrict_user_defined_variables": {
+							Description: "Allow only users with the Maintainer role to pass user-defined variables when triggering a pipeline.",
 							Type:        schema.TypeBool,
 							Computed:    true,
 						},
