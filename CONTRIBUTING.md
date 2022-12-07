@@ -55,6 +55,149 @@ Importer: &schema.ResourceImporter{
 
 See the [importer state function docs](https://www.terraform.io/plugin/sdkv2/resources/import#importer-state-function) for more details.
 
+#### Inline test configuration
+
+We prefer to inline the test Terraform configuration in acceptance tests instead of returning the configuration from a dedicated function.
+
+We make exceptions for large resource configurations and in places where there is a lot of configuration reuse. 
+However, because we prefer to give each configuration a new function, there is very little reuse at present.
+
+| Pros                                                          | Cons                                                                                                                |
+|---------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| Easier to review when the configuration is near the related tests | Large configurations can be hard to read | 
+
+**Desired:**
+
+```go
+Steps: []resource.TestStep{
+	{
+		Config: fmt.Sprintf(`
+            resource "gitlab_instance_variable" "test" {
+              key           = "key_%[1]s"
+              value         = "value-%[1]s"
+              variable_type = "file"
+              masked        = false
+            }
+        `, rString),
+		Check: ... // snip
+	}
+```
+
+**Undesired:**
+
+```go
+Steps: []resource.TestStep{
+	{
+		Config: testAccGitlabInstanceVariableConfig(rString),
+		Check: ... // snip
+        }
+
+func testAccGitlabInstanceVariableConfig(rString string) string {
+	return fmt.Sprintf(`
+resource "gitlab_instance_variable" "test" {
+  key           = "key_%[1]s"
+  value         = "value-%[1]s"
+  variable_type = "file"
+  masked        = false
+}
+`, rString)
+}
+```
+
+#### Add only resource or data source being tested to test configuration
+
+We prefer to add only the resource or data source being tested to the acceptance test configuration instead of 
+adding all required resources to the test configuration.
+
+| Pros                                                        | Cons                                                                                 |
+|-------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| Allows us to use CheckDestroy correctly (see #205 (closed)) | Integration of multiple resources not tested (low risk, because of clear interfaces) |
+| Less code to review                                         |                                                                                      |
+| Isolates issues                                             |                                                                                      |
+| Faster runtime (fewer API calls)                            |
+
+**Desired:**
+
+```hcl
+resource "gitlab_managed_license" "test" {
+  project         = %d
+  name            = "MIT"
+  approval_status = "%s"
+}
+```
+
+The `testGitLabClient` can be used to create a test project. The [`helper_test.go`](internal/provider/helper_test.go) file
+contains many functions to help create test resources. For the example above, a test project you can create the required test project with the following code:
+
+```go
+testProject := testAccCreateProject(t)
+
+// now you can inject the project id using fmt.Sprintf and testProject.ID
+```
+
+**Undesired:**
+
+```hcl
+resource "gitlab_project" "test" {
+  name = "foo-%d"
+  description = "Terraform acceptance tests"
+}
+
+resource "gitlab_managed_license" "test" {
+  project         = "${gitlab_project.test.id}"
+  name            = "MIT"
+  approval_status = "%s"
+}
+```
+
+#### Use Import Verification test steps
+
+We use `Import Verify` test steps whenever possible to check if the created resource can be imported.
+The benefit of this approach is that the Terraform Acceptance Testing framework does all the validation, so we don't have to do any manual checks.
+
+The framework does the following:
+
+1. Re-runs `terraform plan` after each step and fails if the plan is not empty for the same config [(source)](https://www.terraform.io/plugin/sdkv2/best-practices/testing#built-in-patterns). 
+2. Using `ImportStateVerify`, the framework ensures that the state is the same before and after importing,
+bypassing any DiffSuppressFunc or CustomizeDiff [(source)](https://github.com/hashicorp/terraform-plugin-sdk/blob/2c03a32a9d1be63a12eb18aaf12d2c5270c42346/helper/resource/testing.go#L482). This is equivalent to checking the state and upstream resource manually.
+
+| Pros                                                                                                                                                               | Cons                                             |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|
+| No need to write a dedicated "CheckExists" function for each resource                                                                                              | Please [open an issue](/issues) if you find one! |
+| No need to write a dedicated "CheckAttributes" function for each resource (a common sore spot for copy-paste bugs and neglecting new attributes)                   |                                                  | 
+| Encourages pragmatic testing using the framework's builtin check functions where necessary, especially for checking computed attributes which we routinely neglect |                                                  |
+| Faster runtime (fewer API calls)                                                                                                                                   |                                                  |
+
+**Desired**:
+
+```go
+{
+	Config: `<config>`,
+	// Check computed and default attributes.
+	Check: resource.TestCheckResourceAttrSet("gitlab_foo.test", "bar"),
+},
+{
+	ResourceName:      "gitlab_foo.test",
+	ImportState:       true,
+	ImportStateVerify: true,
+},
+```
+
+**Undesired:**
+
+```go 
+{
+	Config: `<config>`,
+	Check: resource.ComposeTestCheckFunc(
+		testAccCheckGitlabFooExists("gitlab_foo.foo", &foo),
+		testAccCheckGitlabFooAttributes(&foo, &testAccGitlabFooExpectedAttributes{
+			Foo: "bar",
+			Baz:  123,
+		}),
+	),
+},
+```
+
 #### Documentation
 
 Documentation in [/docs](/docs) is auto-generated by [terraform-plugin-docs](https://github.com/hashicorp/terraform-plugin-docs) based on code descriptions and [examples](/examples). Generation runs during `make reviewable`. You can use the [Terraform doc preview tool](https://registry.terraform.io/tools/doc-preview) if you would like to preview the generated documentation.
