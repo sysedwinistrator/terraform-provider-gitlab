@@ -81,10 +81,11 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"import_url": {
-		Description: "Git URL to a repository to be imported.",
-		Type:        schema.TypeString,
-		Optional:    true,
-		ForceNew:    true,
+		Description:   "Git URL to a repository to be imported.",
+		Type:          schema.TypeString,
+		Optional:      true,
+		ForceNew:      true,
+		ConflictsWith: []string{"initialize_with_readme", "forked_from_project_id"},
 	},
 	"request_access_enabled": {
 		Description: "Allow users to request member access.",
@@ -224,9 +225,10 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 	},
 	"initialize_with_readme": {
-		Description: "Create main branch with first commit containing a README.md file.",
-		Type:        schema.TypeBool,
-		Optional:    true,
+		Description:   "Create main branch with first commit containing a README.md file.",
+		Type:          schema.TypeBool,
+		Optional:      true,
+		ConflictsWith: []string{"import_url", "forked_from_project_id"},
 	},
 	"squash_option": {
 		Description:  "Squash commits when merge request. Valid values are `never`, `always`, `default_on`, or `default_off`. The default value is `default_off`. [GitLab >= 14.1]",
@@ -617,6 +619,18 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Computed:    true,
 	},
+	"forked_from_project_id": {
+		Description:   "The id of the project to fork. During create the project is forked and during an update the fork relation is changed.",
+		Type:          schema.TypeInt,
+		Optional:      true,
+		ConflictsWith: []string{"initialize_with_readme", "import_url"},
+	},
+	//"mr_default_target_self": {
+	//	Description:  "For forked projects, target merge requests to this project. If false, the target will be the upstream project.",
+	//	Type:         schema.TypeBool,
+	//	Optional:     true,
+	//	RequiredWith: []string{"forked_from_project_id"},
+	//},
 }
 
 var validContainerExpirationPolicyAttributesCadenceValues = []string{
@@ -809,326 +823,371 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 
 	d.Set("ci_default_git_depth", project.CIDefaultGitDepth)
 
+	if project.ForkedFromProject != nil {
+		d.Set("forked_from_project_id", project.ForkedFromProject.ID)
+	} else {
+		d.Set("forked_from_project_id", nil)
+	}
+
+	//d.Set("mr_default_target_self", project.MergeRequestDefaultTargetSelf)
+
 	return nil
 }
 
 func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
-	options := &gitlab.CreateProjectOptions{
-		Name: gitlab.String(d.Get("name").(string)),
-	}
+	// Project that has either been created or forked
+	var project *gitlab.Project
 
-	if v, ok := d.GetOk("build_coverage_regex"); ok {
-		options.BuildCoverageRegex = gitlab.String(v.(string))
-	}
+	if forkedFromProjectID, ok := d.GetOk("forked_from_project_id"); !ok {
 
-	if v, ok := d.GetOk("path"); ok {
-		options.Path = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("namespace_id"); ok {
-		options.NamespaceID = gitlab.Int(v.(int))
-	}
-
-	if v, ok := d.GetOk("description"); ok {
-		options.Description = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("default_branch"); ok {
-		options.DefaultBranch = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("tags"); ok {
-		options.TagList = stringSetToStringSlice(v.(*schema.Set))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("container_registry_enabled"); ok {
-		options.ContainerRegistryEnabled = gitlab.Bool(v.(bool))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("initialize_with_readme"); ok {
-		options.InitializeWithReadme = gitlab.Bool(v.(bool))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("pipelines_enabled"); ok {
-		options.JobsEnabled = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("import_url"); ok {
-		options.ImportURL = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("template_name"); ok {
-		options.TemplateName = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("template_project_id"); ok {
-		options.TemplateProjectID = gitlab.Int(v.(int))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("use_custom_template"); ok {
-		options.UseCustomTemplate = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("group_with_project_templates_id"); ok {
-		options.GroupWithProjectTemplatesID = gitlab.Int(v.(int))
-	}
-
-	if v, ok := d.GetOk("pages_access_level"); ok {
-		options.PagesAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("ci_config_path"); ok {
-		options.CIConfigPath = gitlab.String(v.(string))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("resolve_outdated_diff_discussions"); ok {
-		options.ResolveOutdatedDiffDiscussions = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("analytics_access_level"); ok {
-		options.AnalyticsAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("auto_cancel_pending_pipelines"); ok {
-		options.AutoCancelPendingPipelines = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("auto_devops_deploy_strategy"); ok {
-		options.AutoDevopsDeployStrategy = gitlab.String(v.(string))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("auto_devops_enabled"); ok {
-		options.AutoDevopsEnabled = gitlab.Bool(v.(bool))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("autoclose_referenced_issues"); ok {
-		options.AutocloseReferencedIssues = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("build_git_strategy"); ok {
-		options.BuildGitStrategy = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("build_timeout"); ok {
-		options.BuildTimeout = gitlab.Int(v.(int))
-	}
-
-	if v, ok := d.GetOk("builds_access_level"); ok {
-		options.BuildsAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if _, ok := d.GetOk("container_expiration_policy"); ok {
-		options.ContainerExpirationPolicyAttributes = expandContainerExpirationPolicyAttributes(d)
-	}
-
-	if v, ok := d.GetOk("container_registry_access_level"); ok {
-		options.ContainerRegistryAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("emails_disabled"); ok {
-		options.EmailsDisabled = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("external_authorization_classification_label"); ok {
-		options.ExternalAuthorizationClassificationLabel = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("forking_access_level"); ok {
-		options.ForkingAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("issues_access_level"); ok {
-		options.IssuesAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("merge_requests_access_level"); ok {
-		options.MergeRequestsAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("operations_access_level"); ok {
-		options.OperationsAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("public_builds"); ok {
-		options.PublicBuilds = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("repository_access_level"); ok {
-		options.RepositoryAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("repository_storage"); ok {
-		options.RepositoryStorage = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("requirements_access_level"); ok {
-		options.RequirementsAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("security_and_compliance_access_level"); ok {
-		options.SecurityAndComplianceAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("snippets_access_level"); ok {
-		options.SnippetsAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("suggestion_commit_message"); ok {
-		options.SuggestionCommitMessage = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("topics"); ok {
-		options.Topics = stringSetToStringSlice(v.(*schema.Set))
-	}
-
-	if v, ok := d.GetOk("wiki_access_level"); ok {
-		options.WikiAccessLevel = stringToAccessControlValue(v.(string))
-	}
-
-	if v, ok := d.GetOk("squash_commit_template"); ok {
-		options.SquashCommitTemplate = gitlab.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("merge_commit_template"); ok {
-		options.MergeCommitTemplate = gitlab.String(v.(string))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("request_access_enabled"); ok {
-		options.RequestAccessEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("issues_enabled"); ok {
-		options.IssuesEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("merge_requests_enabled"); ok {
-		options.MergeRequestsEnabled = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("approvals_before_merge"); ok {
-		options.ApprovalsBeforeMerge = gitlab.Int(v.(int))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("wiki_enabled"); ok {
-		options.WikiEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("snippets_enabled"); ok {
-		options.SnippetsEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("lfs_enabled"); ok {
-		options.LFSEnabled = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("visibility_level"); ok {
-		options.Visibility = stringToVisibilityLevel(v.(string))
-	}
-
-	if v, ok := d.GetOk("merge_method"); ok {
-		options.MergeMethod = stringToMergeMethod(v.(string))
-	}
-
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("only_allow_merge_if_pipeline_succeeds"); ok {
-		options.OnlyAllowMergeIfPipelineSucceeds = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("only_allow_merge_if_all_discussions_are_resolved"); ok {
-		options.OnlyAllowMergeIfAllDiscussionsAreResolved = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("allow_merge_on_skipped_pipeline"); ok {
-		options.AllowMergeOnSkippedPipeline = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("shared_runners_enabled"); ok {
-		options.SharedRunnersEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("remove_source_branch_after_merge"); ok {
-		options.RemoveSourceBranchAfterMerge = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("packages_enabled"); ok {
-		options.PackagesEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("printing_merge_request_link_enabled"); ok {
-		options.PrintingMergeRequestLinkEnabled = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("mirror"); ok {
-		options.Mirror = gitlab.Bool(v.(bool))
-	}
-	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
-	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-	if v, ok := d.GetOkExists("mirror_trigger_builds"); ok {
-		options.MirrorTriggerBuilds = gitlab.Bool(v.(bool))
-	}
-
-	if v, ok := d.GetOk("ci_config_path"); ok {
-		options.CIConfigPath = gitlab.String(v.(string))
-	}
-
-	if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
-		return diag.FromErr(err)
-	} else if supportsSquashOption {
-		if v, ok := d.GetOk("squash_option"); ok {
-			options.SquashOption = stringToSquashOptionValue(v.(string))
+		options := &gitlab.CreateProjectOptions{
+			Name: gitlab.String(d.Get("name").(string)),
 		}
-	}
 
-	log.Printf("[DEBUG] create gitlab project %q", *options.Name)
+		if v, ok := d.GetOk("build_coverage_regex"); ok {
+			options.BuildCoverageRegex = gitlab.String(v.(string))
+		}
 
-	project, _, err := client.Projects.CreateProject(options, gitlab.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
+		if v, ok := d.GetOk("path"); ok {
+			options.Path = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("namespace_id"); ok {
+			options.NamespaceID = gitlab.Int(v.(int))
+		}
+
+		if v, ok := d.GetOk("description"); ok {
+			options.Description = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("default_branch"); ok {
+			options.DefaultBranch = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("tags"); ok {
+			options.TagList = stringSetToStringSlice(v.(*schema.Set))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("container_registry_enabled"); ok {
+			options.ContainerRegistryEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("initialize_with_readme"); ok {
+			options.InitializeWithReadme = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("pipelines_enabled"); ok {
+			options.JobsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("import_url"); ok {
+			options.ImportURL = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("template_name"); ok {
+			options.TemplateName = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("template_project_id"); ok {
+			options.TemplateProjectID = gitlab.Int(v.(int))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("use_custom_template"); ok {
+			options.UseCustomTemplate = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("group_with_project_templates_id"); ok {
+			options.GroupWithProjectTemplatesID = gitlab.Int(v.(int))
+		}
+
+		if v, ok := d.GetOk("pages_access_level"); ok {
+			options.PagesAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("ci_config_path"); ok {
+			options.CIConfigPath = gitlab.String(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("resolve_outdated_diff_discussions"); ok {
+			options.ResolveOutdatedDiffDiscussions = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("analytics_access_level"); ok {
+			options.AnalyticsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("auto_cancel_pending_pipelines"); ok {
+			options.AutoCancelPendingPipelines = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("auto_devops_deploy_strategy"); ok {
+			options.AutoDevopsDeployStrategy = gitlab.String(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("auto_devops_enabled"); ok {
+			options.AutoDevopsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("autoclose_referenced_issues"); ok {
+			options.AutocloseReferencedIssues = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("build_git_strategy"); ok {
+			options.BuildGitStrategy = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("build_timeout"); ok {
+			options.BuildTimeout = gitlab.Int(v.(int))
+		}
+
+		if v, ok := d.GetOk("builds_access_level"); ok {
+			options.BuildsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if _, ok := d.GetOk("container_expiration_policy"); ok {
+			options.ContainerExpirationPolicyAttributes = expandContainerExpirationPolicyAttributes(d)
+		}
+
+		if v, ok := d.GetOk("container_registry_access_level"); ok {
+			options.ContainerRegistryAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("emails_disabled"); ok {
+			options.EmailsDisabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("external_authorization_classification_label"); ok {
+			options.ExternalAuthorizationClassificationLabel = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("forking_access_level"); ok {
+			options.ForkingAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("issues_access_level"); ok {
+			options.IssuesAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("merge_requests_access_level"); ok {
+			options.MergeRequestsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("operations_access_level"); ok {
+			options.OperationsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("public_builds"); ok {
+			options.PublicBuilds = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("repository_access_level"); ok {
+			options.RepositoryAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("repository_storage"); ok {
+			options.RepositoryStorage = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("requirements_access_level"); ok {
+			options.RequirementsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("security_and_compliance_access_level"); ok {
+			options.SecurityAndComplianceAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("snippets_access_level"); ok {
+			options.SnippetsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("suggestion_commit_message"); ok {
+			options.SuggestionCommitMessage = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("topics"); ok {
+			options.Topics = stringSetToStringSlice(v.(*schema.Set))
+		}
+
+		if v, ok := d.GetOk("wiki_access_level"); ok {
+			options.WikiAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("squash_commit_template"); ok {
+			options.SquashCommitTemplate = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("merge_commit_template"); ok {
+			options.MergeCommitTemplate = gitlab.String(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("request_access_enabled"); ok {
+			options.RequestAccessEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("issues_enabled"); ok {
+			options.IssuesEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("merge_requests_enabled"); ok {
+			options.MergeRequestsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("approvals_before_merge"); ok {
+			options.ApprovalsBeforeMerge = gitlab.Int(v.(int))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("wiki_enabled"); ok {
+			options.WikiEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("snippets_enabled"); ok {
+			options.SnippetsEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("lfs_enabled"); ok {
+			options.LFSEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("visibility_level"); ok {
+			options.Visibility = stringToVisibilityLevel(v.(string))
+		}
+
+		if v, ok := d.GetOk("merge_method"); ok {
+			options.MergeMethod = stringToMergeMethod(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("only_allow_merge_if_pipeline_succeeds"); ok {
+			options.OnlyAllowMergeIfPipelineSucceeds = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("only_allow_merge_if_all_discussions_are_resolved"); ok {
+			options.OnlyAllowMergeIfAllDiscussionsAreResolved = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("allow_merge_on_skipped_pipeline"); ok {
+			options.AllowMergeOnSkippedPipeline = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("shared_runners_enabled"); ok {
+			options.SharedRunnersEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("remove_source_branch_after_merge"); ok {
+			options.RemoveSourceBranchAfterMerge = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("packages_enabled"); ok {
+			options.PackagesEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("printing_merge_request_link_enabled"); ok {
+			options.PrintingMergeRequestLinkEnabled = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("mirror"); ok {
+			options.Mirror = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("mirror_trigger_builds"); ok {
+			options.MirrorTriggerBuilds = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("ci_config_path"); ok {
+			options.CIConfigPath = gitlab.String(v.(string))
+		}
+
+		if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+			return diag.FromErr(err)
+		} else if supportsSquashOption {
+			if v, ok := d.GetOk("squash_option"); ok {
+				options.SquashOption = stringToSquashOptionValue(v.(string))
+			}
+		}
+
+		log.Printf("[DEBUG] create gitlab project %q", *options.Name)
+
+		var err error
+		project, _, err = client.Projects.CreateProject(options, gitlab.WithContext(ctx))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		log.Printf("[DEBUG] forking project %d", forkedFromProjectID)
+
+		options := gitlab.ForkProjectOptions{}
+		if v, ok := d.GetOk("description"); ok {
+			options.Description = gitlab.String(v.(string))
+		}
+		if v, ok := d.GetOk("name"); ok {
+			options.Name = gitlab.String(v.(string))
+		}
+		if v, ok := d.GetOk("path"); ok {
+			options.Path = gitlab.String(v.(string))
+		}
+		if v, ok := d.GetOk("namespace_id"); ok {
+			options.NamespaceID = gitlab.Int(v.(int))
+		}
+		if v, ok := d.GetOk("visibility_level"); ok {
+			options.Visibility = stringToVisibilityLevel(v.(string))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		//if v, ok := d.GetOkExists("mr_default_target_self"); ok {
+		//	options.MergeRequestDefaultTargetSelf = gitlab.Bool(v.(bool))
+		//}
+
+		var err error
+		project, _, err = client.Projects.ForkProject(forkedFromProjectID, &options, gitlab.WithContext(ctx))
+		if err != nil {
+			return diag.Errorf("Unable to fork project %d: %v", forkedFromProjectID, err)
+		}
 	}
 
 	// from this point onwards no matter how we return, resource creation
 	// is committed to state since we set its ID
 	d.SetId(fmt.Sprintf("%d", project.ID))
 
-	// An import can be triggered by import_url or by creating the project from a template.
+	// An import can be triggered by import_url or by creating the project from a template or from a fork.
 	if project.ImportStatus != "none" {
-		log.Printf("[DEBUG] waiting for project %q import to finish", *options.Name)
+		log.Printf("[DEBUG] waiting for project %q import to finish", project.Name)
 
 		stateConf := &resource.StateChangeConf{
 			Pending: []string{"scheduled", "started"},
@@ -1145,10 +1204,11 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 
 		if _, err := stateConf.WaitForStateContext(ctx); err != nil {
-			return diag.Errorf("error while waiting for project %q import to finish: %s", *options.Name, err)
+			return diag.Errorf("error while waiting for project %q import to finish: %s", project.Name, err)
 		}
 
 		// Read the project again, so that we can detect the default branch.
+		var err error
 		project, _, err = client.Projects.GetProject(project.ID, nil, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.Errorf("Failed to get project %q after completing import: %s", d.Id(), err)
@@ -1336,6 +1396,264 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if v, ok := d.GetOkExists("restrict_user_defined_variables"); ok {
 		editProjectOptions.RestrictUserDefinedVariables = gitlab.Bool(v.(bool))
+	}
+
+	// If we forked the project we could apply lots of the attributes,
+	// thus, we have to do this now.
+	if project.ForkedFromProject != nil {
+		if v, ok := d.GetOk("default_branch"); ok {
+			editProjectOptions.DefaultBranch = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("merge_method"); ok {
+			editProjectOptions.MergeMethod = stringToMergeMethod(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("only_allow_merge_if_pipeline_succeeds"); ok {
+			editProjectOptions.OnlyAllowMergeIfPipelineSucceeds = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("only_allow_merge_if_all_discussions_are_resolved"); ok {
+			editProjectOptions.OnlyAllowMergeIfAllDiscussionsAreResolved = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("allow_merge_on_skipped_pipeline"); ok {
+			editProjectOptions.AllowMergeOnSkippedPipeline = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("request_access_enabled"); ok {
+			editProjectOptions.RequestAccessEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("issues_enabled"); ok {
+			editProjectOptions.IssuesEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("merge_requests_enabled"); ok {
+			editProjectOptions.MergeRequestsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("pipelines_enabled"); ok {
+			editProjectOptions.JobsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("approvals_before_merge"); ok {
+			editProjectOptions.ApprovalsBeforeMerge = gitlab.Int(v.(int))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("wiki_enabled"); ok {
+			editProjectOptions.WikiEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("snippets_enabled"); ok {
+			editProjectOptions.SnippetsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("shared_runners_enabled"); ok {
+			editProjectOptions.SharedRunnersEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("tags"); ok {
+			editProjectOptions.TagList = stringSetToStringSlice(v.(*schema.Set))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("container_registry_enabled"); ok {
+			editProjectOptions.ContainerRegistryEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("lfs_enabled"); ok {
+			editProjectOptions.LFSEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+			return diag.FromErr(err)
+		} else if supportsSquashOption {
+			if v, ok := d.GetOk("squash_option"); ok {
+				editProjectOptions.SquashOption = stringToSquashOptionValue(v.(string))
+			}
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("remove_source_branch_after_merge"); ok {
+			editProjectOptions.RemoveSourceBranchAfterMerge = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("printing_merge_request_link_enabled"); ok {
+			editProjectOptions.PrintingMergeRequestLinkEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("packages_enabled"); ok {
+			editProjectOptions.PackagesEnabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("pages_access_level"); ok {
+			editProjectOptions.PagesAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("build_coverage_regex"); ok {
+			editProjectOptions.IssuesTemplate = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("ci_config_path"); ok {
+			editProjectOptions.CIConfigPath = gitlab.String(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("ci_forward_deployment_enabled"); ok {
+			editProjectOptions.CIForwardDeploymentEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("resolve_outdated_diff_discussions"); ok {
+			editProjectOptions.ResolveOutdatedDiffDiscussions = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("analytics_access_level"); ok {
+			editProjectOptions.AnalyticsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("auto_cancel_pending_pipelines"); ok {
+			editProjectOptions.AutoCancelPendingPipelines = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("auto_devops_deploy_strategy"); ok {
+			editProjectOptions.AutoDevopsDeployStrategy = gitlab.String(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("auto_devops_enabled"); ok {
+			editProjectOptions.AutoDevopsEnabled = gitlab.Bool(v.(bool))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("autoclose_referenced_issues"); ok {
+			editProjectOptions.AutocloseReferencedIssues = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("build_git_strategy"); ok {
+			editProjectOptions.BuildGitStrategy = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("build_timeout"); ok {
+			editProjectOptions.BuildTimeout = gitlab.Int(v.(int))
+		}
+
+		if v, ok := d.GetOk("builds_access_level"); ok {
+			editProjectOptions.BuildsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if _, ok := d.GetOk("container_expiration_policy"); ok {
+			editProjectOptions.ContainerExpirationPolicyAttributes = expandContainerExpirationPolicyAttributes(d)
+		}
+
+		if v, ok := d.GetOk("container_registry_access_level"); ok {
+			editProjectOptions.ContainerRegistryAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("emails_disabled"); ok {
+			editProjectOptions.EmailsDisabled = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("external_authorization_classification_label"); ok {
+			editProjectOptions.ExternalAuthorizationClassificationLabel = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("forking_access_level"); ok {
+			editProjectOptions.ForkingAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("issues_access_level"); ok {
+			editProjectOptions.IssuesAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("merge_requests_access_level"); ok {
+			editProjectOptions.MergeRequestsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("operations_access_level"); ok {
+			editProjectOptions.OperationsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("public_builds"); ok {
+			editProjectOptions.PublicBuilds = gitlab.Bool(v.(bool))
+		}
+
+		if v, ok := d.GetOk("repository_access_level"); ok {
+			editProjectOptions.RepositoryAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("repository_storage"); ok {
+			editProjectOptions.RepositoryStorage = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("requirements_access_level"); ok {
+			editProjectOptions.RequirementsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("security_and_compliance_access_level"); ok {
+			editProjectOptions.SecurityAndComplianceAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("snippets_access_level"); ok {
+			editProjectOptions.SnippetsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("suggestion_commit_message"); ok {
+			editProjectOptions.SuggestionCommitMessage = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("topics"); ok {
+			editProjectOptions.Topics = stringSetToStringSlice(v.(*schema.Set))
+		}
+
+		if v, ok := d.GetOk("wiki_access_level"); ok {
+			editProjectOptions.WikiAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("squash_commit_template"); ok {
+			editProjectOptions.SquashCommitTemplate = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("merge_commit_template"); ok {
+			editProjectOptions.MergeCommitTemplate = gitlab.String(v.(string))
+		}
 	}
 
 	if (editProjectOptions != gitlab.EditProjectOptions{}) {
@@ -1675,11 +1993,47 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 		options.CISeperateCache = gitlab.Bool(d.Get("ci_separated_caches").(bool))
 	}
 
+	//if d.HasChange("mr_default_target_self") {
+	//	options.MergeRequestDefaultTargetSelf = gitlab.Bool(d.Get("mr_default_target_self").(bool))
+	//}
+
 	if *options != (gitlab.EditProjectOptions{}) {
 		log.Printf("[DEBUG] update gitlab project %s", d.Id())
 		_, _, err := client.Projects.EditProject(d.Id(), options, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("forked_from_project_id") {
+		oldRaw, newRaw := d.GetChange("forked_from_project_id")
+		oldValue, newValue := oldRaw.(int), newRaw.(int)
+		var createRelation, removeRelation bool
+
+		if newValue != 0 && oldValue != 0 {
+			// change fork relation
+			removeRelation = true
+			createRelation = true
+		} else if newValue != 0 {
+			// create fork relation
+			createRelation = true
+		} else if newValue == 0 {
+			removeRelation = true
+		}
+
+		if removeRelation {
+			// Remove fork relation
+			if _, err := client.Projects.DeleteProjectForkRelation(d.Id(), gitlab.WithContext(ctx)); err != nil {
+				return diag.Errorf("unable to remove fork relation from project %q: %v", d.Id(), err)
+			}
+		}
+
+		// Add fork relationship
+		if createRelation {
+			// Add fork relation
+			if _, _, err := client.Projects.CreateProjectForkRelation(d.Id(), newValue, gitlab.WithContext(ctx)); err != nil {
+				return diag.Errorf("unable to add fork relation to project %q (to project %d): %v", d.Id(), newValue, err)
+			}
 		}
 	}
 
