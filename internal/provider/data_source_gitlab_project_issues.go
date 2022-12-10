@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/mitchellh/hashstructure"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -356,7 +356,7 @@ func dataSourceGitlabProjectIssuesRead(ctx context.Context, d *schema.ResourceDa
 		options.Page = resp.NextPage
 	}
 
-	optionsHash, err := hashstructure.Hash(&options, nil)
+	optionsHash, err := hashstructure.Hash(&options, hashstructure.FormatV1, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
