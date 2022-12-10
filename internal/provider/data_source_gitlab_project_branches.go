@@ -3,12 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/mitchellh/hashstructure"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -99,7 +99,7 @@ func dataSourceGitlabProjectBranchesRead(ctx context.Context, d *schema.Resource
 			Page:    1,
 		},
 	}
-	h, err := hashstructure.Hash(*options, nil)
+	h, err := hashstructure.Hash(*options, hashstructure.FormatV1, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

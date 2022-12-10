@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/mitchellh/hashstructure"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -88,7 +88,7 @@ func dataSourceGitlabProjectProtectedBranchesRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	h, err := hashstructure.Hash(*opts, nil)
+	h, err := hashstructure.Hash(*opts, hashstructure.FormatV1, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
