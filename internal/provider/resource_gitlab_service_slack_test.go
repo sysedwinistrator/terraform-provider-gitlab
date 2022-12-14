@@ -19,8 +19,8 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 	slackResourceName := "gitlab_service_slack.slack"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabServiceSlackDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServiceSlackDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and a slack service with minimal settings
 			{

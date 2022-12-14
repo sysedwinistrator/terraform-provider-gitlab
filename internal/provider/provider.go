@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
+	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -26,6 +29,25 @@ func init() {
 	// Set descriptions to support markdown syntax, this will be used in document generation
 	// and the language server.
 	schema.DescriptionKind = schema.StringMarkdown
+}
+
+func NewProviderServer(ctx context.Context, version string) (func() tfprotov6.ProviderServer, error) {
+	upgradedSdkProvider, err := tf5to6server.UpgradeServer(ctx, New(version)().GRPCProvider)
+	if err != nil {
+		return nil, err
+	}
+
+	providers := []func() tfprotov6.ProviderServer{
+		func() tfprotov6.ProviderServer { return upgradedSdkProvider },
+		// Example terraform-plugin-framework providers
+		//providerserver.NewProtocol6(provider.New("test")()),
+	}
+
+	muxServer, err := tf6muxserver.NewMuxServer(ctx, providers...)
+	if err != nil {
+		return nil, err
+	}
+	return muxServer.ProviderServer, nil
 }
 
 func New(version string) func() *schema.Provider {

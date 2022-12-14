@@ -19,9 +19,9 @@ func TestAccGitlabInstanceCluster_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccRequiresLessThan(t, "15.0") },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabInstanceClusterDestroy,
+		PreCheck:                 func() { testAccRequiresLessThan(t, "15.0") },
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabInstanceClusterDestroy,
 		Steps: []resource.TestStep{
 			// Create an instance cluster with default options
 			{

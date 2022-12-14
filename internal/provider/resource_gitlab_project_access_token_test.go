@@ -16,8 +16,8 @@ func TestAccGitlabProjectAccessToken_basic(t *testing.T) {
 	project := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectAccessTokenDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectAccessTokenDestroy,
 		Steps: []resource.TestStep{
 			// Create a basic access token.
 			{

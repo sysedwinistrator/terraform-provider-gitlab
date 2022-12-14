@@ -18,8 +18,8 @@ func TestAccGitlabGroupSamlLink_basic(t *testing.T) {
 	testGroup := testAccCreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupSamlLinkDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupSamlLinkDestroy,
 		Steps: []resource.TestStep{
 
 			// Create a group SAML link as a developer

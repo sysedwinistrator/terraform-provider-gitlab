@@ -21,8 +21,8 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and Branch Protection with default options
 			{
@@ -149,8 +149,8 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Start with code owner approval required disabled
 			{
@@ -212,8 +212,8 @@ func TestAccGitlabBranchProtection_createWithAllowForcePush(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Start with allow force push disabled
 			{
@@ -267,8 +267,8 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Configure the Branch Protection access levels
 			{
@@ -323,8 +323,8 @@ func TestAccGitlabBranchProtection_createWithMultipleAccessLevels(t *testing.T) 
 	var pb gitlab.ProtectedBranch
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Create a project, groups, users and Branch Protection with advanced allowed_to blocks
 			{
@@ -448,8 +448,8 @@ func TestAccGitlabBranchProtection_createForProjectDefaultBranch(t *testing.T) {
 	var protectedBranch gitlab.ProtectedBranch
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and protect its default branch with custom settings
 			{

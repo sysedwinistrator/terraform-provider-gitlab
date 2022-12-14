@@ -20,8 +20,8 @@ func TestAccGitlabGroupProjectFileTemplate_basic(t *testing.T) {
 	secondProject := testAccCreateProjectWithNamespace(t, baseGroup.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckProjectFileTemplateDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckProjectFileTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: isRunningInCE,

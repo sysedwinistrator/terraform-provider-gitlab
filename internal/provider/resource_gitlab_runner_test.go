@@ -22,8 +22,8 @@ func TestAccGitlabRunner_basic(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckRunnerDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckRunnerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -68,8 +68,8 @@ func TestAccGitlabRunner_instance(t *testing.T) {
 	token := "ACCTEST1234567890123_RUNNER_REG_TOKEN"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckRunnerDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckRunnerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -103,8 +103,8 @@ func TestAccGitlabRunner_comprehensive(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckRunnerDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckRunnerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

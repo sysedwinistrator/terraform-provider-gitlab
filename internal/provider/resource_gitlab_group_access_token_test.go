@@ -20,8 +20,8 @@ func TestAccGitlabGroupAccessToken_basic(t *testing.T) {
 	testGroup := testAccCreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupAccessTokenDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupAccessTokenDestroy,
 		Steps: []resource.TestStep{
 			// Create a Group and a Group Access Token
 			{

@@ -19,7 +19,7 @@ func TestAccDataSourceGitlabGroups_basic(t *testing.T) {
 	testAccCreateGroupsWithPrefix(t, 42, prefixLotsOf)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceGitlabGroupsConfigSearchSort(prefixFoo),

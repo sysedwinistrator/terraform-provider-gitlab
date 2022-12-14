@@ -22,8 +22,8 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabTopicDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			// Create a topic with default options
 			{
@@ -218,8 +218,8 @@ func TestAccGitlabTopic_withoutAvatarHash(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabTopicDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			// Create a topic with avatar, but without giving a hash
 			{
@@ -244,8 +244,8 @@ func TestAccGitlabTopic_softDestroy(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabTopicSoftDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabTopicSoftDestroy,
 		Steps: []resource.TestStep{
 			// Create a topic with soft_destroy enabled
 			{
@@ -262,8 +262,8 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabTopicDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: isGitLabVersionAtLeast(context.TODO(), testGitlabClient, "15.0"),

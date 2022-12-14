@@ -17,8 +17,8 @@ func TestAccGitlabRepositoryFile_basic(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabRepositoryFileConfig(testProject.ID),
@@ -71,8 +71,8 @@ func TestAccGitlabRepositoryFile_overwriteOnCreate(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			{
 				PreConfig: func() {
@@ -117,8 +117,8 @@ func TestAccGitlabRepositoryFile_createSameFileDifferentRepository(t *testing.T)
 	secondTestProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabRepositoryFileSameFileDifferentRepositoryConfig(firstTestProject.ID, secondTestProject.ID),
@@ -143,8 +143,8 @@ func TestAccGitlabRepositoryFile_concurrentResources(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			// NOTE: we don't need to check anything here, just make sure no terraform errors are being raised,
 			//       the other test cases will do the actual testing :)
@@ -167,8 +167,8 @@ func TestAccGitlabRepositoryFile_createOnNewBranch(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabRepositoryFileStartBranchConfig(testProject.ID),
@@ -189,8 +189,8 @@ func TestAccGitlabRepositoryFile_base64EncodingWithTextContent(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -295,9 +295,9 @@ func TestAccGitlabRepositoryFile_createWithExecuteFilemode(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccRequiresAtLeast(t, "14.10") },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabRepositoryFileDestroy,
+		PreCheck:                 func() { testAccRequiresAtLeast(t, "14.10") },
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

@@ -17,7 +17,7 @@ func TestAccDataGitlabProjectBranches_search(t *testing.T) {
 	expectedBranches := len(testBranches) + 1 //main branch already exists
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -84,8 +84,8 @@ func TestAccDataGitlabProjectBranches_UpdateHashStruct(t *testing.T) {
 				),
 			},
 			{
-				ProviderFactories: providerFactories,
-				Config:            commonConfig,
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config:                   commonConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.gitlab_project_branches.this", "id"),
 

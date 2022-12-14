@@ -19,7 +19,7 @@ func TestAccDataGitlabProjects_search(t *testing.T) {
 	projectName := fmt.Sprintf("tf-%s", acctest.RandString(5))
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabProjectsConfigGetProjectSearch(projectName),
@@ -63,7 +63,7 @@ func TestAccDataGitlabProjects_groups(t *testing.T) {
 	subGroupProjectName2 := fmt.Sprintf("tf-%s", acctest.RandString(5))
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabProjectsConfigGetGroupProjectsByGroupId(groupName, projectName),
@@ -100,7 +100,7 @@ func TestAccDataGitlabProjects_searchArchivedRepository(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabProjectsConfigGetProjectArchivedRepositoryAll(rInt),

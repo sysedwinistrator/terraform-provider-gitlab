@@ -15,7 +15,7 @@ func TestAccDataSourceGitlabProjectIssue_basic(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabProjectIssueConfig(testProject.ID),

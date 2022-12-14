@@ -16,7 +16,7 @@ func TestAccDataGitlabBranch_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 	project := testAccCreateProject(t)
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataGitlabBranch(rInt, project.PathWithNamespace),

@@ -49,8 +49,8 @@ func TestAccGitlabProjectShareGroup_basic(t *testing.T) {
 	randName := acctest.RandomWithPrefix("acctest")
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectShareGroupDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectShareGroupDestroy,
 		Steps: []resource.TestStep{
 			// Share a new project with a new group.
 			{

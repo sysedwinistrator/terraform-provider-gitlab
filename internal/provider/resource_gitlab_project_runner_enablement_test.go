@@ -31,8 +31,8 @@ func TestAccGitlabProjectRunnerEnablement_basic(t *testing.T) {
 	runner, _, _ := testGitlabClient.Runners.RegisterNewRunner(&opts)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectRunnerEnablementDestroy(projectB.ID, runner.ID),
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectRunnerEnablementDestroy(projectB.ID, runner.ID),
 		Steps: []resource.TestStep{
 			// Enable it in projectB
 			{

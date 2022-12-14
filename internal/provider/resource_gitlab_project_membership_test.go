@@ -19,8 +19,8 @@ func TestAccGitlabProjectMembership_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectMembershipDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectMembershipDestroy,
 		Steps: []resource.TestStep{
 
 			// Assign member to the project as a developer

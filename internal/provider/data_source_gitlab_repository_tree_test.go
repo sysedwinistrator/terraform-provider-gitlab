@@ -15,7 +15,7 @@ func TestAccDataSourceGitlabRepositoryTree_basic(t *testing.T) {
 	testFile := testAccCreateProjectFile(t, testProject.ID, "content", "SomeFile", testProject.DefaultBranch)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

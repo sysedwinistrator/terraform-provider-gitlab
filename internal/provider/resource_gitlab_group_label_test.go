@@ -18,8 +18,8 @@ func TestAccGitlabGroupLabel_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupLabelDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupLabelDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabGroupLabelConfig(rInt),

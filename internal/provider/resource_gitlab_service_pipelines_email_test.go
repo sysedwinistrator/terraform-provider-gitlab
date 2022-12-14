@@ -21,8 +21,8 @@ func TestAccGitlabServicePipelinesEmail_basic(t *testing.T) {
 	pipelinesEmailResourceName := "gitlab_service_pipelines_email.email"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabServicePipelinesEmailDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServicePipelinesEmailDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and a pipelines email service
 			{

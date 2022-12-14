@@ -94,8 +94,8 @@ func TestAccGitlabUserGPGKey_basic(t *testing.T) {
 	testUser := testAccCreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabUserGPGKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabUserGPGKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a user + gpgkey
 			{
@@ -140,8 +140,8 @@ func TestAccGitlabUserGPGKey_currentuser(t *testing.T) {
 	testUser := testAccCreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabUserGPGKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabUserGPGKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a gpgkey
 			{
@@ -197,8 +197,8 @@ func TestAccGitlabUserGPGKey_ignoreTrailingWhitespaces(t *testing.T) {
 	testUser := testAccCreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabUserGPGKeyDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabUserGPGKeyDestroy,
 		Steps: []resource.TestStep{
 			// Create a user + gpgkey
 			{

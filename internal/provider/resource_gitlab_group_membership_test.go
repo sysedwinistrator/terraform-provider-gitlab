@@ -19,8 +19,8 @@ func TestAccGitlabGroupMembership_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupMembershipDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupMembershipDestroy,
 		Steps: []resource.TestStep{
 
 			// Assign member to the group as a developer
@@ -57,8 +57,8 @@ func TestAccGitlabGroupMembership_skipRemoveFromSubgroup(t *testing.T) {
 	testSubgroup := testAccCreateSubGroups(t, testGroup, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupMembershipDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupMembershipDestroy,
 		Steps: []resource.TestStep{
 			// Add user to main and subgroup individually
 			{

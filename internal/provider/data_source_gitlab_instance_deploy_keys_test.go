@@ -31,7 +31,7 @@ func TestAccDataSourceGitlabInstanceDeployKeys_basic(t *testing.T) {
 	testAccCreateDeployKey(t, testProjectOneKey.ID, &canPushDeployKeyOptions)
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: `

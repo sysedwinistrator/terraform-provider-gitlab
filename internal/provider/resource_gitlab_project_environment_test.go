@@ -30,8 +30,8 @@ func TestAccGitlabProjectEnvironment_basic(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectEnvironmentDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			// Create an Environment with default options
 			{
@@ -118,8 +118,8 @@ func TestAccGitlabProjectEnvironment_stopBeforeDestroyDisabled(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectEnvironmentDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			// Create environment with `stop_before_destroy = false`
 			{

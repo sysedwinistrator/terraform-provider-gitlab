@@ -19,8 +19,8 @@ func TestAccGitlabProjectMilestone_basic(t *testing.T) {
 	project := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectMilestoneDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectMilestoneDestroy,
 		Steps: []resource.TestStep{
 			{
 				// create Milestone with required values only

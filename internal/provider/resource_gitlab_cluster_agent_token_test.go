@@ -21,8 +21,8 @@ func TestAccGitlabClusterAgentToken_basic(t *testing.T) {
 	var sutClusterAgentToken gitlab.AgentToken
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabClusterAgentTokenDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabClusterAgentTokenDestroy,
 		Steps: []resource.TestStep{
 			// Verify creation with minimal required attributes
 			{

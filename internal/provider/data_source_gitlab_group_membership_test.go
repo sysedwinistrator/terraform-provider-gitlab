@@ -15,7 +15,7 @@ func TestAccDataSourceGitlabGroupMembership_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			// Create the group and one member
 			{
@@ -54,7 +54,7 @@ func TestAccDataSourceGitlabGroupMembership_pagination(t *testing.T) {
 	testAccAddGroupMembers(t, group.ID, users)
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceGitlabGroupMembershipPagination(group.ID),

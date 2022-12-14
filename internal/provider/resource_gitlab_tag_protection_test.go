@@ -18,8 +18,8 @@ func TestAccGitlabTagProtection_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabTagProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabTagProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and Tag Protection with default options
 			{
@@ -77,8 +77,8 @@ func TestAccGitlabTagProtection_wildcard(t *testing.T) {
 	wildcard := "-*"
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabTagProtectionDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabTagProtectionDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and Tag Protection with default options
 			{

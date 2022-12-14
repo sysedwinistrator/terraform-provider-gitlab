@@ -18,7 +18,7 @@ func TestAccDataSourceGitlabInstanceVariables_basic(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: `data "gitlab_instance_variables" "this" {}`,

@@ -19,8 +19,8 @@ func TestAccGitlabGroupCustomAttribute_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabGroupDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

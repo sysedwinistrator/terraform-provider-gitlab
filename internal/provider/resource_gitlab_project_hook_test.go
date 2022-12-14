@@ -19,8 +19,8 @@ func TestAccGitlabProjectHook_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectHookDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectHookDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and hook with default options
 			{

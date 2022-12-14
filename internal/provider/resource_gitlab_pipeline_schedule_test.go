@@ -19,8 +19,8 @@ func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabPipelineScheduleDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabPipelineScheduleDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and pipeline schedule with default options
 			{

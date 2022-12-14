@@ -23,8 +23,8 @@ func TestAccGitlabBranch_basic(t *testing.T) {
 	fooBranchName := fmt.Sprintf("testbranch-%d", rInt)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabBranchDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabBranchDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccGitlabBranchConfig(rInt, project.PathWithNamespace),

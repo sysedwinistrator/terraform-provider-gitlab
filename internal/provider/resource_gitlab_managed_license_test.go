@@ -20,9 +20,9 @@ func TestAccGitlabManagedLicense_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccCheckEE(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckManagedLicenseDestroy,
+		PreCheck:                 func() { testAccCheckEE(t) },
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckManagedLicenseDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Create a managed license with an "allowed" state
@@ -52,8 +52,8 @@ func TestAccGitlabManagedLicense_deprecatedConfigValues(t *testing.T) {
 			testAccRequiresLessThan(t, "15.0")
 			testAccCheckEE(t)
 		},
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckManagedLicenseDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckManagedLicenseDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Create a managed license with an "approved" state

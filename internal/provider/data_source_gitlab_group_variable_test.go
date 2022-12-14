@@ -15,7 +15,7 @@ func TestAccDataSourceGitlabGroupVariable_basic(t *testing.T) {
 	testGroup := testAccCreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
+		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

@@ -15,8 +15,8 @@ func TestAccGitlabProjectBadge_basic(t *testing.T) {
 	testProject := testAccCreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGitlabProjectBadgeDestroy,
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectBadgeDestroy,
 		Steps: []resource.TestStep{
 			// Create a project badge
 			{
