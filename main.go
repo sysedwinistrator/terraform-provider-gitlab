@@ -24,7 +24,7 @@ func main() {
 		serveOpts = append(serveOpts, tf6server.WithManagedDebug())
 	}
 
-	serverFactory, err := provider.NewProviderServer(context.Background(), version)
+	serverFactory, err := provider.NewMuxedProviderServer(context.Background(), version)
 	if err != nil {
 		log.Fatal(err)
 	}
