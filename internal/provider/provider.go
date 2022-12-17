@@ -3,170 +3,210 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
-	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
-	"strings"
+	"os"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
-var (
-	allDataSources = make(map[string]func() *schema.Resource)
-	allResources   = make(map[string]func() *schema.Resource)
-)
+// Ensure GitLabProvider satisfies various provider interfaces.
+var _ provider.Provider = &GitLabProvider{}
 
-// registerDataSource may be called during package initialization to register a new data source with
-// the provider.
-var registerDataSource = makeRegisterResourceFunc(allDataSources, "data source")
-
-// registerResource may be called during package initialization to register a new resource with the
-// provider.
-var registerResource = makeRegisterResourceFunc(allResources, "resource")
-
-func init() {
-	// Set descriptions to support markdown syntax, this will be used in document generation
-	// and the language server.
-	schema.DescriptionKind = schema.StringMarkdown
+// GitLabProvider defines the provider implementation.
+type GitLabProvider struct {
+	// version is set to the provider version on release, "dev" when the
+	// provider is built and ran locally, and "test" when running acceptance testing.
+	version string
 }
 
-func NewProviderServer(ctx context.Context, version string) (func() tfprotov6.ProviderServer, error) {
-	upgradedSdkProvider, err := tf5to6server.UpgradeServer(ctx, New(version)().GRPCProvider)
-	if err != nil {
-		return nil, err
-	}
-
-	providers := []func() tfprotov6.ProviderServer{
-		func() tfprotov6.ProviderServer { return upgradedSdkProvider },
-		// Example terraform-plugin-framework providers
-		//providerserver.NewProtocol6(provider.New("test")()),
-	}
-
-	muxServer, err := tf6muxserver.NewMuxServer(ctx, providers...)
-	if err != nil {
-		return nil, err
-	}
-	return muxServer.ProviderServer, nil
+// GitLabProviderModel describes the provider data model.
+type GitLabProviderModel struct {
+	Token          types.String `tfsdk:"token"`
+	BaseUrl        types.String `tfsdk:"base_url"`
+	CACertFile     types.String `tfsdk:"cacert_file"`
+	Insecure       types.Bool   `tfsdk:"insecure"`
+	ClientCert     types.String `tfsdk:"client_cert"`
+	ClientKey      types.String `tfsdk:"client_key"`
+	EarlyAuthCheck types.Bool   `tfsdk:"early_auth_check"`
 }
 
-func New(version string) func() *schema.Provider {
-	return func() *schema.Provider {
-		provider := &schema.Provider{
-			Schema: map[string]*schema.Schema{
-				"token": {
-					Type:        schema.TypeString,
-					Required:    true,
-					DefaultFunc: schema.EnvDefaultFunc("GITLAB_TOKEN", nil),
-					Description: "The OAuth2 Token, Project, Group, Personal Access Token or CI Job Token used to connect to GitLab. The OAuth method is used in this provider for authentication (using Bearer authorization token). See https://docs.gitlab.com/ee/api/#authentication for details. It may be sourced from the `GITLAB_TOKEN` environment variable.",
-				},
-				"base_url": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc("GITLAB_BASE_URL", ""),
-					Description: "This is the target GitLab base API endpoint. Providing a value is a requirement when working with GitLab CE or GitLab Enterprise e.g. `https://my.gitlab.server/api/v4/`. It is optional to provide this value and it can also be sourced from the `GITLAB_BASE_URL` environment variable. The value must end with a slash.",
-					ValidateFunc: func(value interface{}, key string) (ws []string, es []error) {
-						v := value.(string)
-						if strings.HasSuffix(v, "/api/v3") || strings.HasSuffix(v, "/api/v3/") {
-							es = append(es, fmt.Errorf("terraform-provider-gitlab does not support v3 api; please upgrade to /api/v4 in %s", v))
-						}
-						return
-					},
-				},
-				"cacert_file": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "",
-					Description: "This is a file containing the ca cert to verify the gitlab instance. This is available for use when working with GitLab CE or Gitlab Enterprise with a locally-issued or self-signed certificate chain.",
-				},
-				"insecure": {
-					Type:        schema.TypeBool,
-					Optional:    true,
-					Default:     false,
-					Description: "When set to true this disables SSL verification of the connection to the GitLab instance.",
-				},
-				"client_cert": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "",
-					Description: "File path to client certificate when GitLab instance is behind company proxy. File must contain PEM encoded data.",
-				},
-				"client_key": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "",
-					Description: "File path to client key when GitLab instance is behind company proxy. File must contain PEM encoded data. Required when `client_cert` is set.",
-				},
-				"early_auth_check": {
-					Type:        schema.TypeBool,
-					Optional:    true,
-					Default:     true,
-					Description: "(Experimental) By default the provider does a dummy request to get the current user in order to verify that the provider configuration is correct and the GitLab API is reachable. Turn it off, to skip this check. This may be useful if the GitLab instance does not yet exist and is created within the same terraform module. This is an experimental feature and may change in the future. Please make sure to always keep backups of your state.",
-				},
+func (p *GitLabProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "gitlab"
+	resp.Version = p.version
+}
+
+func (p *GitLabProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"token": schema.StringAttribute{
+				MarkdownDescription: "The OAuth2 Token, Project, Group, Personal Access Token or CI Job Token used to connect to GitLab. The OAuth method is used in this provider for authentication (using Bearer authorization token). See https://docs.gitlab.com/ee/api/#authentication for details. It may be sourced from the `GITLAB_TOKEN` environment variable.",
+				Optional:            true,
+				// FIXME(@timofurrer): cannot yet set to `true` because the SDKv2 provider doesn't set it to sensitive
+				//Sensitive:           true,
 			},
-
-			DataSourcesMap: resourceFactoriesToMap(allDataSources),
-			ResourcesMap:   resourceFactoriesToMap(allResources),
-		}
-
-		provider.ConfigureContextFunc = configure(version, provider)
-		return provider
-	}
-
-}
-
-func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		config := Config{
-			Token:         d.Get("token").(string),
-			BaseURL:       d.Get("base_url").(string),
-			CACertFile:    d.Get("cacert_file").(string),
-			Insecure:      d.Get("insecure").(bool),
-			ClientCert:    d.Get("client_cert").(string),
-			ClientKey:     d.Get("client_key").(string),
-			EarlyAuthFail: d.Get("early_auth_check").(bool),
-		}
-
-		client, err := config.Client(ctx)
-		if err != nil {
-			return nil, diag.FromErr(err)
-		}
-
-		userAgent := p.UserAgent("terraform-provider-gitlab", version)
-		client.UserAgent = userAgent
-
-		return client, nil
+			"base_url": schema.StringAttribute{
+				MarkdownDescription: "This is the target GitLab base API endpoint. Providing a value is a requirement when working with GitLab CE or GitLab Enterprise e.g. `https://my.gitlab.server/api/v4/`. It is optional to provide this value and it can also be sourced from the `GITLAB_BASE_URL` environment variable. The value must end with a slash.",
+				Optional:            true,
+			},
+			"cacert_file": schema.StringAttribute{
+				MarkdownDescription: "This is a file containing the ca cert to verify the gitlab instance. This is available for use when working with GitLab CE or Gitlab Enterprise with a locally-issued or self-signed certificate chain.",
+				Optional:            true,
+			},
+			"insecure": schema.BoolAttribute{
+				MarkdownDescription: "When set to true this disables SSL verification of the connection to the GitLab instance.",
+				Optional:            true,
+			},
+			"client_cert": schema.StringAttribute{
+				MarkdownDescription: "File path to client certificate when GitLab instance is behind company proxy. File must contain PEM encoded data.",
+				Optional:            true,
+			},
+			"client_key": schema.StringAttribute{
+				MarkdownDescription: "File path to client key when GitLab instance is behind company proxy. File must contain PEM encoded data. Required when `client_cert` is set.",
+				Optional:            true,
+			},
+			"early_auth_check": schema.BoolAttribute{
+				MarkdownDescription: "(Experimental) By default the provider does a dummy request to get the current user in order to verify that the provider configuration is correct and the GitLab API is reachable. Set this to `false` to skip this check. This may be useful if the GitLab instance does not yet exist and is created within the same terraform module. This is an experimental feature and may change in the future. Please make sure to always keep backups of your state.",
+				Optional:            true,
+			},
+		},
 	}
 }
 
-func makeRegisterResourceFunc(factories map[string]func() *schema.Resource, resourceType string) func(name string, fn func() *schema.Resource) interface{} {
-	// lintignore: R009 // panic() during package initialization is ok
-	return func(name string, fn func() *schema.Resource) interface{} {
-		if strings.ToLower(name) != name {
-			panic(fmt.Sprintf("cannot register %s %q: name must be lowercase", resourceType, name))
-		}
-
-		const wantPrefix = "gitlab_"
-		if !strings.HasPrefix(name, wantPrefix) {
-			panic(fmt.Sprintf("cannot register %s %q: name must begin with %q", resourceType, name, wantPrefix))
-		}
-
-		if _, exists := factories[name]; exists {
-			panic(fmt.Sprintf("cannot register %s %q: a %s with the same name already exists", resourceType, name, resourceType))
-		}
-
-		factories[name] = fn
-
-		return nil
+func (p *GitLabProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	// Parse the provider configuration
+	var config GitLabProviderModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
+
+	// Prevent an unexpectedly misconfigured client, if Terraform configuration values are only known after another resource is applied.
+	if config.Token.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("token"),
+			"Unknown GitLab Token",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Token. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration, or use the GITLAB_TOKEN environment variable.",
+		)
+	}
+	if config.BaseUrl.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("base_url"),
+			"Unknown GitLab Base URL for the API endpoint",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Base URL. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration, or use the GITLAB_BASE_URL environment variable.",
+		)
+	}
+	if config.CACertFile.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("cacert_file"),
+			"Unknown GitLab CA Certificate File",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab CA Certificate File. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration.",
+		)
+	}
+	if config.Insecure.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("insecure"),
+			"Unknown GitLab Insecure Flag Value",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Insecure flag. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration.",
+		)
+	}
+	if config.ClientCert.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("client_cert"),
+			"Unknown GitLab Client Certificate",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Client Certificate. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration.",
+		)
+	}
+	if config.ClientKey.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("client_key"),
+			"Unknown GitLab Client Key",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Client Key. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration.",
+		)
+	}
+	if config.EarlyAuthCheck.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("early_auth_check"),
+			"Unknown GitLab Early Auth Check Flag Value",
+			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Early Auth Check flag. "+
+				"Either apply the source of the value first, set the token attribute value statically in the configuration.",
+		)
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Provider Configuration containing the values after evaluation of defaults etc.
+	// Initialized with the defaults which get overridden later if config is set.
+	evaluatedConfig := client.Config{
+		Token:         os.Getenv("GITLAB_TOKEN"),
+		BaseURL:       os.Getenv("GITLAB_BASE_URL"),
+		CACertFile:    "",
+		Insecure:      false,
+		ClientCert:    "",
+		ClientKey:     "",
+		EarlyAuthFail: true,
+	}
+
+	// Evaluate Provider Attribute Default values now that they are all "known"
+	if !config.Token.IsNull() {
+		evaluatedConfig.Token = config.Token.ValueString()
+	}
+	if !config.BaseUrl.IsNull() {
+		evaluatedConfig.BaseURL = config.BaseUrl.ValueString()
+	}
+	if !config.CACertFile.IsNull() {
+		evaluatedConfig.CACertFile = config.CACertFile.ValueString()
+	}
+	if !config.Insecure.IsNull() {
+		evaluatedConfig.Insecure = config.Insecure.ValueBool()
+	}
+	if !config.ClientCert.IsNull() {
+		evaluatedConfig.ClientCert = config.ClientCert.ValueString()
+	}
+	if !config.ClientKey.IsNull() {
+		evaluatedConfig.ClientKey = config.ClientKey.ValueString()
+	}
+	if !config.EarlyAuthCheck.IsNull() {
+		evaluatedConfig.EarlyAuthFail = config.EarlyAuthCheck.ValueBool()
+	}
+
+	// TODO(@timofurrer): validate configuration values
+
+	// Creating a new GitLab Client from the provider configuration
+	gitlabClient, err := evaluatedConfig.NewGitLabClient(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to create GitLab Client from provider configuration", fmt.Sprintf("The provider failed to create a new GitLab Client from the given configuration: %+v", err))
+		return
+	}
+
+	// Attach the client to the response so that it will be available for the Data Sources and Resources
+	resp.DataSourceData = gitlabClient
+	resp.ResourceData = gitlabClient
 }
 
-func resourceFactoriesToMap(factories map[string]func() *schema.Resource) map[string]*schema.Resource {
-	resourcesMap := make(map[string]*schema.Resource)
+func (p *GitLabProvider) Resources(ctx context.Context) []func() resource.Resource {
+	return allResources
+}
 
-	for name, fn := range factories {
-		resourcesMap[name] = fn()
+func (p *GitLabProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return allDataSources
+}
+
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &GitLabProvider{
+			version: version,
+		}
 	}
-
-	return resourcesMap
 }

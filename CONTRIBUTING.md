@@ -221,8 +221,18 @@ You'll first need [Go](http://www.golang.org) installed on your machine (version
    $ make build
    ```
 
+To do some experiments you can use the setup in the `playground` folder.
+It contains a prepared `.terraformrc` file which can be used to leverage the previously
+built provider:
 
-You can also install the provider locally so that you can use it with Terraform experimentally.
+```sh
+cd playground
+export TF_CLI_CONFIG_FILE=.terraformrc
+terraform plan
+```
+
+You can also install the provider to the system so that you can use from any configuration
+without the `.terraformrc`.
 Run one of the following `make` commands depending on what is correct for your platform:
 
 ```sh

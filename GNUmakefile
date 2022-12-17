@@ -3,7 +3,7 @@ default: reviewable
 reviewable: build fmt generate test ## Run before committing.
 
 GOBIN = $(shell pwd)/bin
-PROVIDER_SRC_DIR := ./internal/provider
+PROVIDER_SRC_DIR := ./internal/provider/...
 TERRAFORM_PLUGIN_DIR ?= ~/.terraform.d/plugins/gitlab.local/x/gitlab/99.99.99
 TERRAFORM_PLATFORM_DIR ?= darwin_amd64
 
