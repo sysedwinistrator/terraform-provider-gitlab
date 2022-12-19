@@ -1504,6 +1504,57 @@ func TestAccGitlabProject_ForkProject(t *testing.T) {
 	})
 }
 
+func TestAccGitlabProject_ContainerExpirationPolicy(t *testing.T) {
+	testProjectName := acctest.RandomWithPrefix("acctest")
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			// Create project with container expiration policy
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+					  name                = "%s"
+					  visibility_level    = "public"
+
+					  container_expiration_policy {
+						enabled = true
+						cadence = "1d"
+						keep_n  = 5
+					  }
+					}
+				`, testProjectName),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Disabling container expiration policy
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+					  name                = "%s"
+					  visibility_level    = "public"
+
+					  container_expiration_policy {
+						enabled = false
+					  }
+					}
+				`, testProjectName),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckGitlabProjectExists(n string, project *gitlab.Project) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		var err error
