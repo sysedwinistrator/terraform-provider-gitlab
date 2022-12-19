@@ -25,7 +25,7 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 	var topic gitlab.Topic
 	rInt := acctest.RandInt()
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
@@ -44,9 +44,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Update the topics values
 			{
@@ -57,8 +54,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 						Name:        fmt.Sprintf("foo-full-%d", rInt),
 						Description: "Terraform acceptance tests",
 					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
 				),
 			},
 			// Verify import
@@ -66,9 +61,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Update back to the default topics avatar
 			{
@@ -180,8 +172,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
 						Name: fmt.Sprintf("foo-req-%d", rInt),
 					}),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_url", ""),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", ""),
 				),
 			},
 			// Verify import
@@ -189,9 +179,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Updating the topic to have a description before it is deleted
 			{
@@ -209,9 +196,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 		},
 	})
@@ -438,8 +422,6 @@ resource "gitlab_topic" "foo" {
   name        = "foo-full-%d"
   %s
   description = "Terraform acceptance tests"
-  avatar      = "${path.module}/testdata/gitlab_topic/avatar.png"
-  avatar_hash = filesha256("${path.module}/testdata/gitlab_topic/avatar.png")
 }`, rInt, titleConfig)
 }
 

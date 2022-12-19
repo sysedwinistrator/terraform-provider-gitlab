@@ -709,7 +709,7 @@ branch using a ` + "`DELETE`" + ` request. Then define the desired branch protec
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
-		Schema: constructSchema(resourceGitLabProjectSchema, map[string]*schema.Schema{
+		Schema: constructSchema(resourceGitLabProjectSchema, avatarableSchema(), map[string]*schema.Schema{
 			"skip_wait_for_default_branch_protection": {
 				Description: `If ` + "`true`" + `, the default behavior to wait for the default branch protection to be created is skipped.
 This is necessary if the current user is not an admin and the default branch protection is disabled on an instance-level.
@@ -728,6 +728,7 @@ This attribute is only used during resource creation, thus changes are suppresse
 			customdiff.ComputedIf("ssh_url_to_repo", namespaceOrPathChanged),
 			customdiff.ComputedIf("http_url_to_repo", namespaceOrPathChanged),
 			customdiff.ComputedIf("web_url", namespaceOrPathChanged),
+			avatarableDiff,
 		),
 	}
 })
@@ -824,6 +825,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("build_coverage_regex", project.BuildCoverageRegex)
 
 	d.Set("ci_default_git_depth", project.CIDefaultGitDepth)
+	d.Set("avatar_url", project.AvatarURL)
 
 	if project.ForkedFromProject != nil {
 		d.Set("forked_from_project_id", project.ForkedFromProject.ID)
@@ -1144,9 +1146,19 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			}
 		}
 
+		avatar, err := handleAvatarOnCreate(d)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if avatar != nil {
+			options.Avatar = &gitlab.ProjectAvatar{
+				Filename: avatar.Filename,
+				Image:    avatar.Image,
+			}
+		}
+
 		log.Printf("[DEBUG] create gitlab project %q", *options.Name)
 
-		var err error
 		project, _, err = client.Projects.CreateProject(options, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
@@ -1656,6 +1668,17 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		if v, ok := d.GetOk("merge_commit_template"); ok {
 			editProjectOptions.MergeCommitTemplate = gitlab.String(v.(string))
 		}
+
+		avatar, err := handleAvatarOnUpdate(d)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if avatar != nil {
+			editProjectOptions.Avatar = &gitlab.ProjectAvatar{
+				Filename: avatar.Filename,
+				Image:    avatar.Image,
+			}
+		}
 	}
 
 	if (editProjectOptions != gitlab.EditProjectOptions{}) {
@@ -1993,6 +2016,17 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if d.HasChange("ci_separated_caches") {
 		options.CISeperateCache = gitlab.Bool(d.Get("ci_separated_caches").(bool))
+	}
+
+	avatar, err := handleAvatarOnUpdate(d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if avatar != nil {
+		options.Avatar = &gitlab.ProjectAvatar{
+			Filename: avatar.Filename,
+			Image:    avatar.Image,
+		}
 	}
 
 	//if d.HasChange("mr_default_target_self") {
