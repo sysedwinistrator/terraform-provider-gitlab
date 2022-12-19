@@ -30,7 +30,7 @@ var _ = registerResource("gitlab_group", func() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: constructSchema(map[string]*schema.Schema{
 			"name": {
 				Description: "The name of this group.",
 				Type:        schema.TypeString,
@@ -170,7 +170,8 @@ var _ = registerResource("gitlab_group", func() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 			},
-		},
+		}, avatarableSchema()),
+		CustomizeDiff: avatarableDiff,
 	}
 })
 
@@ -258,6 +259,17 @@ func resourceGitlabGroupCreate(ctx context.Context, d *schema.ResourceData, meta
 		options.SharedRunnersMinutesLimit = gitlab.Int(v.(int))
 	}
 
+	avatar, err := handleAvatarOnCreate(d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if avatar != nil {
+		options.Avatar = &gitlab.GroupAvatar{
+			Filename: avatar.Filename,
+			Image:    avatar.Image,
+		}
+	}
+
 	log.Printf("[DEBUG] create gitlab group %q", *options.Name)
 
 	group, _, err := client.Groups.CreateGroup(options, gitlab.WithContext(ctx))
@@ -328,6 +340,7 @@ func resourceGitlabGroupRead(ctx context.Context, d *schema.ResourceData, meta i
 	d.Set("membership_lock", group.MembershipLock)
 	d.Set("extra_shared_runners_minutes_limit", group.ExtraSharedRunnersMinutesLimit)
 	d.Set("shared_runners_minutes_limit", group.SharedRunnersMinutesLimit)
+	d.Set("avatar_url", group.AvatarURL)
 
 	return nil
 }
@@ -415,9 +428,20 @@ func resourceGitlabGroupUpdate(ctx context.Context, d *schema.ResourceData, meta
 		options.SharedRunnersMinutesLimit = gitlab.Int(d.Get("shared_runners_minutes_limit").(int))
 	}
 
+	avatar, err := handleAvatarOnUpdate(d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if avatar != nil {
+		options.Avatar = &gitlab.GroupAvatar{
+			Filename: avatar.Filename,
+			Image:    avatar.Image,
+		}
+	}
+
 	log.Printf("[DEBUG] update gitlab group %s", d.Id())
 
-	_, _, err := client.Groups.UpdateGroup(d.Id(), options, gitlab.WithContext(ctx))
+	_, _, err = client.Groups.UpdateGroup(d.Id(), options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}

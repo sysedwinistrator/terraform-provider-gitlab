@@ -349,6 +349,186 @@ func TestAccGitlabGroup_SetDefaultFalseBooleansOnCreate(t *testing.T) {
 	})
 }
 
+func TestAccGitlabGroup_WithoutAvatarHash(t *testing.T) {
+	testGroupName := acctest.RandomWithPrefix("acctest")
+
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_group" "test" {
+	  name             =  "%[1]s"
+	  path             =  "%[1]s"
+	  visibility_level = "public"
+
+	  avatar = "${path.module}/testdata/gitlab_group/avatar.png"
+	}
+	`, testGroupName)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupDestroy,
+		Steps: []resource.TestStep{
+			// Create a group with avatar, but without giving a hash
+			{
+				Config:             testConfig,
+				Check:              resource.TestCheckResourceAttrSet("gitlab_group.test", "avatar_url"),
+				ExpectNonEmptyPlan: true,
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"avatar", "avatar_hash",
+				},
+			},
+			// Update the avatar image, but keep the filename to test the `CustomizeDiff` function
+			{
+				Config:             testConfig,
+				Check:              resource.TestCheckResourceAttrSet("gitlab_group.test", "avatar_url"),
+				ExpectNonEmptyPlan: true,
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"avatar", "avatar_hash",
+				},
+			},
+		},
+	})
+}
+
+func TestAccGitlabGroup_WithAvatar(t *testing.T) {
+	testGroupName := acctest.RandomWithPrefix("acctest")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupDestroy,
+		Steps: []resource.TestStep{
+			// Create a group with avatar and providing the hash
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "test" {
+				  name             =  "%[1]s"
+				  path             =  "%[1]s"
+				  visibility_level = "public"
+
+				  avatar      = "${path.module}/testdata/gitlab_group/avatar.png"
+				  avatar_hash = filesha256("${path.module}/testdata/gitlab_group/avatar.png")
+				}
+				`, testGroupName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("gitlab_group.test", "avatar_url"),
+					resource.TestCheckResourceAttr("gitlab_group.test", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
+				),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"avatar", "avatar_hash",
+				},
+			},
+			// Update group avatar
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "test" {
+				  name             =  "%[1]s"
+				  path             =  "%[1]s"
+				  visibility_level = "public"
+
+				  avatar      = "${path.module}/testdata/gitlab_group/avatar-update.png"
+				  avatar_hash = filesha256("${path.module}/testdata/gitlab_group/avatar-update.png")
+				}
+				`, testGroupName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("gitlab_group.test", "avatar_url"),
+					resource.TestCheckResourceAttr("gitlab_group.test", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
+				),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"avatar", "avatar_hash",
+				},
+			},
+			// Update avatar back to default
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "test" {
+				  name             =  "%[1]s"
+				  path             =  "%[1]s"
+				  visibility_level = "public"
+
+				  avatar      = "${path.module}/testdata/gitlab_group/avatar.png"
+				  avatar_hash = filesha256("${path.module}/testdata/gitlab_group/avatar.png")
+				}
+				`, testGroupName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("gitlab_group.test", "avatar_url"),
+					resource.TestCheckResourceAttr("gitlab_group.test", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
+				),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"avatar", "avatar_hash",
+				},
+			},
+			// Update the group avatar image, but keep the filename to test the `CustomizeDiff` function
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "test" {
+				  name             =  "%[1]s"
+				  path             =  "%[1]s"
+				  visibility_level = "public"
+
+				  avatar      = "${path.module}/testdata/gitlab_group/avatar.png"
+				  avatar_hash = filesha256("${path.module}/testdata/gitlab_group/avatar.png")
+				}
+				`, testGroupName),
+				PreConfig: func() {
+					// overwrite the avatar image file
+					if err := copyFile("testdata/gitlab_group/avatar.png", "testdata/gitlab_group/avatar.png.bak"); err != nil {
+						t.Fatalf("failed to backup the avatar image file: %v", err)
+					}
+					if err := copyFile("testdata/gitlab_group/avatar-update.png", "testdata/gitlab_group/avatar.png"); err != nil {
+						t.Fatalf("failed to overwrite the avatar image file: %v", err)
+					}
+					t.Cleanup(func() {
+						if err := os.Rename("testdata/gitlab_group/avatar.png.bak", "testdata/gitlab_group/avatar.png"); err != nil {
+							t.Fatalf("failed to restore the avatar image file: %v", err)
+						}
+					})
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("gitlab_group.test", "avatar_url"),
+					resource.TestCheckResourceAttr("gitlab_group.test", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
+				),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"avatar", "avatar_hash",
+				},
+			},
+		},
+	})
+}
+
 func testAccCheckGitlabGroupExists(n string, group *gitlab.Group) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
