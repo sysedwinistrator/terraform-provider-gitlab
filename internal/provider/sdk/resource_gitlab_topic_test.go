@@ -6,7 +6,6 @@ package sdk
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -201,30 +200,34 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 	})
 }
 
-func TestAccGitlabTopic_withoutAvatarHash(t *testing.T) {
-	var topic gitlab.Topic
-	rInt := acctest.RandInt()
+func TestAccGitlabTopic_WithoutAvatarHash(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_topic" "test" {
+		name  = "%[1]s"
+		title = "%[1]s"
 
-	resource.ParallelTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabTopicDestroy,
-		Steps: []resource.TestStep{
-			// Create a topic with avatar, but without giving a hash
-			{
-				Config: testAccGitlabTopicAvatarWithoutHashConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-			// Update the avatar image, but keep the filename to test the `CustomizeDiff` function
-			{
-				Config:             testAccGitlabTopicAvatarWithoutHashConfig(t, rInt),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithoutAvatarHash(t, "gitlab_topic.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabTopicDestroy
+	resource.Test(t, testCase)
+}
+
+func TestAccGitlabTopic_WithAvatar(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_topic" "test" {
+		name  = "%[1]s"
+		title = "%[1]s"
+
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithAvatar(t, "gitlab_topic.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabTopicDestroy
+	resource.Test(t, testCase)
 }
 
 func TestAccGitlabTopic_softDestroy(t *testing.T) {

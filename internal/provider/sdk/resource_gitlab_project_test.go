@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -1562,178 +1561,33 @@ func TestAccGitlabProject_ContainerExpirationPolicy(t *testing.T) {
 }
 
 func TestAccGitlabProject_WithoutAvatarHash(t *testing.T) {
-	testProjectName := acctest.RandomWithPrefix("acctest")
-
 	testConfig := fmt.Sprintf(`
 	resource "gitlab_project" "test" {
-	  name             =  "%s"
-	  visibility_level = "public"
+		name             =  "%s"
+		visibility_level = "public"
 
-	  avatar = "${path.module}/testdata/gitlab_project/avatar.png"
+		{{.AvatarableAttributeConfig}}
 	}
-	`, testProjectName)
+	`, acctest.RandomWithPrefix("acctest"))
 
-	resource.ParallelTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabProjectDestroy,
-		Steps: []resource.TestStep{
-			// Create a project with avatar, but without giving a hash
-			{
-				Config:             testConfig,
-				Check:              resource.TestCheckResourceAttrSet("gitlab_project.test", "avatar_url"),
-				ExpectNonEmptyPlan: true,
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_project.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash",
-				},
-			},
-			// Update the avatar image, but keep the filename to test the `CustomizeDiff` function
-			{
-				Config:             testConfig,
-				Check:              resource.TestCheckResourceAttrSet("gitlab_project.test", "avatar_url"),
-				ExpectNonEmptyPlan: true,
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_project.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash",
-				},
-			},
-		},
-	})
+	testCase := createAvatarableTestCase_WithoutAvatarHash(t, "gitlab_project.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabProjectDestroy
+	resource.Test(t, testCase)
 }
 
 func TestAccGitlabProject_WithAvatar(t *testing.T) {
-	testProjectName := acctest.RandomWithPrefix("acctest")
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_project" "test" {
+		name             =  "%s"
+		visibility_level = "public"
 
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabProjectDestroy,
-		Steps: []resource.TestStep{
-			// Create a project with avatar and providing the hash
-			{
-				Config: fmt.Sprintf(`
-				resource "gitlab_project" "test" {
-				  name             = "%s"
-				  visibility_level = "public"
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
 
-				  avatar      = "${path.module}/testdata/gitlab_project/avatar.png"
-				  avatar_hash = filesha256("${path.module}/testdata/gitlab_project/avatar.png")
-				}
-				`, testProjectName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("gitlab_project.test", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_project.test", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_project.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash",
-				},
-			},
-			// Update project avatar
-			{
-				Config: fmt.Sprintf(`
-				resource "gitlab_project" "test" {
-				  name             = "%s"
-				  visibility_level = "public"
-
-				  avatar      = "${path.module}/testdata/gitlab_project/avatar-update.png"
-				  avatar_hash = filesha256("${path.module}/testdata/gitlab_project/avatar-update.png")
-				}
-				`, testProjectName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("gitlab_project.test", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_project.test", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_project.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash",
-				},
-			},
-			// Update avatar back to default
-			{
-				Config: fmt.Sprintf(`
-				resource "gitlab_project" "test" {
-				  name             = "%s"
-				  visibility_level = "public"
-
-				  avatar      = "${path.module}/testdata/gitlab_project/avatar.png"
-				  avatar_hash = filesha256("${path.module}/testdata/gitlab_project/avatar.png")
-				}
-				`, testProjectName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("gitlab_project.test", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_project.test", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_project.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash",
-				},
-			},
-			// Update the project avatar image, but keep the filename to test the `CustomizeDiff` function
-			{
-				Config: fmt.Sprintf(`
-				resource "gitlab_project" "test" {
-				  name             = "%s"
-				  visibility_level = "public"
-
-				  avatar      = "${path.module}/testdata/gitlab_project/avatar.png"
-				  avatar_hash = filesha256("${path.module}/testdata/gitlab_project/avatar.png")
-				}
-				`, testProjectName),
-				PreConfig: func() {
-					// overwrite the avatar image file
-					if err := copyFile("testdata/gitlab_project/avatar.png", "testdata/gitlab_project/avatar.png.bak"); err != nil {
-						t.Fatalf("failed to backup the avatar image file: %v", err)
-					}
-					if err := copyFile("testdata/gitlab_project/avatar-update.png", "testdata/gitlab_project/avatar.png"); err != nil {
-						t.Fatalf("failed to overwrite the avatar image file: %v", err)
-					}
-					t.Cleanup(func() {
-						if err := os.Rename("testdata/gitlab_project/avatar.png.bak", "testdata/gitlab_project/avatar.png"); err != nil {
-							t.Fatalf("failed to restore the avatar image file: %v", err)
-						}
-					})
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("gitlab_project.test", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_project.test", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_project.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash",
-				},
-			},
-		},
-	})
+	testCase := createAvatarableTestCase_WithAvatar(t, "gitlab_project.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabProjectDestroy
+	resource.Test(t, testCase)
 }
 
 func testAccCheckGitlabProjectExists(n string, project *gitlab.Project) resource.TestCheckFunc {
