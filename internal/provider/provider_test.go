@@ -55,6 +55,7 @@ func TestAcc_GitLabProvider_UpgradeLatestMajor(t *testing.T) {
         }
 	`, testProjectName)
 
+	//lintignore:AT001
 	resource.ParallelTest(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			// Create resources with the latest major version
