@@ -4,23 +4,15 @@
 package provider
 
 import (
-	"context"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAcc_GitLab_ProviderMux(t *testing.T) {
-	providerServer, err := NewMuxedProviderServer(context.Background(), "acctest")
-	if err != nil {
-		t.Fatalf("failed to create mux provider server for testing: %v", err)
-	}
 	//lintignore:AT001
 	resource.ParallelTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
-			"gitlab": func() (tfprotov6.ProviderServer, error) { return providerServer(), nil },
-		},
+		ProtoV6ProviderFactories: testAccProtoV6MuxProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: `
