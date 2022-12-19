@@ -2322,7 +2322,9 @@ func expandContainerExpirationPolicyAttributes(d *schema.ResourceData) *gitlab.C
 		policy.NameRegexKeep = gitlab.String(v.(string))
 	}
 
-	if v, ok := d.GetOk("container_expiration_policy.0.enabled"); ok {
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("container_expiration_policy.0.enabled"); ok {
 		policy.Enabled = gitlab.Bool(v.(bool))
 	}
 
