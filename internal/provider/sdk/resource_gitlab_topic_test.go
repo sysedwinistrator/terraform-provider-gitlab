@@ -14,9 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
-
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
@@ -60,108 +58,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-			},
-			// Update back to the default topics avatar
-			{
-				Config: testAccGitlabTopicFullConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update the topics avatar
-			{
-				Config: testAccGitlabTopicFullUpdatedAvatarConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update back to the default topics avatar
-			{
-				Config: testAccGitlabTopicFullConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update the avatar image, but keep the filename to test the `CustomizeDiff` function
-			{
-				Config: testAccGitlabTopicFullConfig(t, rInt),
-				PreConfig: func() {
-					// overwrite the avatar image file
-					if err := testutil.CopyFile("testdata/gitlab_topic/avatar.png", "testdata/gitlab_topic/avatar.png.bak"); err != nil {
-						t.Fatalf("failed to backup the avatar image file: %v", err)
-					}
-					if err := testutil.CopyFile("testdata/gitlab_topic/avatar-update.png", "testdata/gitlab_topic/avatar.png"); err != nil {
-						t.Fatalf("failed to overwrite the avatar image file: %v", err)
-					}
-					t.Cleanup(func() {
-						if err := os.Rename("testdata/gitlab_topic/avatar.png.bak", "testdata/gitlab_topic/avatar.png"); err != nil {
-							t.Fatalf("failed to restore the avatar image file: %v", err)
-						}
-					})
-				},
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Update the topics values back to their initial state
 			{
@@ -257,7 +153,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -425,34 +321,6 @@ resource "gitlab_topic" "foo" {
   name        = "foo-full-%d"
   %s
   description = "Terraform acceptance tests"
-}`, rInt, titleConfig)
-}
-
-func testAccGitlabTopicFullUpdatedAvatarConfig(t *testing.T, rInt int) string {
-	var titleConfig string
-	if testutil.IsRunningAtLeast(t, "15.0") {
-		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
-	}
-	return fmt.Sprintf(`
-resource "gitlab_topic" "foo" {
-  name        = "foo-full-%d"
-  %s
-  description = "Terraform acceptance tests"
-  avatar 	  = "${path.module}/testdata/gitlab_topic/avatar-update.png"
-  avatar_hash = filesha256("${path.module}/testdata/gitlab_topic/avatar-update.png")
-}`, rInt, titleConfig)
-}
-
-func testAccGitlabTopicAvatarWithoutHashConfig(t *testing.T, rInt int) string {
-	var titleConfig string
-	if testutil.IsRunningAtLeast(t, "15.0") {
-		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
-	}
-	return fmt.Sprintf(`
-resource "gitlab_topic" "foo" {
-  name   = "foo-%d"
-  %s
-  avatar = "${path.module}/testdata/gitlab_topic/avatar.png"
 }`, rInt, titleConfig)
 }
 

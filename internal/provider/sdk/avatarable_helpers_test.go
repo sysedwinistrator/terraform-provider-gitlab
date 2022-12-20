@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 type avatarableAttributeConfig struct {
@@ -147,10 +148,10 @@ func createAvatarableTestCase_WithAvatar(t *testing.T, resourceName string, base
 				`),
 				PreConfig: func() {
 					// overwrite the avatar image file
-					if err := copyFile("testdata/avatarable/avatar.png", "testdata/avatarable/avatar.png.bak"); err != nil {
+					if err := testutil.CopyFile("testdata/avatarable/avatar.png", "testdata/avatarable/avatar.png.bak"); err != nil {
 						t.Fatalf("failed to backup the avatar image file: %v", err)
 					}
-					if err := copyFile("testdata/avatarable/avatar-update.png", "testdata/avatarable/avatar.png"); err != nil {
+					if err := testutil.CopyFile("testdata/avatarable/avatar-update.png", "testdata/avatarable/avatar.png"); err != nil {
 						t.Fatalf("failed to overwrite the avatar image file: %v", err)
 					}
 					t.Cleanup(func() {
