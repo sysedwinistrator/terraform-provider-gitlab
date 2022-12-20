@@ -46,8 +46,7 @@ func (p *GitLabProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 			"token": schema.StringAttribute{
 				MarkdownDescription: "The OAuth2 Token, Project, Group, Personal Access Token or CI Job Token used to connect to GitLab. The OAuth method is used in this provider for authentication (using Bearer authorization token). See https://docs.gitlab.com/ee/api/#authentication for details. It may be sourced from the `GITLAB_TOKEN` environment variable.",
 				Optional:            true,
-				// FIXME(@timofurrer): cannot yet set to `true` because the SDKv2 provider doesn't set it to sensitive
-				//Sensitive:           true,
+				Sensitive:           true,
 			},
 			"base_url": schema.StringAttribute{
 				MarkdownDescription: "This is the target GitLab base API endpoint. Providing a value is a requirement when working with GitLab CE or GitLab Enterprise e.g. `https://my.gitlab.server/api/v4/`. It is optional to provide this value and it can also be sourced from the `GITLAB_BASE_URL` environment variable. The value must end with a slash.",
