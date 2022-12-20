@@ -8,11 +8,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabProjectHooks_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
-	testHooks := testAccCreateProjectHooks(t, testProject.ID, 25)
+	testProject := testutil.CreateProject(t)
+	testHooks := testutil.CreateProjectHooks(t, testProject.ID, 25)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

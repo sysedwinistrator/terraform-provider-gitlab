@@ -8,13 +8,15 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabProjectMembership_basic(t *testing.T) {
 
-	project := testAccCreateProject(t)
-	users := testAccCreateUsers(t, 1)
-	testAccAddProjectMembers(t, project.ID, users)
+	project := testutil.CreateProject(t)
+	users := testutil.CreateUsers(t, 1)
+	testutil.AddProjectMembers(t, project.ID, users)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -35,9 +37,9 @@ func TestAccDataSourceGitlabProjectMembership_basic(t *testing.T) {
 func TestAccDataSourceGitlabProjectMembership_pagination(t *testing.T) {
 	userCount := 21
 
-	project := testAccCreateProject(t)
-	users := testAccCreateUsers(t, userCount)
-	testAccAddProjectMembers(t, project.ID, users)
+	project := testutil.CreateProject(t)
+	users := testutil.CreateUsers(t, userCount)
+	testutil.AddProjectMembers(t, project.ID, users)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

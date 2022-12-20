@@ -7,6 +7,8 @@ import (
 	"context"
 	"log"
 	"testing"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAcc_GraphQL_basic(t *testing.T) {
@@ -16,7 +18,7 @@ func TestAcc_GraphQL_basic(t *testing.T) {
 	}
 
 	var response CurrentUserResponse
-	_, err := SendGraphQLRequest(context.Background(), testGitlabClient, query, &response)
+	_, err := SendGraphQLRequest(context.Background(), testutil.TestGitlabClient, query, &response)
 	if err != nil {
 		log.Println(err)
 		t.Fail()

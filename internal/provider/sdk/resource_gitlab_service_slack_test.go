@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServiceSlack_basic(t *testing.T) {
@@ -143,7 +145,7 @@ func testAccCheckGitlabServiceExists(n string, service *gitlab.SlackService) res
 		if project == "" {
 			return fmt.Errorf("No project ID is set")
 		}
-		slackService, _, err := testGitlabClient.Services.GetSlackService(project)
+		slackService, _, err := testutil.TestGitlabClient.Services.GetSlackService(project)
 		if err != nil {
 			return fmt.Errorf("Slack service does not exist in project %s: %v", project, err)
 		}
@@ -161,7 +163,7 @@ func testAccCheckGitlabServiceSlackDestroy(s *terraform.State) error {
 
 		project := rs.Primary.ID
 
-		_, _, err := testGitlabClient.Services.GetSlackService(project)
+		_, _, err := testutil.TestGitlabClient.Services.GetSlackService(project)
 		if err == nil {
 			return fmt.Errorf("Slack Service Integration in project %s still exists", project)
 		}

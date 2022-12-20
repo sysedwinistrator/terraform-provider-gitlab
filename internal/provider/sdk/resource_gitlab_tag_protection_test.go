@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabTagProtection_basic(t *testing.T) {
@@ -146,7 +148,7 @@ func testAccCheckGitlabTagProtectionExists(n string, pt *gitlab.ProtectedTag) re
 			return fmt.Errorf("Error in Splitting Project and Tag Ids")
 		}
 
-		pts, _, err := testGitlabClient.ProtectedTags.ListProtectedTags(project, nil)
+		pts, _, err := testutil.TestGitlabClient.ProtectedTags.ListProtectedTags(project, nil)
 		if err != nil {
 			return err
 		}
@@ -190,7 +192,7 @@ func testAccCheckGitlabTagProtectionDestroy(s *terraform.State) error {
 		}
 	}
 
-	pt, _, err := testGitlabClient.ProtectedTags.GetProtectedTag(project, tag)
+	pt, _, err := testutil.TestGitlabClient.ProtectedTags.GetProtectedTag(project, tag)
 	if err == nil {
 		if pt != nil {
 			return fmt.Errorf("project tag protection %s still exists", tag)

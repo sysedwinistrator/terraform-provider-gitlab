@@ -11,12 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabRunner_basic(t *testing.T) {
-	group := testAccCreateGroups(t, 1)[0]
+	group := testutil.CreateGroups(t, 1)[0]
 	//The runner token is not populated on the return from the group create, so re-retrieve it to get the token.
-	group, _, err := testGitlabClient.Groups.GetGroup(group.ID, &gitlab.GetGroupOptions{})
+	group, _, err := testutil.TestGitlabClient.Groups.GetGroup(group.ID, &gitlab.GetGroupOptions{})
 	if err != nil {
 		t.Fail()
 	}
@@ -95,9 +97,9 @@ func TestAccGitlabRunner_instance(t *testing.T) {
 }
 
 func TestAccGitlabRunner_comprehensive(t *testing.T) {
-	group := testAccCreateGroups(t, 1)[0]
+	group := testutil.CreateGroups(t, 1)[0]
 	//The runner token is not populated on the return from the group create, so re-retrieve it to get the token.
-	group, _, err := testGitlabClient.Groups.GetGroup(group.ID, &gitlab.GetGroupOptions{})
+	group, _, err := testutil.TestGitlabClient.Groups.GetGroup(group.ID, &gitlab.GetGroupOptions{})
 	if err != nil {
 		t.Fail()
 	}
@@ -162,7 +164,7 @@ func testAccCheckRunnerDestroy(state *terraform.State) error {
 
 		id, _ := strconv.Atoi(rs.Primary.ID)
 
-		runner, _, err := testGitlabClient.Runners.GetRunnerDetails(id)
+		runner, _, err := testutil.TestGitlabClient.Runners.GetRunnerDetails(id)
 		if err == nil {
 			if runner != nil {
 				return fmt.Errorf("runner still exists")

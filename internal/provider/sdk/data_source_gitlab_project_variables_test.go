@@ -9,13 +9,15 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabProjectVariables_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 	testVariables := make([]*gitlab.ProjectVariable, 0)
 	for i := 0; i < 25; i++ {
-		testVariables = append(testVariables, testAccCreateProjectVariable(t, testProject.ID))
+		testVariables = append(testVariables, testutil.CreateProjectVariable(t, testProject.ID))
 	}
 
 	resource.ParallelTest(t, resource.TestCase{

@@ -3,11 +3,13 @@ package sdk
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 	"os"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"

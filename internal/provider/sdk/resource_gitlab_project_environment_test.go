@@ -14,17 +14,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectEnvironment_basic(t *testing.T) {
 	rInt := acctest.RandInt()
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
-	var env1 gitlab.Environment = gitlab.Environment{
+	var env1 = gitlab.Environment{
 		Name: fmt.Sprintf("ProjectEnvironment-%d", rInt),
 	}
 
-	var env2 gitlab.Environment = gitlab.Environment{
+	var env2 = gitlab.Environment{
 		Name:        fmt.Sprintf("ProjectEnvironment-%d", rInt),
 		ExternalURL: "https://example.com",
 	}
@@ -115,7 +117,7 @@ func TestAccGitlabProjectEnvironment_basic(t *testing.T) {
 
 func TestAccGitlabProjectEnvironment_stopBeforeDestroyDisabled(t *testing.T) {
 	rInt := acctest.RandInt()
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -155,7 +157,7 @@ func testAccCheckGitlabProjectEnvironmentExists(n string, env *gitlab.Environmen
 			return fmt.Errorf("error converting environment ID to int: %v", err)
 		}
 
-		if e, _, err := testGitlabClient.Environments.GetEnvironment(project, environmentID); err != nil {
+		if e, _, err := testutil.TestGitlabClient.Environments.GetEnvironment(project, environmentID); err != nil {
 			return err
 		} else {
 			*env = *e
@@ -209,7 +211,7 @@ func testAccCheckGitlabProjectEnvironmentDestroy(s *terraform.State) error {
 		}
 	}
 
-	env, _, err := testGitlabClient.Environments.GetEnvironment(project, environmentIDInt)
+	env, _, err := testutil.TestGitlabClient.Environments.GetEnvironment(project, environmentIDInt)
 	if err == nil {
 		if env != nil {
 			return fmt.Errorf("[ERROR] project Environment %v still exists", environmentIDInt)

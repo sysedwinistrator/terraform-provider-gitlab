@@ -11,12 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectMilestone_basic(t *testing.T) {
 
 	rInt1, rInt2 := acctest.RandInt(), acctest.RandInt()
-	project := testAccCreateProject(t)
+	project := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -84,7 +86,7 @@ func testAccCheckGitlabProjectMilestoneDestroy(s *terraform.State) error {
 			return err
 		}
 
-		milestone, _, err := testGitlabClient.Milestones.GetMilestone(projectID, milestoneID)
+		milestone, _, err := testutil.TestGitlabClient.Milestones.GetMilestone(projectID, milestoneID)
 		if err == nil && milestone != nil {
 			return errors.New("Milestone still exists")
 		}

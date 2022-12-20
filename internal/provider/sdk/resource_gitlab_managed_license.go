@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var managedLicenseAllowedValues = []string{
@@ -160,7 +162,7 @@ func resourceGitlabManagedLicenseUpdate(ctx context.Context, d *schema.ResourceD
 // Convert the incoming string into the proper constant value for passing into the API.
 func stringToApprovalStatus(ctx context.Context, client *gitlab.Client, s string) (*gitlab.LicenseApprovalStatusValue, error) {
 	var value gitlab.LicenseApprovalStatusValue
-	notSupported, err := isGitLabVersionAtLeast(ctx, client, "15.0")()
+	notSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "15.0")()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch GitLab version: %+v", err)
 	}

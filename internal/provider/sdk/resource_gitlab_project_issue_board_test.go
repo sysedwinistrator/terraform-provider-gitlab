@@ -9,17 +9,19 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectIssueBoard_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
-	testMilestone := testAccAddProjectMilestones(t, testProject, 1)[0]
-	testLabels := testAccCreateProjectLabels(t, testProject.ID, 2)
-	testUser := testAccCreateUsers(t, 1)[0]
+	testProject := testutil.CreateProject(t)
+	testMilestone := testutil.AddProjectMilestones(t, testProject, 1)[0]
+	testLabels := testutil.CreateProjectLabels(t, testProject.ID, 2)
+	testUser := testutil.CreateUsers(t, 1)[0]
 
 	// NOTE: there is no way to delete the last issue board, see
 	// https://gitlab.com/gitlab-org/gitlab/-/issues/367395
-	testAccCreateProjectIssueBoard(t, testProject.ID)
+	testutil.CreateProjectIssueBoard(t, testProject.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -42,7 +44,7 @@ func TestAccGitlabProjectIssueBoard_basic(t *testing.T) {
 			},
 			// Verify update with optional values (all optional attributes are EE only)
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`
 					resource "gitlab_project_issue_board" "this" {
 						project      = "%d"
@@ -56,7 +58,7 @@ func TestAccGitlabProjectIssueBoard_basic(t *testing.T) {
 			},
 			// Verify Import
 			{
-				SkipFunc:          isRunningInCE,
+				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      "gitlab_project_issue_board.this",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -66,16 +68,16 @@ func TestAccGitlabProjectIssueBoard_basic(t *testing.T) {
 }
 
 func TestAccGitlabProjectIssueBoard_AllOnCreateEE(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
-	testProject := testAccCreateProject(t)
-	testMilestones := testAccAddProjectMilestones(t, testProject, 2)
-	testLabels := testAccCreateProjectLabels(t, testProject.ID, 4)
-	testUsers := testAccCreateUsers(t, 2)
+	testProject := testutil.CreateProject(t)
+	testMilestones := testutil.AddProjectMilestones(t, testProject, 2)
+	testLabels := testutil.CreateProjectLabels(t, testProject.ID, 4)
+	testUsers := testutil.CreateUsers(t, 2)
 
 	// NOTE: there is no way to delete the last issue board, see
 	// https://gitlab.com/gitlab-org/gitlab/-/issues/367395
-	testAccCreateProjectIssueBoard(t, testProject.ID)
+	testutil.CreateProjectIssueBoard(t, testProject.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -139,15 +141,15 @@ func TestAccGitlabProjectIssueBoard_AllOnCreateEE(t *testing.T) {
 }
 
 func TestAccGitlabProjectIssueBoard_Lists(t *testing.T) {
-	testProject := testAccCreateProject(t)
-	testMilestones := testAccAddProjectMilestones(t, testProject, 2)
-	testLabels := testAccCreateProjectLabels(t, testProject.ID, 4)
-	testUsers := testAccCreateUsers(t, 2)
-	testAccAddProjectMembers(t, testProject.ID, testUsers)
+	testProject := testutil.CreateProject(t)
+	testMilestones := testutil.AddProjectMilestones(t, testProject, 2)
+	testLabels := testutil.CreateProjectLabels(t, testProject.ID, 4)
+	testUsers := testutil.CreateUsers(t, 2)
+	testutil.AddProjectMembers(t, testProject.ID, testUsers)
 
 	// NOTE: there is no way to delete the last issue board, see
 	// https://gitlab.com/gitlab-org/gitlab/-/issues/367395
-	testAccCreateProjectIssueBoard(t, testProject.ID)
+	testutil.CreateProjectIssueBoard(t, testProject.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -201,11 +203,11 @@ func TestAccGitlabProjectIssueBoard_Lists(t *testing.T) {
 			},
 			// Force a destroy for the board so that it can be recreated as the same resource
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   ` `, // requires a space for empty config
 			},
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`
 					resource "gitlab_project_issue_board" "this" {
 						project      = "%d"
@@ -232,7 +234,7 @@ func TestAccGitlabProjectIssueBoard_Lists(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`
 					resource "gitlab_project_issue_board" "this" {
 						project      = "%d"
@@ -273,7 +275,7 @@ func testAccCheckGitlabProjectIssueBoardDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subject, _, err := testGitlabClient.Boards.GetIssueBoard(project, issueBoardID)
+		subject, _, err := testutil.TestGitlabClient.Boards.GetIssueBoard(project, issueBoardID)
 		if err == nil && subject != nil {
 			return fmt.Errorf("gitlab_project_issue_board resource '%s' still exists", rs.Primary.ID)
 		}

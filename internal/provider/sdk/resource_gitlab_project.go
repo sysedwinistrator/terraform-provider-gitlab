@@ -12,7 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var (
@@ -762,7 +764,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 		return err
 	}
 	d.Set("archived", project.Archived)
-	if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+	if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 		return err
 	} else if supportsSquashOption {
 		d.Set("squash_option", project.SquashOption)
@@ -1134,7 +1136,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			options.CIConfigPath = gitlab.String(v.(string))
 		}
 
-		if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+		if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 			return diag.FromErr(err)
 		} else if supportsSquashOption {
 			if v, ok := d.GetOk("squash_option"); ok {
@@ -1234,7 +1236,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	// see: https://gitlab.com/gitlab-org/gitlab/-/issues/333426
-	noDefaultBranchAPISupport, err := isGitLabVersionLessThan(ctx, client, "14.10")()
+	noDefaultBranchAPISupport, err := providerclient.IsGitLabVersionLessThan(ctx, client, "14.10")()
 	if err != nil {
 		return diag.Errorf("unable to get information if `default_branch` handling is supported in the GitLab instance: %v", err)
 	}
@@ -1489,7 +1491,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			editProjectOptions.LFSEnabled = gitlab.Bool(v.(bool))
 		}
 
-		if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+		if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 			return diag.FromErr(err)
 		} else if supportsSquashOption {
 			if v, ok := d.GetOk("squash_option"); ok {
@@ -1803,7 +1805,7 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 		options.LFSEnabled = gitlab.Bool(d.Get("lfs_enabled").(bool))
 	}
 
-	if supportsSquashOption, err := isGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+	if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 		return diag.FromErr(err)
 	} else if supportsSquashOption && d.HasChange("squash_option") {
 		options.SquashOption = stringToSquashOptionValue(d.Get("squash_option").(string))

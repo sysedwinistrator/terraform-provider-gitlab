@@ -11,10 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabDeployKey_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -59,7 +61,7 @@ func TestAccGitlabDeployKey_basic(t *testing.T) {
 }
 
 func TestAccGitlabDeployKey_suppressTrailingSpace(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -90,7 +92,7 @@ func testAccCheckGitlabDeployKeyDestroy(s *terraform.State) error {
 
 		project := rs.Primary.Attributes["project"]
 
-		gotDeployKey, _, err := testGitlabClient.DeployKeys.GetDeployKey(project, deployKeyID)
+		gotDeployKey, _, err := testutil.TestGitlabClient.DeployKeys.GetDeployKey(project, deployKeyID)
 		if err == nil {
 			if gotDeployKey != nil && fmt.Sprintf("%d", gotDeployKey.ID) == rs.Primary.ID {
 				return fmt.Errorf("Deploy key still exists")

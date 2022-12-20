@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6/tf6server"
+
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider"
 )
 

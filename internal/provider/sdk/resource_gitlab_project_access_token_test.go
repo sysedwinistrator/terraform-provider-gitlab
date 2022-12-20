@@ -10,10 +10,12 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectAccessToken_basic(t *testing.T) {
-	project := testAccCreateProject(t)
+	project := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -108,7 +110,7 @@ func testAccCheckGitlabProjectAccessTokenDestroy(s *terraform.State) error {
 		project := rs.Primary.Attributes["project"]
 		name := rs.Primary.Attributes["name"]
 
-		tokens, _, err := testGitlabClient.ProjectAccessTokens.ListProjectAccessTokens(project, nil)
+		tokens, _, err := testutil.TestGitlabClient.ProjectAccessTokens.ListProjectAccessTokens(project, nil)
 		if err != nil {
 			return err
 		}

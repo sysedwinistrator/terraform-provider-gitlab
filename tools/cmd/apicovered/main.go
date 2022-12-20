@@ -3,8 +3,9 @@ package main
 import (
 	"os"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes/apicovered"
 	"golang.org/x/tools/go/analysis/singlechecker"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes/apicovered"
 )
 
 func main() {

@@ -8,17 +8,19 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabCurrentUser_basic(t *testing.T) {
 	//The root user has no public email by default, set the public email so it shows up properly.
-	_, _, _ = testGitlabClient.Users.ModifyUser(1, &gitlab.ModifyUserOptions{
+	_, _, _ = testutil.TestGitlabClient.Users.ModifyUser(1, &gitlab.ModifyUserOptions{
 		// The public email MUST match an email on record for the user, or it gets a bad request.
 		PublicEmail: gitlab.String("admin@example.com"),
 	})
 
 	t.Cleanup(func() {
-		_, _, _ = testGitlabClient.Users.ModifyUser(1, &gitlab.ModifyUserOptions{
+		_, _, _ = testutil.TestGitlabClient.Users.ModifyUser(1, &gitlab.ModifyUserOptions{
 			//Set back to the empty state on test completion.
 			PublicEmail: gitlab.String(""),
 		})

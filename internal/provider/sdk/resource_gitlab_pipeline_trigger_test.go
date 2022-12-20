@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabPipelineTrigger_basic(t *testing.T) {
@@ -110,7 +112,7 @@ func testAccCheckGitlabPipelineTriggerExists(n string, trigger *gitlab.PipelineT
 			return fmt.Errorf("No project ID is set")
 		}
 
-		triggers, _, err := testGitlabClient.PipelineTriggers.ListPipelineTriggers(repoName, nil)
+		triggers, _, err := testutil.TestGitlabClient.PipelineTriggers.ListPipelineTriggers(repoName, nil)
 		if err != nil {
 			return err
 		}
@@ -150,7 +152,7 @@ func testAccCheckGitlabPipelineTriggerDestroy(s *terraform.State) error {
 			return err
 		}
 
-		_, _, err = testGitlabClient.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerID)
+		_, _, err = testutil.TestGitlabClient.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerID)
 		if err == nil {
 			return fmt.Errorf("Pipeline Trigger %d in project %s still exists", pipelineTriggerID, project)
 		}

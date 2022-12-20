@@ -8,12 +8,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabProjectMilestone_basic(t *testing.T) {
 
-	testProject := testAccCreateProject(t)
-	testMilestone := testAccAddProjectMilestones(t, testProject, 1)[0]
+	testProject := testutil.CreateProject(t)
+	testMilestone := testutil.AddProjectMilestones(t, testProject, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

@@ -10,11 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupShareGroup_basic(t *testing.T) {
-	mainGroup := testAccCreateGroups(t, 1)[0]
-	sharedGroup := testAccCreateGroups(t, 1)[0]
+	mainGroup := testutil.CreateGroups(t, 1)[0]
+	sharedGroup := testutil.CreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -69,7 +71,7 @@ func TestAccGitlabGroupShareGroup_basic(t *testing.T) {
 
 func testAccCheckGitlabGroupSharedWithGroup(mainGroupName string, sharedGroupName string, expireTime string, accessLevel gitlab.AccessLevelValue) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		mainGroup, _, err := testGitlabClient.Groups.GetGroup(mainGroupName, nil)
+		mainGroup, _, err := testutil.TestGitlabClient.Groups.GetGroup(mainGroupName, nil)
 		if err != nil {
 			return err
 		}
@@ -112,7 +114,7 @@ func testAccCheckGitlabShareGroupDestroy(s *terraform.State) error {
 			}
 
 			// Get Main Group
-			group, _, err := testGitlabClient.Groups.GetGroup(groupId, nil)
+			group, _, err := testutil.TestGitlabClient.Groups.GetGroup(groupId, nil)
 			if err != nil {
 				return err
 			}

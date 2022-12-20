@@ -13,8 +13,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 type testAccGitlabProjectExpectedAttributes struct {
@@ -158,7 +163,7 @@ func TestAccGitlabProject_basic(t *testing.T) {
 			},
 			// Add all push rules to an existing project
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: testAccGitlabProjectConfigPushRules(rInt, `
 author_email_regex = "foo_author"
 branch_name_regex = "foo_branch"
@@ -188,14 +193,14 @@ max_file_size = 123
 			},
 			// Test import with a all push rules defined (checks read function)
 			{
-				SkipFunc:          isRunningInCE,
+				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      "gitlab_project.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Update some push rules but not others
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: testAccGitlabProjectConfigPushRules(rInt, `
 author_email_regex = "foo_author"
 branch_name_regex = "foo_branch"
@@ -225,13 +230,13 @@ max_file_size = 1234
 			},
 			// Try to add push rules to an existing project in CE
 			{
-				SkipFunc:    isRunningInEE,
+				SkipFunc:    testutil.IsRunningInEE,
 				Config:      testAccGitlabProjectConfigPushRules(rInt, `author_email_regex = "foo_author"`),
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta("Project push rules are not supported in your version of GitLab")),
 			},
 			// Update push rules
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabProjectConfigPushRules(rInt, `author_email_regex = "foo_author"`),
 				Check: testAccCheckGitlabProjectPushRules("gitlab_project.foo", &gitlab.ProjectPushRules{
 					AuthorEmailRegex: "foo_author",
@@ -240,7 +245,7 @@ max_file_size = 1234
 			// Remove the push_rules block entirely.
 			// NOTE: The push rules will still exist upstream because the push_rules block is computed.
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabProjectConfigDefaultBranch(rInt, "main"),
 				Check: testAccCheckGitlabProjectPushRules("gitlab_project.foo", &gitlab.ProjectPushRules{
 					AuthorEmailRegex: "foo_author",
@@ -248,7 +253,7 @@ max_file_size = 1234
 			},
 			// Add different push rules after the block was removed previously
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabProjectConfigPushRules(rInt, `branch_name_regex = "(feature|hotfix)\\/*"`),
 				Check: testAccCheckGitlabProjectPushRules("gitlab_project.foo", &gitlab.ProjectPushRules{
 					BranchNameRegex: `(feature|hotfix)\/*`,
@@ -272,13 +277,13 @@ func TestAccGitlabProject_templates(t *testing.T) {
 			// Create a project using custom template name
 			{
 				Config:   testAccGitlabProjectConfigTemplateNameCustom(rInt, templateProject.Name),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.template-name-custom", &received),
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.template-name-custom"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, templateFileName, &gitlab.GetFileOptions{Ref: gitlab.String(received.DefaultBranch)}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, templateFileName, &gitlab.GetFileOptions{Ref: gitlab.String(received.DefaultBranch)}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get %s' file from template project: %w", templateFileName, err)
 						}
@@ -290,13 +295,13 @@ func TestAccGitlabProject_templates(t *testing.T) {
 			// Create a project using custom template project id
 			{
 				Config:   testAccGitlabProjectConfigTemplateProjectID(rInt, templateProject.ID),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.template-id", &received),
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.template-id"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, templateFileName, &gitlab.GetFileOptions{Ref: gitlab.String(received.DefaultBranch)}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, templateFileName, &gitlab.GetFileOptions{Ref: gitlab.String(received.DefaultBranch)}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get '%s' file from template project: %w", templateFileName, err)
 						}
@@ -318,7 +323,7 @@ func TestAccGitlabProject_PushRules(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create a new project with push rules
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: testAccGitlabProjectConfigPushRules(rInt, `
 author_email_regex = "foo_author"
 max_file_size = 123
@@ -330,26 +335,26 @@ max_file_size = 123
 			},
 			// Verify import
 			{
-				SkipFunc:          isRunningInCE,
+				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      "gitlab_project.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Update to original project config
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabProjectConfig(rInt),
 			},
 			// Verify import
 			{
-				SkipFunc:          isRunningInCE,
+				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      "gitlab_project.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Try to create a new project with all push rules in CE
 			{
-				SkipFunc:    isRunningInEE,
+				SkipFunc:    testutil.IsRunningInEE,
 				Config:      testAccGitlabProjectConfigPushRules(rInt, `author_email_regex = "foo_author"`),
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta("Project push rules are not supported in your version of GitLab")),
 			},
@@ -372,7 +377,7 @@ func TestAccGitlabProject_initializeWithReadme(t *testing.T) {
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
 					testAccCheckGitlabProjectDefaultBranch(&project, nil),
 					func(state *terraform.State) error {
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(project.ID, "README.md", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(project.ID, "README.md", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get 'README.md' file from project: %w", err)
 						}
@@ -398,7 +403,7 @@ func TestAccGitlabProject_initializeWithoutReadme(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
 					func(s *terraform.State) error {
-						branches, _, err := testGitlabClient.Branches.ListBranches(project.ID, nil)
+						branches, _, err := testutil.TestGitlabClient.Branches.ListBranches(project.ID, nil)
 						if err != nil {
 							return fmt.Errorf("failed to list branches: %w", err)
 						}
@@ -436,7 +441,7 @@ func TestAccGitlabProject_setSinglePushRuleToDefault(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config: testAccGitlabProjectConfigPushRules(rInt, `
 member_check = false
 `),
@@ -481,7 +486,7 @@ func TestAccGitlabProject_IssueMergeRequestTemplates(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabProjectConfigIssueMergeRequestTemplates(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
@@ -511,7 +516,7 @@ func TestAccGitlabProject_MergePipelines(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitLabProjectMergePipelinesEnabled(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
@@ -537,7 +542,7 @@ func TestAccGitlabProject_MergeTrains(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitLabProjectMergeTrainsEnabled(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
@@ -610,11 +615,11 @@ func TestAccGitlabProject_import(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInEE,
+				SkipFunc: testutil.IsRunningInEE,
 				Config:   testAccGitlabProjectConfig(rInt),
 			},
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabProjectConfigEE(rInt),
 			},
 			{
@@ -710,7 +715,7 @@ func TestAccGitlabProject_importURL(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	// Create a base project for importing.
-	baseProject, _, err := testGitlabClient.Projects.CreateProject(&gitlab.CreateProjectOptions{
+	baseProject, _, err := testutil.TestGitlabClient.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		Name:       gitlab.String(fmt.Sprintf("base-%d", rInt)),
 		Visibility: gitlab.Visibility(gitlab.PublicVisibility),
 	})
@@ -718,10 +723,10 @@ func TestAccGitlabProject_importURL(t *testing.T) {
 		t.Fatalf("failed to create base project: %v", err)
 	}
 
-	defer testGitlabClient.Projects.DeleteProject(baseProject.ID) // nolint // TODO: Resolve this golangci-lint issue: Error return value of `testGitlabClient.Projects.DeleteProject` is not checked (errcheck)
+	defer testutil.TestGitlabClient.Projects.DeleteProject(baseProject.ID) // nolint // TODO: Resolve this golangci-lint issue: Error return value of `TestGitlabClient.Projects.DeleteProject` is not checked (errcheck)
 
 	// Add a file to the base project, for later verifying the import.
-	_, _, err = testGitlabClient.RepositoryFiles.CreateFile(baseProject.ID, "foo.txt", &gitlab.CreateFileOptions{
+	_, _, err = testutil.TestGitlabClient.RepositoryFiles.CreateFile(baseProject.ID, "foo.txt", &gitlab.CreateFileOptions{
 		Branch:        gitlab.String("main"),
 		CommitMessage: gitlab.String("add file"),
 		Content:       gitlab.String(""),
@@ -741,7 +746,7 @@ func TestAccGitlabProject_importURL(t *testing.T) {
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.imported"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get file from imported project: %w", err)
 						}
@@ -785,7 +790,7 @@ resource "gitlab_project" "foo" {
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.foo"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "README.md", &gitlab.GetFileOptions{Ref: gitlab.String("foo")}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, "README.md", &gitlab.GetFileOptions{Ref: gitlab.String("foo")}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get 'README.md' file from project: %w", err)
 						}
@@ -839,10 +844,10 @@ func TestAccGitlabProject_CreateProjectInUserNamespace(t *testing.T) {
 	var project gitlab.Project
 	rInt := acctest.RandInt()
 
-	user := testAccCreateUsers(t, 1)[0]
+	user := testutil.CreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccRequiresAtLeast(t, "14.10") },
+		PreCheck:                 func() { testutil.RunIfAtLeast(t, "14.10") },
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
@@ -879,17 +884,17 @@ func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				PreConfig: func() {
-					settings, _, err := testGitlabClient.Settings.GetSettings()
+					settings, _, err := testutil.TestGitlabClient.Settings.GetSettings()
 					if err != nil {
 						t.Fatalf("failed to get settings: %v", err)
 					}
 					t.Cleanup(func() {
-						if _, _, err := testGitlabClient.Settings.UpdateSettings(&gitlab.UpdateSettingsOptions{DefaultBranchProtection: gitlab.Int(settings.DefaultBranchProtection)}); err != nil {
+						if _, _, err := testutil.TestGitlabClient.Settings.UpdateSettings(&gitlab.UpdateSettingsOptions{DefaultBranchProtection: gitlab.Int(settings.DefaultBranchProtection)}); err != nil {
 							t.Fatalf("failed to update instance-wide default branch protection setting to default: %v", err)
 						}
 					})
 
-					if _, _, err := testGitlabClient.Settings.UpdateSettings(&gitlab.UpdateSettingsOptions{DefaultBranchProtection: gitlab.Int(0)}); err != nil {
+					if _, _, err := testutil.TestGitlabClient.Settings.UpdateSettings(&gitlab.UpdateSettingsOptions{DefaultBranchProtection: gitlab.Int(0)}); err != nil {
 						t.Fatalf("failed to update instance-wide default branch protection setting: %v", err)
 					}
 				},
@@ -1066,7 +1071,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	// Create a base project for importing.
-	baseProject, _, err := testGitlabClient.Projects.CreateProject(&gitlab.CreateProjectOptions{
+	baseProject, _, err := testutil.TestGitlabClient.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		Name:       gitlab.String(fmt.Sprintf("base-%d", rInt)),
 		Visibility: gitlab.Visibility(gitlab.PublicVisibility),
 	})
@@ -1074,10 +1079,10 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 		t.Fatalf("failed to create base project: %v", err)
 	}
 
-	defer testGitlabClient.Projects.DeleteProject(baseProject.ID) // nolint // TODO: Resolve this golangci-lint issue: Error return value of `testGitlabClient.Projects.DeleteProject` is not checked (errcheck)
+	defer testutil.TestGitlabClient.Projects.DeleteProject(baseProject.ID) // nolint // TODO: Resolve this golangci-lint issue: Error return value of `TestGitlabClient.Projects.DeleteProject` is not checked (errcheck)
 
 	// Add a file to the base project, for later verifying the import.
-	_, _, err = testGitlabClient.RepositoryFiles.CreateFile(baseProject.ID, "foo.txt", &gitlab.CreateFileOptions{
+	_, _, err = testutil.TestGitlabClient.RepositoryFiles.CreateFile(baseProject.ID, "foo.txt", &gitlab.CreateFileOptions{
 		Branch:        gitlab.String("main"),
 		CommitMessage: gitlab.String("add file"),
 		Content:       gitlab.String(""),
@@ -1093,7 +1098,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 			{
 				// First, import, as mirrored
 				Config:   testAccGitlabProjectConfigImportURLMirror(rInt, baseProject.HTTPURLToRepo),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.imported", &mirror),
 					resource.TestCheckResourceAttr("gitlab_project.imported", "import_url", baseProject.HTTPURLToRepo),
@@ -1107,7 +1112,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.imported"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get file from imported project: %w", err)
 						}
@@ -1119,7 +1124,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 			{
 				// Second, disable all optional mirroring options
 				Config:   testAccGitlabProjectConfigImportURLMirrorDisabledOptionals(rInt, baseProject.HTTPURLToRepo),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.imported", &mirror),
 					resource.TestCheckResourceAttr("gitlab_project.imported", "import_url", baseProject.HTTPURLToRepo),
@@ -1134,7 +1139,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.imported"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get file from imported project: %w", err)
 						}
@@ -1146,7 +1151,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 			{
 				// Third, disable mirroring, using the original ImportURL acceptance test
 				Config:   testAccGitlabProjectConfigImportURLMirrorDisabled(rInt, baseProject.HTTPURLToRepo),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.imported", &mirror),
 					resource.TestCheckResourceAttr("gitlab_project.imported", "import_url", baseProject.HTTPURLToRepo),
@@ -1161,7 +1166,7 @@ func TestAccGitlabProject_ImportURLMirrored(t *testing.T) {
 					func(state *terraform.State) error {
 						projectID := state.RootModule().Resources["gitlab_project.imported"].Primary.ID
 
-						_, _, err := testGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
+						_, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(projectID, "foo.txt", &gitlab.GetFileOptions{Ref: gitlab.String("main")}, nil)
 						if err != nil {
 							return fmt.Errorf("failed to get file from imported project: %w", err)
 						}
@@ -1183,7 +1188,7 @@ func TestAccGitlabProject_templateMutualExclusiveNameAndID(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccCheckMutualExclusiveNameAndID(rInt),
-				SkipFunc:    isRunningInCE,
+				SkipFunc:    testutil.IsRunningInCE,
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`"template_project_id": conflicts with template_name`)),
 			},
 		},
@@ -1324,7 +1329,7 @@ func TestAccGitlabProject_DeprecatedBuildCoverageRegex(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isGitLabVersionAtLeast(context.Background(), testGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "this" {
 						name = "foo-%d"
@@ -1337,7 +1342,7 @@ func TestAccGitlabProject_DeprecatedBuildCoverageRegex(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:          isGitLabVersionAtLeast(context.Background(), testGitlabClient, "15.0"),
+				SkipFunc:          client.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "15.0"),
 				ResourceName:      "gitlab_project.this",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1402,8 +1407,8 @@ func TestAccGitlabProject_PublicBuilds(t *testing.T) {
 
 func TestAccGitlabProject_ForkProject(t *testing.T) {
 	// Create project to fork
-	testProjectToFork := testAccCreateProject(t)
-	testProjectToFork2 := testAccCreateProject(t)
+	testProjectToFork := testutil.CreateProject(t)
+	testProjectToFork2 := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -1566,7 +1571,7 @@ func testAccCheckGitlabProjectExists(n string, project *gitlab.Project) resource
 		if repoName == "" {
 			return fmt.Errorf("No project ID is set")
 		}
-		if g, _, err := testGitlabClient.Projects.GetProject(repoName, nil); err == nil {
+		if g, _, err := testutil.TestGitlabClient.Projects.GetProject(repoName, nil); err == nil {
 			*project = *g
 		}
 		return err
@@ -1578,7 +1583,7 @@ func testAccCheckGitlabProjectDestroy(s *terraform.State) error {
 		if rs.Type != "gitlab_project" {
 			continue
 		}
-		gotRepo, resp, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, resp, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err == nil {
 			if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 				if gotRepo.MarkedForDeletionAt == nil {
@@ -1600,7 +1605,7 @@ func testAccCheckGitlabProjectArchivedOnDestroy(s *terraform.State) error {
 			continue
 		}
 
-		gotRepo, _, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, _, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err != nil {
 			return fmt.Errorf("unable to get project %s, to check if it has been archived on the destroy", rs.Primary.ID)
 		}
@@ -1634,11 +1639,11 @@ func testAccCheckAggregateGitlabProject(expected, received *gitlab.Project) reso
 				}
 			}
 
-			if err := resourceGitlabProjectSetToState(context.Background(), testGitlabClient, expectedData, expected); err != nil {
+			if err := resourceGitlabProjectSetToState(context.Background(), testutil.TestGitlabClient, expectedData, expected); err != nil {
 				return err
 			}
 
-			if err := resourceGitlabProjectSetToState(context.Background(), testGitlabClient, receivedData, received); err != nil {
+			if err := resourceGitlabProjectSetToState(context.Background(), testutil.TestGitlabClient, receivedData, received); err != nil {
 				return err
 			}
 
@@ -1653,13 +1658,32 @@ func testAccCheckAggregateGitlabProject(expected, received *gitlab.Project) reso
 	return resource.ComposeAggregateTestCheckFunc(checks...)
 }
 
+// testAccCompareGitLabAttribute compares an attribute in two ResourceData's for
+// equivalency.
+func testAccCompareGitLabAttribute(attr string, expected, received *schema.ResourceData) error {
+	e := expected.Get(attr)
+	r := received.Get(attr)
+	switch e.(type) { // nolint // TODO: Resolve this golangci-lint issue: S1034: assigning the result of this type assertion to a variable (switch e := e.(type)) could eliminate type assertions in switch cases (gosimple)
+	case *schema.Set:
+		if !e.(*schema.Set).Equal(r) { // nolint // TODO: Resolve this golangci-lint issue: S1034(related information): could eliminate this type assertion (gosimple)
+			return fmt.Errorf(`attribute set %s expected "%+v" received "%+v"`, attr, e, r)
+		}
+	default:
+		// Stringify to check because of type differences
+		if fmt.Sprintf("%v", e) != fmt.Sprintf("%v", r) {
+			return fmt.Errorf(`attribute %s expected "%+v" received "%+v"`, attr, e, r)
+		}
+	}
+	return nil
+}
+
 func testAccCheckGitlabProjectDefaultBranch(project *gitlab.Project, want *testAccGitlabProjectExpectedAttributes) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if want != nil && project.DefaultBranch != want.DefaultBranch {
 			return fmt.Errorf("got default branch %q; want %q", project.DefaultBranch, want.DefaultBranch)
 		}
 
-		branches, _, err := testGitlabClient.Branches.ListBranches(project.ID, nil)
+		branches, _, err := testutil.TestGitlabClient.Branches.ListBranches(project.ID, nil)
 		if err != nil {
 			return fmt.Errorf("failed to list branches: %w", err)
 		}
@@ -1680,7 +1704,7 @@ func testAccCheckGitlabProjectPushRules(name string, wantPushRules *gitlab.Proje
 	return func(state *terraform.State) error {
 		projectResource := state.RootModule().Resources[name].Primary
 
-		gotPushRules, _, err := testGitlabClient.Projects.GetProjectPushRules(projectResource.ID, nil)
+		gotPushRules, _, err := testutil.TestGitlabClient.Projects.GetProjectPushRules(projectResource.ID, nil)
 		if err != nil {
 			return err
 		}
@@ -1949,7 +1973,7 @@ func testAccGitlabProjectConfigDefaultBranchSkipFunc(project *gitlab.Project, de
 			Actions:       commitActions,
 		}
 
-		_, _, err := testGitlabClient.Commits.CreateCommit(project.ID, options)
+		_, _, err := testutil.TestGitlabClient.Commits.CreateCommit(project.ID, options)
 
 		return false, err
 	}
@@ -2431,11 +2455,11 @@ func testProjectDefaults(rInt int) gitlab.Project {
 
 func testAccGitLabProjectCreateTemplateProject(t *testing.T, templateFileName string) *gitlab.Project {
 	// Create template project in template group called `terraform` (created in `healthcheck-and-setup.sh`).
-	templateGroup, _, err := testGitlabClient.Groups.GetGroup("terraform", nil)
+	templateGroup, _, err := testutil.TestGitlabClient.Groups.GetGroup("terraform", nil)
 	if err != nil {
 		t.Fatalf("Unable to find template group `terraform` - must be a bug when creating it in `scripts/healthcheck-and-setup.sh`: %+v", err)
 	}
-	templateProject := testAccCreateProjectWithNamespace(t, templateGroup.ID)
-	testAccCreateProjectFile(t, templateProject.ID, "meow", templateFileName, templateProject.DefaultBranch)
+	templateProject := testutil.CreateProjectWithNamespace(t, templateGroup.ID)
+	testutil.CreateProjectFile(t, templateProject.ID, "meow", templateFileName, templateProject.DefaultBranch)
 	return templateProject
 }

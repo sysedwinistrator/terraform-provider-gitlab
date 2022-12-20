@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 /* Keys are generated via:
@@ -28,7 +30,7 @@ Passphrase: ''
 $ gpg --batch --gen-key gen-key-script
 */
 
-var testEd25519GPGPubKey string = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+var testEd25519GPGPubKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mDMEYtzLgRYJKwYBBAHaRw8BAQdArtnkLgGRJyUI0QiBidLC6tZ++xAQ0ofQ0sxR
 +lZbIsO0IFRlcnJhZm9ybSA8dGVycmFmb3JtQGdpdGxhYi5jb20+iJAEExYIADgW
@@ -43,7 +45,7 @@ RLwa75kqGYGYS6cpY/ZSaqi19342XjiJD+NtAQDq+XWq7qVf1DZ6VPBpsZJfQ/ws
 1piPsvmKI/2koOa1wQD/ebxTge120L4AVDMpGhDjpqt+B4qN4SiEKynbSJcWiAg=
 =q0aF
 -----END PGP PUBLIC KEY BLOCK-----`
-var updatedEd25519GPGPubKey string = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+var updatedEd25519GPGPubKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mDMEYtzQ6RYJKwYBBAHaRw8BAQdASvO1H8QsiJSN+qmEmBwtgeNi61lXzCmCfUF3
 /5e1qgC0IFRlcnJhZm9ybSA8dGVycmFmb3JtQGdpdGxhYi5jb20+iJAEExYIADgW
@@ -58,7 +60,7 @@ Mph4TYEBAPSRfGNlQESyYfUmqV795iFkIgCM5nVzqHHfw0mcH50EAP4qZK9Iobvs
 dZcWp5qRyFu5zodW2gEAgw7OxfYmlQbz7wwKr3IYnY9MyVp+JwSxyAxZ4X+odAM=
 =XSo3
 -----END PGP PUBLIC KEY BLOCK-----`
-var testEd25519GPGPubKeyForCurrentUser string = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+var testEd25519GPGPubKeyForCurrentUser = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mDMEYtzl7hYJKwYBBAHaRw8BAQdAF8RE2x2wE3w/QJAbB8uVv+9HqYQZJGyNZeLt
 eKyyh2i0IFRlcnJhZm9ybSA8dGVycmFmb3JtQGdpdGxhYi5jb20+iJAEExYIADgW
@@ -73,7 +75,7 @@ GcNNwjo6hAu59BiCvU5+W2of9fpSxBM5CJQ4AQDjyZwDcf6kMu5+bYY9aNcz9skX
 BEMqhn2i2EtNNfH6eAEA1m21vnE8pseBCYHtl9/XJGkB5JH0gUqqRrCf5CAqsgk=
 =/bV6
 -----END PGP PUBLIC KEY BLOCK-----`
-var testEd25519GPGPubKeyWithTrailingNewline string = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+var testEd25519GPGPubKeyWithTrailingNewline = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mDMEYtzSYhYJKwYBBAHaRw8BAQdAaSePzlrqUWT/hBRqO/oIdfBPh5m57cPwpmjL
 dgUJGcW0IFRlcnJhZm9ybSA8dGVycmFmb3JtQGdpdGxhYi5jb20+iJAEExYIADgW
@@ -91,7 +93,7 @@ ubvgn0HwJkdP6VIUKwEArIF90cFLtKmephxMlwp7h+djEWpVIQ/T31pLYSAH4QA=
 `
 
 func TestAccGitlabUserGPGKey_basic(t *testing.T) {
-	testUser := testAccCreateUsers(t, 1)[0]
+	testUser := testutil.CreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -137,7 +139,7 @@ func TestAccGitlabUserGPGKey_basic(t *testing.T) {
 }
 
 func TestAccGitlabUserGPGKey_currentuser(t *testing.T) {
-	testUser := testAccCreateUsers(t, 1)[0]
+	testUser := testutil.CreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -194,7 +196,7 @@ func TestAccGitlabUserGPGKey_currentuser(t *testing.T) {
 }
 
 func TestAccGitlabUserGPGKey_ignoreTrailingWhitespaces(t *testing.T) {
-	testUser := testAccCreateUsers(t, 1)[0]
+	testUser := testutil.CreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -246,9 +248,9 @@ func testAccCheckGitlabUserGPGKeyDestroy(s *terraform.State) error {
 
 		var key *gitlab.GPGKey
 		if userID != 0 {
-			key, _, err = testGitlabClient.Users.GetGPGKeyForUser(userID, keyID)
+			key, _, err = testutil.TestGitlabClient.Users.GetGPGKeyForUser(userID, keyID)
 		} else {
-			key, _, err = testGitlabClient.Users.GetGPGKey(keyID)
+			key, _, err = testutil.TestGitlabClient.Users.GetGPGKey(keyID)
 		}
 		if err != nil && !is404(err) {
 			return err

@@ -5,17 +5,20 @@ package sdk
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceGitlabUsers_basic(t *testing.T) {
 	rInt := acctest.RandInt()
-	testAccCreateUsersWithPrefix(t, 12, fmt.Sprintf("ds-%d-acctest-a-", rInt))
-	testUsersGroupB := testAccCreateUsersWithPrefix(t, 12, fmt.Sprintf("ds-%d-acctest-b-", rInt))
+	testutil.CreateUsersWithPrefix(t, 12, fmt.Sprintf("ds-%d-acctest-a-", rInt))
+	testUsersGroupB := testutil.CreateUsersWithPrefix(t, 12, fmt.Sprintf("ds-%d-acctest-b-", rInt))
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

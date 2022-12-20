@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes"
 	"golang.org/x/tools/go/analysis"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes"
 )
 
 const goGitLabPackagePath = "github.com/xanzy/go-gitlab"

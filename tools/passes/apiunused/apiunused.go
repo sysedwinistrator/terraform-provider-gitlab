@@ -6,10 +6,11 @@ import (
 	"os"
 	"reflect"
 
+	"golang.org/x/tools/go/analysis"
+
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes/gogitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes/usage"
-	"golang.org/x/tools/go/analysis"
 )
 
 var Output io.Writer = io.Discard

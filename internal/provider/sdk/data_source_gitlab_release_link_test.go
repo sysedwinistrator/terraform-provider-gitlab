@@ -8,12 +8,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabReleaseLink_basic(t *testing.T) {
 
-	project := testAccCreateProject(t)
-	releases := testAccCreateReleases(t, project, 2)
+	project := testutil.CreateProject(t)
+	releases := testutil.CreateReleases(t, project, 2)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

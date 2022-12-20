@@ -9,14 +9,16 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServiceGithub_basic(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	var githubService gitlab.GithubService
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -113,7 +115,7 @@ func testAccCheckGitlabServiceGithubExists(n string, service *gitlab.GithubServi
 		if project == "" {
 			return fmt.Errorf("No project ID is set")
 		}
-		githubService, _, err := testGitlabClient.Services.GetGithubService(project)
+		githubService, _, err := testutil.TestGitlabClient.Services.GetGithubService(project)
 		if err != nil {
 			return fmt.Errorf("Github service does not exist in project %s: %v", project, err)
 		}
@@ -129,7 +131,7 @@ func testAccCheckGitlabServiceGithubDestroy(s *terraform.State) error {
 			continue
 		}
 
-		gotRepo, _, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, _, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err == nil {
 			if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 				if gotRepo.MarkedForDeletionAt == nil {

@@ -11,12 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabClusterAgent_basic(t *testing.T) {
-	testAccRequiresAtLeast(t, "14.10")
+	testutil.RunIfAtLeast(t, "14.10")
 
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 	var sutClusterAgent gitlab.Agent
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -121,7 +123,7 @@ func testAccResourceGitlabClusterAgentGet(resourceName string, clusterAgent *git
 			return err
 		}
 
-		subject, _, err := testGitlabClient.ClusterAgents.GetAgent(project, agentID)
+		subject, _, err := testutil.TestGitlabClient.ClusterAgents.GetAgent(project, agentID)
 		if err != nil {
 			return err
 		}
@@ -142,7 +144,7 @@ func testAccCheckGitlabClusterAgentDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subject, _, err := testGitlabClient.ClusterAgents.GetAgent(project, agentID)
+		subject, _, err := testutil.TestGitlabClient.ClusterAgents.GetAgent(project, agentID)
 		if err == nil && subject != nil {
 			return fmt.Errorf("gitlab_cluster_agent resource '%s' still exists", rs.Primary.ID)
 		}

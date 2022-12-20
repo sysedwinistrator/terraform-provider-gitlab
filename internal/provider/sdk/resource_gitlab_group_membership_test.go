@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupMembership_basic(t *testing.T) {
@@ -52,9 +54,9 @@ func TestAccGitlabGroupMembership_basic(t *testing.T) {
 }
 
 func TestAccGitlabGroupMembership_skipRemoveFromSubgroup(t *testing.T) {
-	testUser := testAccCreateUsers(t, 1)[0]
-	testGroup := testAccCreateGroups(t, 1)[0]
-	testSubgroup := testAccCreateSubGroups(t, testGroup, 1)[0]
+	testUser := testutil.CreateUsers(t, 1)[0]
+	testGroup := testutil.CreateGroups(t, 1)[0]
+	testSubgroup := testutil.CreateSubGroups(t, testGroup, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -110,7 +112,7 @@ func testAccCheckGitlabGroupMembershipExists(n string, membership *gitlab.GroupM
 			return fmt.Errorf("No user userId is set")
 		}
 
-		gotGroupMembership, _, err := testGitlabClient.GroupMembers.GetGroupMember(groupId, userId)
+		gotGroupMembership, _, err := testutil.TestGitlabClient.GroupMembers.GetGroupMember(groupId, userId)
 		if err != nil {
 			return err
 		}
@@ -150,7 +152,7 @@ func testAccCheckGitlabGroupMembershipDestroy(s *terraform.State) error {
 
 		// GetGroupMember needs int type for userIdString
 		userId, err := strconv.Atoi(userIdString) // nolint // TODO: Resolve this golangci-lint issue: ineffectual assignment to err (ineffassign)
-		groupMember, _, err := testGitlabClient.GroupMembers.GetGroupMember(groupId, userId)
+		groupMember, _, err := testutil.TestGitlabClient.GroupMembers.GetGroupMember(groupId, userId)
 		if err != nil {
 			if groupMember != nil && fmt.Sprintf("%d", groupMember.AccessLevel) == rs.Primary.Attributes["access_level"] {
 				return fmt.Errorf("Group still has member.")

@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupBadge_basic(t *testing.T) {
@@ -73,7 +75,7 @@ func testAccCheckGitlabGroupBadgeExists(n string, badge *gitlab.GroupBadge) reso
 			return fmt.Errorf("No group ID is set")
 		}
 
-		gotBadge, _, err := testGitlabClient.GroupBadges.GetGroupBadge(groupID, badgeID)
+		gotBadge, _, err := testutil.TestGitlabClient.GroupBadges.GetGroupBadge(groupID, badgeID)
 		if err != nil {
 			return err
 		}
@@ -107,7 +109,7 @@ func testAccCheckGitlabGroupBadgeDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, resp, err := testGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
+		group, resp, err := testutil.TestGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
 		if err == nil {
 			if group != nil && fmt.Sprintf("%d", group.ID) == rs.Primary.ID {
 				if group.MarkedForDeletionOn == nil {

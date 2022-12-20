@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
@@ -122,7 +124,7 @@ func testAccCheckGitlabPipelineScheduleExists(n string, schedule *gitlab.Pipelin
 			return fmt.Errorf("No project ID is set")
 		}
 
-		schedules, _, err := testGitlabClient.PipelineSchedules.ListPipelineSchedules(repoName, nil)
+		schedules, _, err := testutil.TestGitlabClient.PipelineSchedules.ListPipelineSchedules(repoName, nil)
 		if err != nil {
 			return err
 		}
@@ -180,7 +182,7 @@ func testAccCheckGitlabPipelineScheduleDestroy(s *terraform.State) error {
 			return fmt.Errorf("could not convert pipeline schedule id to integer: %s", err)
 		}
 
-		gotPS, _, err := testGitlabClient.PipelineSchedules.GetPipelineSchedule(rs.Primary.Attributes["project"], id)
+		gotPS, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(rs.Primary.Attributes["project"], id)
 		if err == nil {
 			if gotPS != nil && fmt.Sprintf("%d", gotPS.ID) == rs.Primary.ID {
 				return fmt.Errorf("pipeline schedule still exists")

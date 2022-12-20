@@ -10,11 +10,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	var emailsOnPushService gitlab.EmailsOnPushService
 
@@ -117,7 +119,7 @@ func testAccCheckGitlabServiceEmailsOnPushExists(resourceIdentifier string, serv
 			return fmt.Errorf("No project ID is set")
 		}
 
-		emailsOnPushService, _, err := testGitlabClient.Services.GetEmailsOnPushService(project)
+		emailsOnPushService, _, err := testutil.TestGitlabClient.Services.GetEmailsOnPushService(project)
 		if err != nil {
 			return fmt.Errorf("Emails on Push service does not exist in project %s: %v", project, err)
 		}
@@ -134,7 +136,7 @@ func testAccCheckGitlabServiceEmailsOnPushDestroy(s *terraform.State) error {
 		if rs.Type == "gitlab_service_emails_on_push" {
 			project = rs.Primary.ID
 
-			emailsOnPushService, _, err := testGitlabClient.Services.GetEmailsOnPushService(project)
+			emailsOnPushService, _, err := testutil.TestGitlabClient.Services.GetEmailsOnPushService(project)
 			if err == nil {
 				if emailsOnPushService != nil && emailsOnPushService.Active != false {
 					return fmt.Errorf("[ERROR] Emails on Push Service %v still exists", project)

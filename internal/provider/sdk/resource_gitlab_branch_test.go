@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabBranch_basic(t *testing.T) {
@@ -19,7 +21,7 @@ func TestAccGitlabBranch_basic(t *testing.T) {
 	var branch2 gitlab.Branch
 	rInt := acctest.RandInt()
 	rInt2 := acctest.RandInt()
-	project := testAccCreateProject(t)
+	project := testutil.CreateProject(t)
 	fooBranchName := fmt.Sprintf("testbranch-%d", rInt)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -106,7 +108,7 @@ func testAccCheckGitlabBranchDestroy(s *terraform.State) error {
 		}
 		name := rs.Primary.Attributes["name"]
 		project := rs.Primary.Attributes["project"]
-		_, _, err := testGitlabClient.Branches.GetBranch(project, name)
+		_, _, err := testutil.TestGitlabClient.Branches.GetBranch(project, name)
 		if err != nil {
 			if is404(err) {
 				return nil
@@ -161,7 +163,7 @@ func testAccCheckGitlabBranchExists(n string, branch *gitlab.Branch, rInt int) r
 		if err != nil {
 			return fmt.Errorf("Error in splitting project and branch IDs")
 		}
-		gotBranch, _, err := testGitlabClient.Branches.GetBranch(pid, name)
+		gotBranch, _, err := testutil.TestGitlabClient.Branches.GetBranch(pid, name)
 		if err != nil {
 			return err
 		}

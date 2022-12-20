@@ -15,6 +15,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabTopic_basic(t *testing.T) {
@@ -137,10 +141,10 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				Config: testAccGitlabTopicFullConfig(t, rInt),
 				PreConfig: func() {
 					// overwrite the avatar image file
-					if err := copyFile("testdata/gitlab_topic/avatar.png", "testdata/gitlab_topic/avatar.png.bak"); err != nil {
+					if err := testutil.CopyFile("testdata/gitlab_topic/avatar.png", "testdata/gitlab_topic/avatar.png.bak"); err != nil {
 						t.Fatalf("failed to backup the avatar image file: %v", err)
 					}
-					if err := copyFile("testdata/gitlab_topic/avatar-update.png", "testdata/gitlab_topic/avatar.png"); err != nil {
+					if err := testutil.CopyFile("testdata/gitlab_topic/avatar-update.png", "testdata/gitlab_topic/avatar.png"); err != nil {
 						t.Fatalf("failed to overwrite the avatar image file: %v", err)
 					}
 					t.Cleanup(func() {
@@ -266,7 +270,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isGitLabVersionAtLeast(context.TODO(), testGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -276,7 +280,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is not supported by your version of GitLab. At least GitLab 15.0 is required`),
 			},
 			{
-				SkipFunc: isGitLabVersionLessThan(context.TODO(), testGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -285,7 +289,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is a required attribute for GitLab 15.0 and newer. Please specify it in the configuration.`),
 			},
 			{
-				SkipFunc: isGitLabVersionLessThan(context.TODO(), testGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -317,7 +321,7 @@ func testAccCheckGitlabTopicExists(n string, assign *gitlab.Topic) resource.Test
 			return err
 		}
 
-		topic, _, err := testGitlabClient.Topics.GetTopic(id)
+		topic, _, err := testutil.TestGitlabClient.Topics.GetTopic(id)
 		*assign = *topic
 
 		return err
@@ -362,7 +366,7 @@ func testAccCheckGitlabTopicDestroy(s *terraform.State) (err error) {
 			return err
 		}
 
-		topic, _, err := testGitlabClient.Topics.GetTopic(id)
+		topic, _, err := testutil.TestGitlabClient.Topics.GetTopic(id)
 		if err == nil {
 			if topic != nil && fmt.Sprintf("%d", topic.ID) == rs.Primary.ID {
 				return fmt.Errorf("topic %s still exists", rs.Primary.ID)
@@ -394,7 +398,7 @@ func testAccCheckGitlabTopicSoftDestroy(s *terraform.State) (err error) {
 			return err
 		}
 
-		topic, _, err := testGitlabClient.Topics.GetTopic(id)
+		topic, _, err := testutil.TestGitlabClient.Topics.GetTopic(id)
 		if err == nil {
 			if topic != nil && fmt.Sprintf("%d", topic.ID) == rs.Primary.ID {
 				if topic.Description != "" {
@@ -413,7 +417,7 @@ func testAccCheckGitlabTopicSoftDestroy(s *terraform.State) (err error) {
 
 func testAccGitlabTopicRequiredConfig(t *testing.T, rInt int) string {
 	var titleConfig string
-	if testAccIsRunningAtLeast(t, "15.0") {
+	if testutil.IsRunningAtLeast(t, "15.0") {
 		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
 	}
 
@@ -426,7 +430,7 @@ resource "gitlab_topic" "foo" {
 
 func testAccGitlabTopicFullConfig(t *testing.T, rInt int) string {
 	var titleConfig string
-	if testAccIsRunningAtLeast(t, "15.0") {
+	if testutil.IsRunningAtLeast(t, "15.0") {
 		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
 	}
 	return fmt.Sprintf(`
@@ -441,7 +445,7 @@ resource "gitlab_topic" "foo" {
 
 func testAccGitlabTopicFullUpdatedAvatarConfig(t *testing.T, rInt int) string {
 	var titleConfig string
-	if testAccIsRunningAtLeast(t, "15.0") {
+	if testutil.IsRunningAtLeast(t, "15.0") {
 		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
 	}
 	return fmt.Sprintf(`
@@ -456,7 +460,7 @@ resource "gitlab_topic" "foo" {
 
 func testAccGitlabTopicAvatarWithoutHashConfig(t *testing.T, rInt int) string {
 	var titleConfig string
-	if testAccIsRunningAtLeast(t, "15.0") {
+	if testutil.IsRunningAtLeast(t, "15.0") {
 		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
 	}
 	return fmt.Sprintf(`
@@ -469,7 +473,7 @@ resource "gitlab_topic" "foo" {
 
 func testAccGitlabTopicSoftDestroyConfig(t *testing.T, rInt int) string {
 	var titleConfig string
-	if testAccIsRunningAtLeast(t, "15.0") {
+	if testutil.IsRunningAtLeast(t, "15.0") {
 		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
 	}
 	return fmt.Sprintf(`

@@ -9,10 +9,12 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectBadge_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -75,7 +77,7 @@ func testAccCheckGitlabProjectBadgeDestroy(s *terraform.State) error {
 			return err
 		}
 
-		gotBadge, _, err := testGitlabClient.ProjectBadges.GetProjectBadge(projectID, badgeID)
+		gotBadge, _, err := testutil.TestGitlabClient.ProjectBadges.GetProjectBadge(projectID, badgeID)
 		if err != nil {
 			if !is404(err) {
 				return err
