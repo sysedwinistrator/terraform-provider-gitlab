@@ -10,30 +10,32 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
 )
 
 func TestAccGitLabProjectApprovalRule_Basic(t *testing.T) {
 	// Set up project, groups, users, and branches to use in the test.
 
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	// Need to get the current user (usually the admin) because they are automatically added as group members, and we
 	// will need the user ID for our assertions later.
-	currentUser := testAccCurrentUser(t)
+	currentUser := testutil.GetCurrentUser(t)
 
-	project := testAccCreateProject(t)
-	projectUsers := testAccCreateUsers(t, 2)
-	branches := testAccCreateProtectedBranches(t, project, 2)
-	groups := testAccCreateGroups(t, 2)
-	group0Users := testAccCreateUsers(t, 1)
-	group1Users := testAccCreateUsers(t, 1)
+	project := testutil.CreateProject(t)
+	projectUsers := testutil.CreateUsers(t, 2)
+	branches := testutil.CreateProtectedBranches(t, project, 2)
+	groups := testutil.CreateGroups(t, 2)
+	group0Users := testutil.CreateUsers(t, 1)
+	group1Users := testutil.CreateUsers(t, 1)
 
-	testAccAddProjectMembers(t, project.ID, projectUsers) // Users must belong to the project for rules to work.
-	testAccAddGroupMembers(t, groups[0].ID, group0Users)
-	testAccAddGroupMembers(t, groups[1].ID, group1Users)
+	testutil.AddProjectMembers(t, project.ID, projectUsers) // Users must belong to the project for rules to work.
+	testutil.AddGroupMembers(t, groups[0].ID, group0Users)
+	testutil.AddGroupMembers(t, groups[1].ID, group1Users)
 
 	// Terraform test starts here.
 
@@ -84,9 +86,9 @@ func TestAccGitLabProjectApprovalRule_Basic(t *testing.T) {
 func TestAccGitLabProjectApprovalRule_AnyApprover(t *testing.T) {
 	// Set up project, groups, users, and branches to use in the test.
 
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
-	project := testAccCreateProject(t)
+	project := testutil.CreateProject(t)
 
 	// Terraform test starts here.
 
@@ -232,7 +234,7 @@ func testAccCheckGitlabProjectApprovalRuleExists(n string, projectApprovalRule *
 			return err
 		}
 
-		rules, _, err := testGitlabClient.Projects.GetProjectApprovalRules(projectID)
+		rules, _, err := testutil.TestGitlabClient.Projects.GetProjectApprovalRules(projectID)
 		if err != nil {
 			return err
 		}
@@ -251,7 +253,7 @@ func testAccCheckGitlabProjectApprovalRuleExists(n string, projectApprovalRule *
 func testAccCheckGitlabProjectApprovalRuleDestroy(pid interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		return InterceptGomegaFailure(func() {
-			rules, _, err := testGitlabClient.Projects.GetProjectApprovalRules(pid)
+			rules, _, err := testutil.TestGitlabClient.Projects.GetProjectApprovalRules(pid)
 			Expect(err).To(BeNil())
 			Expect(rules).To(BeEmpty())
 		})

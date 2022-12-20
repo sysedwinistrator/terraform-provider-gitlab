@@ -9,11 +9,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataGitlabProjectBranches_search(t *testing.T) {
-	testProject := testAccCreateProject(t)
-	testBranches := testAccCreateBranches(t, testProject, 25)
+	testProject := testutil.CreateProject(t)
+	testBranches := testutil.CreateBranches(t, testProject, 25)
 	expectedBranches := len(testBranches) + 1 //main branch already exists
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -45,7 +47,7 @@ func TestAccDataGitlabProjectBranches_search(t *testing.T) {
 // This tests is testing that the update from https://github.com/mitchellh/hashstructure -> V2 maintains the ID properly
 // and doesn't result in a breaking change.
 func TestAccDataGitlabProjectBranches_UpdateHashStruct(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	// We want to use the same config on old and new version
 	commonConfig := fmt.Sprintf(`

@@ -13,11 +13,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectMirror_basic(t *testing.T) {
-	ctx := testAccGitlabProjectStart(t)
-	var miror gitlab.ProjectMirror
+	testProject := testutil.CreateProject(t)
+	var mirror gitlab.ProjectMirror
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -25,10 +27,10 @@ func TestAccGitlabProjectMirror_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create with default options
 			{
-				Config: testAccGitlabProjectMirrorConfig(ctx.project.PathWithNamespace),
+				Config: testAccGitlabProjectMirrorConfig(testProject.PathWithNamespace),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabProjectMirrorExists("gitlab_project_mirror.foo", &miror),
-					testAccCheckGitlabProjectMirrorAttributes(&miror, &testAccGitlabProjectMirrorExpectedAttributes{
+					testAccCheckGitlabProjectMirrorExists("gitlab_project_mirror.foo", &mirror),
+					testAccCheckGitlabProjectMirrorAttributes(&mirror, &testAccGitlabProjectMirrorExpectedAttributes{
 						URL:                   "https://example.com/mirror",
 						Enabled:               true,
 						OnlyProtectedBranches: true,
@@ -38,10 +40,10 @@ func TestAccGitlabProjectMirror_basic(t *testing.T) {
 			},
 			// Update to toggle all the values to their inverse
 			{
-				Config: testAccGitlabProjectMirrorUpdateConfig(ctx.project.PathWithNamespace),
+				Config: testAccGitlabProjectMirrorUpdateConfig(testProject.PathWithNamespace),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabProjectMirrorExists("gitlab_project_mirror.foo", &miror),
-					testAccCheckGitlabProjectMirrorAttributes(&miror, &testAccGitlabProjectMirrorExpectedAttributes{
+					testAccCheckGitlabProjectMirrorExists("gitlab_project_mirror.foo", &mirror),
+					testAccCheckGitlabProjectMirrorAttributes(&mirror, &testAccGitlabProjectMirrorExpectedAttributes{
 						URL:                   "https://example.com/mirror",
 						Enabled:               false,
 						OnlyProtectedBranches: false,
@@ -51,10 +53,10 @@ func TestAccGitlabProjectMirror_basic(t *testing.T) {
 			},
 			// Update to toggle the options back
 			{
-				Config: testAccGitlabProjectMirrorConfig(ctx.project.PathWithNamespace),
+				Config: testAccGitlabProjectMirrorConfig(testProject.PathWithNamespace),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabProjectMirrorExists("gitlab_project_mirror.foo", &miror),
-					testAccCheckGitlabProjectMirrorAttributes(&miror, &testAccGitlabProjectMirrorExpectedAttributes{
+					testAccCheckGitlabProjectMirrorExists("gitlab_project_mirror.foo", &mirror),
+					testAccCheckGitlabProjectMirrorAttributes(&mirror, &testAccGitlabProjectMirrorExpectedAttributes{
 						URL:                   "https://example.com/mirror",
 						Enabled:               true,
 						OnlyProtectedBranches: true,
@@ -73,7 +75,7 @@ func TestAccGitlabProjectMirror_basic(t *testing.T) {
 }
 
 func TestAccGitlabProjectMirror_withPassword(t *testing.T) {
-	ctx := testAccGitlabProjectStart(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -81,7 +83,7 @@ func TestAccGitlabProjectMirror_withPassword(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create a project and mirror with a username / password.
 			{
-				Config: testAccGitlabProjectMirrorConfigWithPassword(ctx.project.PathWithNamespace),
+				Config: testAccGitlabProjectMirrorConfigWithPassword(testProject.PathWithNamespace),
 			},
 		},
 	})
@@ -105,7 +107,7 @@ func testAccCheckGitlabProjectMirrorExists(n string, mirror *gitlab.ProjectMirro
 			return fmt.Errorf("No project ID is set")
 		}
 
-		mirrors, _, err := testGitlabClient.ProjectMirrors.ListProjectMirror(repoName, nil)
+		mirrors, _, err := testutil.TestGitlabClient.ProjectMirrors.ListProjectMirror(repoName, nil)
 		if err != nil {
 			return err
 		}
@@ -161,7 +163,7 @@ func testAccCheckGitlabProjectMirrorDestroy(s *terraform.State) error {
 			return err
 		}
 
-		mirror, _, err := testGitlabClient.ProjectMirrors.GetProjectMirror(projectID, mirrorID)
+		mirror, _, err := testutil.TestGitlabClient.ProjectMirrors.GetProjectMirror(projectID, mirrorID)
 		if err == nil && mirror != nil && mirror.ID == mirrorID {
 			return fmt.Errorf("Project Mirror still exists")
 		}

@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_project_mirror", func() *schema.Resource {
@@ -149,7 +151,7 @@ func resourceGitlabProjectMirrorDelete(ctx context.Context, d *schema.ResourceDa
 	mirrorID := d.Get("mirror_id").(int)
 	projectID := d.Get("project").(string)
 
-	isDeleteSupported, err := isGitLabVersionAtLeast(ctx, client, "14.10")()
+	isDeleteSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.10")()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -211,7 +213,7 @@ func resourceGitlabProjectMirrorSetToState(d *schema.ResourceData, projectMirror
 }
 
 func resourceGitLabProjectMirrorGetMirror(ctx context.Context, client *gitlab.Client, projectID string, mirrorID int) (*gitlab.ProjectMirror, error) {
-	isGetProjectMirrorSupported, err := isGitLabVersionAtLeast(ctx, client, "14.10")()
+	isGetProjectMirrorSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.10")()
 	if err != nil {
 		return nil, err
 	}

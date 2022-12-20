@@ -9,13 +9,15 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabClusterAgent_basic(t *testing.T) {
-	testAccRequiresAtLeast(t, "14.10")
+	testutil.RunIfAtLeast(t, "14.10")
 
-	testProject := testAccCreateProject(t)
-	testAgent := testAccCreateClusterAgents(t, testProject.ID, 1)[0]
+	testProject := testutil.CreateProject(t)
+	testAgent := testutil.CreateClusterAgents(t, testProject.ID, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

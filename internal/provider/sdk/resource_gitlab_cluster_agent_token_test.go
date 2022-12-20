@@ -11,13 +11,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabClusterAgentToken_basic(t *testing.T) {
-	testAccRequiresAtLeast(t, "15.0")
+	testutil.RunIfAtLeast(t, "15.0")
 
-	testProject := testAccCreateProject(t)
-	testAgent := testAccCreateClusterAgents(t, testProject.ID, 1)[0]
+	testProject := testutil.CreateProject(t)
+	testAgent := testutil.CreateClusterAgents(t, testProject.ID, 1)[0]
 	var sutClusterAgentToken gitlab.AgentToken
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -129,7 +131,7 @@ func testAccResourceGitlabClusterAgentTokenGet(resourceName string, clusterAgent
 			return err
 		}
 
-		subject, _, err := testGitlabClient.ClusterAgents.GetAgentToken(project, agentID, tokenID)
+		subject, _, err := testutil.TestGitlabClient.ClusterAgents.GetAgentToken(project, agentID, tokenID)
 		if err != nil {
 			return err
 		}
@@ -150,7 +152,7 @@ func testAccCheckGitlabClusterAgentTokenDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subject, _, err := testGitlabClient.ClusterAgents.GetAgentToken(project, agentID, tokenID)
+		subject, _, err := testutil.TestGitlabClient.ClusterAgents.GetAgentToken(project, agentID, tokenID)
 		if err == nil && subject != nil && subject.Status != "revoked" {
 			return fmt.Errorf("gitlab_cluster_agent_token resource '%s' not yet revoked", rs.Primary.ID)
 		}

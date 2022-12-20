@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabSystemHook_basic(t *testing.T) {
@@ -67,7 +69,7 @@ func testAccCheckGitlabSystemHookExists(n string, hook *gitlab.Hook) resource.Te
 			return err
 		}
 
-		gotHook, _, err := testGitlabClient.SystemHooks.GetHook(hookID)
+		gotHook, _, err := testutil.TestGitlabClient.SystemHooks.GetHook(hookID)
 		if err != nil {
 			return err
 		}
@@ -86,7 +88,7 @@ func testAccCheckGitlabSystemHookDestroy(s *terraform.State) error {
 			return err
 		}
 
-		gotHook, _, err := testGitlabClient.SystemHooks.GetHook(hookID, nil)
+		gotHook, _, err := testutil.TestGitlabClient.SystemHooks.GetHook(hookID, nil)
 		if err == nil {
 			if gotHook != nil && gotHook.ID == hookID {
 				return fmt.Errorf("System Hook %d still exists after deletion", hookID)

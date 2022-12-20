@@ -9,12 +9,14 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupHook_basic(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
-	testGroup := testAccCreateGroups(t, 1)[0]
+	testGroup := testutil.CreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -100,7 +102,7 @@ func testAccCheckGitlabGroupHookDestroy(s *terraform.State) error {
 			return err
 		}
 
-		_, _, err = testGitlabClient.Groups.GetGroupHook(group, hookID)
+		_, _, err = testutil.TestGitlabClient.Groups.GetGroupHook(group, hookID)
 		if err == nil {
 			return fmt.Errorf("Group Hook %d in group %s still exists", hookID, group)
 		}

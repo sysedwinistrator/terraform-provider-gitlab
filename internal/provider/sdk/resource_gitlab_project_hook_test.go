@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectHook_basic(t *testing.T) {
@@ -98,7 +100,7 @@ func testAccCheckGitlabProjectHookExists(n string, hook *gitlab.ProjectHook) res
 			return fmt.Errorf("No project ID is set")
 		}
 
-		gotHook, _, err := testGitlabClient.Projects.GetProjectHook(repoName, hookID)
+		gotHook, _, err := testutil.TestGitlabClient.Projects.GetProjectHook(repoName, hookID)
 		if err != nil {
 			return err
 		}
@@ -203,7 +205,7 @@ func testAccCheckGitlabProjectHookDestroy(s *terraform.State) error {
 			return err
 		}
 
-		_, _, err = testGitlabClient.Projects.GetProjectHook(project, hookID)
+		_, _, err = testutil.TestGitlabClient.Projects.GetProjectHook(project, hookID)
 		if err == nil {
 			return fmt.Errorf("Project Hook %d in project %s still exists", hookID, project)
 		}

@@ -11,15 +11,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectTag_basic(t *testing.T) {
 	var tag gitlab.Tag
 	var tag2 gitlab.Tag
 	rInt, rInt2, rInt3 := acctest.RandInt(), acctest.RandInt(), acctest.RandInt()
-	project := testAccCreateProject(t)
-	branches := testAccCreateBranches(t, project, 1)
+	project := testutil.CreateProject(t)
+	branches := testutil.CreateBranches(t, project, 1)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -72,7 +74,7 @@ func testAccCheckGitlabProjectTagDestroy(s *terraform.State) error {
 		}
 		name := rs.Primary.Attributes["name"]
 		project := rs.Primary.Attributes["project"]
-		_, _, err := testGitlabClient.Tags.GetTag(project, name)
+		_, _, err := testutil.TestGitlabClient.Tags.GetTag(project, name)
 		if err != nil {
 			if is404(err) {
 				return nil
@@ -125,7 +127,7 @@ func testAccCheckGitlabProjectTagExists(n string, tag *gitlab.Tag, rInt int) res
 		if err != nil {
 			return fmt.Errorf("Error in splitting project and tag")
 		}
-		gotTag, _, err := testGitlabClient.Tags.GetTag(project, name)
+		gotTag, _, err := testutil.TestGitlabClient.Tags.GetTag(project, name)
 		if err != nil {
 			return err
 		}

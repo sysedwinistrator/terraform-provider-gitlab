@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabPipelineScheduleVariable_basic(t *testing.T) {
@@ -110,7 +112,7 @@ func testAccCheckGitlabPipelineScheduleVariableExists(n string, variable *gitlab
 			return fmt.Errorf("failed to convert PipelineSchedule.ID to int")
 		}
 
-		pipelineSchedule, _, err := testGitlabClient.PipelineSchedules.GetPipelineSchedule(project, scheduleID)
+		pipelineSchedule, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(project, scheduleID)
 		if err != nil {
 			return err
 		}
@@ -206,7 +208,7 @@ func testAccCheckGitlabPipelineScheduleVariableDestroy(s *terraform.State) error
 			return fmt.Errorf("could not convert pipeline schedule id to integer: %s", err)
 		}
 
-		gotPS, _, err := testGitlabClient.PipelineSchedules.GetPipelineSchedule(rs.Primary.Attributes["project"], psid)
+		gotPS, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(rs.Primary.Attributes["project"], psid)
 		if err == nil {
 			for _, v := range gotPS.Variables {
 				if buildTwoPartID(&psidString, &v.Key) == rs.Primary.ID {

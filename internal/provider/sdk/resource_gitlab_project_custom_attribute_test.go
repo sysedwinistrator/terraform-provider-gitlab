@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectCustomAttribute_basic(t *testing.T) {
@@ -84,7 +86,7 @@ func testAccCheckGitlabProjectCustomAttributeExists(n string, customAttribute *g
 			return err
 		}
 
-		gotCustomAttribute, _, err := testGitlabClient.CustomAttribute.GetCustomProjectAttribute(id, key)
+		gotCustomAttribute, _, err := testutil.TestGitlabClient.CustomAttribute.GetCustomProjectAttribute(id, key)
 		if err != nil {
 			return err
 		}

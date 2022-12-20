@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
@@ -32,7 +34,7 @@ func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
 
 			// Create a group LDAP link as a developer (uses testAccGitlabGroupLdapLinkCreateConfig for Config)
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabGroupLdapLinkCreateConfig(rInt, &testLdapLink),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupLdapLinkExists(resourceName, &ldapLink),
@@ -43,7 +45,7 @@ func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
 
 			// Import the group LDAP link (re-uses testAccGitlabGroupLdapLinkCreateConfig for Config)
 			{
-				SkipFunc:          isRunningInCE,
+				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      resourceName,
 				ImportStateIdFunc: getGitlabGroupLdapLinkImportID(resourceName),
 				ImportState:       true,
@@ -52,7 +54,7 @@ func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
 
 			// Update the group LDAP link to change the access level (uses testAccGitlabGroupLdapLinkUpdateConfig for Config)
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabGroupLdapLinkUpdateConfig(rInt, &testLdapLink),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupLdapLinkExists(resourceName, &ldapLink),
@@ -132,7 +134,7 @@ func testAccCheckGitlabGroupLdapLinkDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, _, err := testGitlabClient.Groups.GetGroup(resourceState.Primary.ID, nil)
+		group, _, err := testutil.TestGitlabClient.Groups.GetGroup(resourceState.Primary.ID, nil)
 		if err == nil {
 			if group != nil && fmt.Sprintf("%d", group.ID) == resourceState.Primary.ID {
 				if group.MarkedForDeletionOn == nil {
@@ -164,7 +166,7 @@ func testAccGetGitlabGroupLdapLink(ldapLink *gitlab.LDAPGroupLink, resourceState
 	desiredLdapLinkId := buildTwoPartID(&desiredLdapLink.Provider, &desiredLdapLink.CN)
 
 	// Try to fetch all group links from GitLab
-	currentLdapLinks, _, err := testGitlabClient.Groups.ListGroupLDAPLinks(groupId, nil)
+	currentLdapLinks, _, err := testutil.TestGitlabClient.Groups.ListGroupLDAPLinks(groupId, nil)
 	if err != nil {
 		// The read/GET API wasn't implemented in GitLab until version 12.8 (March 2020, well after the add and delete APIs).
 		// If we 404, assume GitLab is at an older version and take things on faith.

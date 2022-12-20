@@ -10,11 +10,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServiceExternalWiki_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	var externalWikiService gitlab.ExternalWikiService
 
@@ -107,7 +109,7 @@ func testAccCheckGitlabServiceExternalWikiExists(resourceIdentifier string, serv
 			return fmt.Errorf("No project ID is set")
 		}
 
-		externalWikiService, _, err := testGitlabClient.Services.GetExternalWikiService(project)
+		externalWikiService, _, err := testutil.TestGitlabClient.Services.GetExternalWikiService(project)
 		if err != nil {
 			return fmt.Errorf("External Wiki service does not exist in project %s: %v", project, err)
 		}
@@ -124,7 +126,7 @@ func testAccCheckGitlabServiceExternalWikiDestroy(s *terraform.State) error {
 		if rs.Type == "gitlab_service_external_wiki" {
 			project = rs.Primary.ID
 
-			externalWikiService, _, err := testGitlabClient.Services.GetExternalWikiService(project)
+			externalWikiService, _, err := testutil.TestGitlabClient.Services.GetExternalWikiService(project)
 			if err == nil {
 				if externalWikiService != nil && externalWikiService.Active != false {
 					return fmt.Errorf("[ERROR] External Wiki Service %v still exists", project)

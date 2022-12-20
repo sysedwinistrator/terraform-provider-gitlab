@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupVariable_basic(t *testing.T) {
@@ -121,7 +123,7 @@ func TestAccGitlabGroupVariable_scope(t *testing.T) {
 			// Create a group and variables with same keys, different scopes
 			{
 				Config:   testAccGitlabGroupVariableScopeConfig(rString, "*", "review/*", defaultValueA, defaultValueB),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupVariableExists("gitlab_group_variable.a", &groupVariableA),
 					testAccCheckGitlabGroupVariableExists("gitlab_group_variable.b", &groupVariableB),
@@ -140,7 +142,7 @@ func TestAccGitlabGroupVariable_scope(t *testing.T) {
 			// Change a variable's scope
 			{
 				Config:   testAccGitlabGroupVariableScopeConfig(rString, "my-new-scope", "review/*", defaultValueA, defaultValueB),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupVariableExists("gitlab_group_variable.a", &groupVariableA),
 					testAccCheckGitlabGroupVariableExists("gitlab_group_variable.b", &groupVariableB),
@@ -159,7 +161,7 @@ func TestAccGitlabGroupVariable_scope(t *testing.T) {
 			// Change both variables scopes at the same time
 			{
 				Config:   testAccGitlabGroupVariableScopeConfig(rString, "my-new-new-scope", "review/hello-world", defaultValueA, defaultValueB),
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupVariableExists("gitlab_group_variable.a", &groupVariableA),
 					testAccCheckGitlabGroupVariableExists("gitlab_group_variable.b", &groupVariableB),
@@ -178,7 +180,7 @@ func TestAccGitlabGroupVariable_scope(t *testing.T) {
 			// Change value of one variable
 			{
 				Config: testAccGitlabGroupVariableScopeConfig(rString, "my-new-new-scope", "review/hello-world", defaultValueA, fmt.Sprintf("new-value-for-b-%s", rString)),
-				// SkipFunc: isRunningInCE,
+				// SkipFunc: IsRunningInCE,
 				// NOTE(TF): this test sporadically fails because of this: https://gitlab.com/gitlab-org/gitlab/-/issues/333296
 				SkipFunc: func() (bool, error) { return true, nil },
 				Check: resource.ComposeTestCheckFunc(
@@ -215,7 +217,7 @@ func testAccCheckGitlabGroupVariableExists(n string, groupVariable *gitlab.Group
 		if key == "" {
 			return fmt.Errorf("No variable key is set")
 		}
-		gotVariable, _, err := testGitlabClient.GroupVariables.GetVariable(repoName, key, withEnvironmentScopeFilter(context.Background(), rs.Primary.Attributes["environment_scope"]))
+		gotVariable, _, err := testutil.TestGitlabClient.GroupVariables.GetVariable(repoName, key, withEnvironmentScopeFilter(context.Background(), rs.Primary.Attributes["environment_scope"]))
 		if err != nil {
 			return err
 		}
@@ -264,7 +266,7 @@ func testAccCheckGitlabGroupVariableDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, _, err := testGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
+		_, _, err := testutil.TestGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
 		if err == nil { // nolint // TODO: Resolve this golangci-lint issue: SA9003: empty branch (staticcheck)
 			//if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 			//	if gotRepo.MarkedForDeletionAt == nil {

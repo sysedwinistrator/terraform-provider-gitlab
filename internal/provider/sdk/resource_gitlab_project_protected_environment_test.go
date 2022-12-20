@@ -12,24 +12,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectProtectedEnvironment_basic(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	// Set up project environment.
-	project := testAccCreateProject(t)
-	environment := testAccCreateProjectEnvironment(t, project.ID, &gitlab.CreateEnvironmentOptions{
+	project := testutil.CreateProject(t)
+	environment := testutil.CreateProjectEnvironment(t, project.ID, &gitlab.CreateEnvironmentOptions{
 		Name: gitlab.String(acctest.RandomWithPrefix("test-protected-environment")),
 	})
 
 	// Set up project user.
-	user := testAccCreateUsers(t, 1)[0]
-	testAccAddProjectMembers(t, project.ID, []*gitlab.User{user})
+	user := testutil.CreateUsers(t, 1)[0]
+	testutil.AddProjectMembers(t, project.ID, []*gitlab.User{user})
 
 	// Set up group access.
-	group := testAccCreateGroups(t, 1)[0]
-	if _, err := testGitlabClient.Projects.ShareProjectWithGroup(project.ID, &gitlab.ShareWithGroupOptions{
+	group := testutil.CreateGroups(t, 1)[0]
+	if _, err := testutil.TestGitlabClient.Projects.ShareProjectWithGroup(project.ID, &gitlab.ShareWithGroupOptions{
 		GroupID:     &group.ID,
 		GroupAccess: gitlab.AccessLevel(gitlab.MaintainerPermissions),
 	}); err != nil {
@@ -96,29 +98,29 @@ func TestAccGitlabProjectProtectedEnvironment_basic(t *testing.T) {
 }
 
 func TestAccGitlabProjectProtectedEnvironment_regressionIssue1132(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	// Set up project environment.
-	project := testAccCreateProject(t)
-	environment := testAccCreateProjectEnvironment(t, project.ID, &gitlab.CreateEnvironmentOptions{
+	project := testutil.CreateProject(t)
+	environment := testutil.CreateProjectEnvironment(t, project.ID, &gitlab.CreateEnvironmentOptions{
 		Name: gitlab.String(acctest.RandomWithPrefix("test-protected-environment")),
 	})
 
 	// Set up project user.
-	user := testAccCreateUsers(t, 1)[0]
-	testAccAddProjectMembers(t, project.ID, []*gitlab.User{user})
+	user := testutil.CreateUsers(t, 1)[0]
+	testutil.AddProjectMembers(t, project.ID, []*gitlab.User{user})
 
 	// Set up group access.
-	group := testAccCreateGroups(t, 1)[0]
-	if _, err := testGitlabClient.Projects.ShareProjectWithGroup(project.ID, &gitlab.ShareWithGroupOptions{
+	group := testutil.CreateGroups(t, 1)[0]
+	if _, err := testutil.TestGitlabClient.Projects.ShareProjectWithGroup(project.ID, &gitlab.ShareWithGroupOptions{
 		GroupID:     &group.ID,
 		GroupAccess: gitlab.AccessLevel(gitlab.MaintainerPermissions),
 	}); err != nil {
 		t.Fatalf("unable to share project %d with group %d", project.ID, group.ID)
 	}
 
-	additionalGroup := testAccCreateGroups(t, 1)[0]
-	if _, err := testGitlabClient.Projects.ShareProjectWithGroup(project.ID, &gitlab.ShareWithGroupOptions{
+	additionalGroup := testutil.CreateGroups(t, 1)[0]
+	if _, err := testutil.TestGitlabClient.Projects.ShareProjectWithGroup(project.ID, &gitlab.ShareWithGroupOptions{
 		GroupID:     &additionalGroup.ID,
 		GroupAccess: gitlab.AccessLevel(gitlab.MaintainerPermissions),
 	}); err != nil {
@@ -150,7 +152,7 @@ func TestAccGitlabProjectProtectedEnvironment_regressionIssue1132(t *testing.T) 
 
 func testAccCheckGitlabProjectProtectedEnvironmentDestroy(projectID int, environmentName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		_, _, err := testGitlabClient.ProtectedEnvironments.GetProtectedEnvironment(projectID, environmentName)
+		_, _, err := testutil.TestGitlabClient.ProtectedEnvironments.GetProtectedEnvironment(projectID, environmentName)
 		if err == nil {
 			return errors.New("environment is still protected")
 		}

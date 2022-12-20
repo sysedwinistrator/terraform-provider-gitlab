@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectMembership_basic(t *testing.T) {
@@ -69,7 +71,7 @@ func testAccCheckGitlabProjectMembershipExists(n string, membership *gitlab.Proj
 			return fmt.Errorf("No user id is set")
 		}
 
-		gotProjectMembership, _, err := testGitlabClient.ProjectMembers.GetProjectMember(projectID, id)
+		gotProjectMembership, _, err := testutil.TestGitlabClient.ProjectMembers.GetProjectMember(projectID, id)
 		if err != nil {
 			return err
 		}
@@ -109,7 +111,7 @@ func testAccCheckGitlabProjectMembershipDestroy(s *terraform.State) error {
 
 		// GetProjectMember needs int type for userID
 		userIDI, err := strconv.Atoi(userID) // nolint // TODO: Resolve this golangci-lint issue: ineffectual assignment to err (ineffassign)
-		gotMembership, _, err := testGitlabClient.ProjectMembers.GetProjectMember(projectID, userIDI)
+		gotMembership, _, err := testutil.TestGitlabClient.ProjectMembers.GetProjectMember(projectID, userIDI)
 		if err != nil {
 			if gotMembership != nil && fmt.Sprintf("%d", gotMembership.AccessLevel) == rs.Primary.Attributes["access_level"] {
 				return fmt.Errorf("Project still has member.")

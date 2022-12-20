@@ -12,10 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabPersonalAccessToken_basic(t *testing.T) {
-	user := testAccCreateUsers(t, 1)[0]
+	user := testutil.CreateUsers(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -93,7 +95,7 @@ func testAccCheckGitlabPersonalAccessTokenDestroy(s *terraform.State) error {
 			return fmt.Errorf("Error converting user ID to string: %v", userId)
 		}
 
-		tokens, _, err := testGitlabClient.PersonalAccessTokens.ListPersonalAccessTokens(&gitlab.ListPersonalAccessTokensOptions{UserID: &userIdInt})
+		tokens, _, err := testutil.TestGitlabClient.PersonalAccessTokens.ListPersonalAccessTokens(&gitlab.ListPersonalAccessTokensOptions{UserID: &userIdInt})
 		if err != nil {
 			return err
 		}

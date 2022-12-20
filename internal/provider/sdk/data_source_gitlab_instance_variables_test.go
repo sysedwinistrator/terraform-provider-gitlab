@@ -9,12 +9,14 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabInstanceVariables_basic(t *testing.T) {
 	testVariables := make([]*gitlab.InstanceVariable, 0)
 	for i := 0; i < 25; i++ {
-		testVariables = append(testVariables, testAccCreateInstanceVariable(t))
+		testVariables = append(testVariables, testutil.CreateInstanceVariable(t))
 	}
 
 	resource.Test(t, resource.TestCase{

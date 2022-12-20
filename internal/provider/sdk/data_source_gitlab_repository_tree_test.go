@@ -8,11 +8,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabRepositoryTree_basic(t *testing.T) {
-	testProject := testAccCreateProject(t)
-	testFile := testAccCreateProjectFile(t, testProject.ID, "content", "SomeFile", testProject.DefaultBranch)
+	testProject := testutil.CreateProject(t)
+	testFile := testutil.CreateProjectFile(t, testProject.ID, "content", "SomeFile", testProject.DefaultBranch)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

@@ -10,11 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabDeployKeyEnable_basic(t *testing.T) {
-	testProjectParent := testAccCreateProject(t)
-	testProjectKeyShared := testAccCreateProject(t)
+	testProjectParent := testutil.CreateProject(t)
+	testProjectKeyShared := testutil.CreateProject(t)
 
 	key := "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDblguSWgpqiXIjHPSas4+N3Dten7MTLJMlGQXxGpaqN9nGPdNmuRB2YXyjT/nrryoY/qrtuVkPnis5WVo8N/s3hAnJbeJPUS2WKEGjpBlL34AQ+ANnlmGY8L6zr82Hp2Ommb7XGGtlq5D3yLCgTfcXLjC51tgcdwHsdH1U+RisgLwaTSrP/HF4G7IAr5ATsyYjtCwQRQ8ijdf5A34+XN6h8J6TLXKab5eZDuH38s9LxJuS7MRxx/P2UTOsqfjtrZWoQgE5adEGvnDxKyruex9PzNbCNVahzsma7tdikDbzxlHLIZ1aht6rKuai3iyLgcZfGIYtkq4xvg/bnNXxSsGf worker@kg.getwifi.com"
 
@@ -24,7 +26,7 @@ func TestAccGitlabDeployKeyEnable_basic(t *testing.T) {
 		CanPush: gitlab.Bool(true),
 	}
 
-	parentProjectDeployKey := testAccCreateDeployKey(t, testProjectParent.ID, &canPushDeployKeyOptions)
+	parentProjectDeployKey := testutil.CreateDeployKey(t, testProjectParent.ID, &canPushDeployKeyOptions)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -97,7 +99,7 @@ func testAccCheckGitlabDeployKeyEnableDestroy(s *terraform.State) error {
 			return fmt.Errorf("unable to parse resource ID into project and deployKeyID: %w", err)
 		}
 
-		gotDeployKey, _, err := testGitlabClient.DeployKeys.GetDeployKey(project, deployKeyID)
+		gotDeployKey, _, err := testutil.TestGitlabClient.DeployKeys.GetDeployKey(project, deployKeyID)
 		if err == nil {
 			if gotDeployKey != nil {
 				return fmt.Errorf("Deploy key still exists: %d", deployKeyID)

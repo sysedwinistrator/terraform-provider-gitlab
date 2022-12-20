@@ -9,14 +9,16 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabGroups_basic(t *testing.T) {
 	prefixFoo := "acctest-group-foo"
-	groupsFoo := testAccCreateGroupsWithPrefix(t, 2, prefixFoo)
+	groupsFoo := testutil.CreateGroupsWithPrefix(t, 2, prefixFoo)
 
 	prefixLotsOf := "acctest-group-lotsof"
-	testAccCreateGroupsWithPrefix(t, 42, prefixLotsOf)
+	testutil.CreateGroupsWithPrefix(t, 42, prefixLotsOf)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

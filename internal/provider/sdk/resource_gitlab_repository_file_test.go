@@ -9,12 +9,14 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabRepositoryFile_basic(t *testing.T) {
 	var file gitlab.File
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -60,7 +62,7 @@ func TestAccGitlabRepositoryFile_basic(t *testing.T) {
 
 func TestAccGitlabRepositoryFile_overwriteOnCreate(t *testing.T) {
 	var file gitlab.File
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 	options := &gitlab.CreateFileOptions{
 		Branch:        gitlab.String("main"),
 		Encoding:      gitlab.String("base64"),
@@ -76,7 +78,7 @@ func TestAccGitlabRepositoryFile_overwriteOnCreate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				PreConfig: func() {
-					if _, _, err := testGitlabClient.RepositoryFiles.CreateFile(testProject.ID, "animal-noise.txt", options); err != nil {
+					if _, _, err := testutil.TestGitlabClient.RepositoryFiles.CreateFile(testProject.ID, "animal-noise.txt", options); err != nil {
 						t.Fatalf("failed to create file: %v", err)
 					}
 				},
@@ -113,8 +115,8 @@ func TestAccGitlabRepositoryFile_overwriteOnCreate(t *testing.T) {
 func TestAccGitlabRepositoryFile_createSameFileDifferentRepository(t *testing.T) {
 	var fooFile gitlab.File
 	var barFile gitlab.File
-	firstTestProject := testAccCreateProject(t)
-	secondTestProject := testAccCreateProject(t)
+	firstTestProject := testutil.CreateProject(t)
+	secondTestProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -140,7 +142,7 @@ func TestAccGitlabRepositoryFile_createSameFileDifferentRepository(t *testing.T)
 }
 
 func TestAccGitlabRepositoryFile_concurrentResources(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -164,7 +166,7 @@ func TestAccGitlabRepositoryFile_concurrentResources(t *testing.T) {
 
 func TestAccGitlabRepositoryFile_createOnNewBranch(t *testing.T) {
 	var file gitlab.File
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -186,7 +188,7 @@ func TestAccGitlabRepositoryFile_createOnNewBranch(t *testing.T) {
 
 func TestAccGitlabRepositoryFile_base64EncodingWithTextContent(t *testing.T) {
 	var file gitlab.File
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -292,10 +294,10 @@ func TestAccGitlabRepositoryFile_base64EncodingWithTextContent(t *testing.T) {
 }
 
 func TestAccGitlabRepositoryFile_createWithExecuteFilemode(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccRequiresAtLeast(t, "14.10") },
+		PreCheck:                 func() { testutil.RunIfAtLeast(t, "14.10") },
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
 		Steps: []resource.TestStep{
@@ -368,7 +370,7 @@ func testAccCheckGitlabRepositoryFileExists(n string, file *gitlab.File) resourc
 			return fmt.Errorf("No project ID set")
 		}
 
-		gotFile, _, err := testGitlabClient.RepositoryFiles.GetFile(repoName, fileID, options)
+		gotFile, _, err := testutil.TestGitlabClient.RepositoryFiles.GetFile(repoName, fileID, options)
 		if err != nil {
 			return fmt.Errorf("Cannot get file: %v", err)
 		}
@@ -405,7 +407,7 @@ func testAccCheckGitlabRepositoryFileDestroy(s *terraform.State) error {
 			continue
 		}
 
-		gotRepo, resp, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, resp, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err == nil {
 			if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 				if gotRepo.MarkedForDeletionAt == nil {

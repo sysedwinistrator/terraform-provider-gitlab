@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
@@ -99,7 +101,7 @@ func testAccCheckGitlabServiceMicrosoftTeamsExists(n string, service *gitlab.Mic
 		if project == "" {
 			return fmt.Errorf("No project ID is set")
 		}
-		teamsService, _, err := testGitlabClient.Services.GetMicrosoftTeamsService(project)
+		teamsService, _, err := testutil.TestGitlabClient.Services.GetMicrosoftTeamsService(project)
 		if err != nil {
 			return fmt.Errorf("Microsoft Teams service does not exist in project %s: %v", project, err)
 		}
@@ -115,7 +117,7 @@ func testAccCheckGitlabServiceMicrosoftTeamsDestroy(s *terraform.State) error {
 			continue
 		}
 
-		gotRepo, resp, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, resp, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err == nil {
 			if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 				if gotRepo.MarkedForDeletionAt == nil {

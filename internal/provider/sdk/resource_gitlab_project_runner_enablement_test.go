@@ -11,14 +11,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectRunnerEnablement_basic(t *testing.T) {
-	testGroup := testAccCreateGroups(t, 1)[0]
-	projectA := testAccCreateProjectWithNamespace(t, testGroup.ID)
-	projectB := testAccCreateProjectWithNamespace(t, testGroup.ID)
-	projectC := testAccCreateProjectWithNamespace(t, testGroup.ID)
+	testGroup := testutil.CreateGroups(t, 1)[0]
+	projectA := testutil.CreateProjectWithNamespace(t, testGroup.ID)
+	projectB := testutil.CreateProjectWithNamespace(t, testGroup.ID)
+	projectC := testutil.CreateProjectWithNamespace(t, testGroup.ID)
 
 	name := fmt.Sprintf("TestAcc Runner %s", acctest.RandString(10))
 
@@ -28,7 +30,7 @@ func TestAccGitlabProjectRunnerEnablement_basic(t *testing.T) {
 	}
 
 	// Create runner in project A
-	runner, _, _ := testGitlabClient.Runners.RegisterNewRunner(&opts)
+	runner, _, _ := testutil.TestGitlabClient.Runners.RegisterNewRunner(&opts)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -112,7 +114,7 @@ func TestAccGitlabProjectRunnerEnablement_basic(t *testing.T) {
 
 func testAccCheckGitlabProjectRunnerEnablementCreate(pid int, rid int) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		runnerdetails, _, err := testGitlabClient.Runners.GetRunnerDetails(rid)
+		runnerdetails, _, err := testutil.TestGitlabClient.Runners.GetRunnerDetails(rid)
 		if err != nil {
 			return err
 		}

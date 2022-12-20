@@ -10,14 +10,16 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupAccessToken_basic(t *testing.T) {
 	var gat testAccGitlabGroupAccessTokenWrapper
 	var groupVariable gitlab.GroupVariable
 
-	testGroup := testAccCreateGroups(t, 1)[0]
+	testGroup := testutil.CreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -127,7 +129,7 @@ func testAccCheckGitlabGroupAccessTokenExists(n string, gat *testAccGitlabGroupA
 			return fmt.Errorf("Group [%s] in group identifier [%s] it's different from group stored into the state [%s]", group, rs.Primary.ID, groupId)
 		}
 
-		tokens, _, err := testGitlabClient.GroupAccessTokens.ListGroupAccessTokens(groupId, nil)
+		tokens, _, err := testutil.TestGitlabClient.GroupAccessTokens.ListGroupAccessTokens(groupId, nil)
 		if err != nil {
 			return err
 		}
@@ -184,7 +186,7 @@ func testAccCheckGitlabGroupAccessTokenAttributes(gatWrap *testAccGitlabGroupAcc
 			}
 		}
 
-		git, err := gitlab.NewClient(gatWrap.token, gitlab.WithBaseURL(testGitlabClient.BaseURL().String()))
+		git, err := gitlab.NewClient(gatWrap.token, gitlab.WithBaseURL(testutil.TestGitlabClient.BaseURL().String()))
 		if err != nil {
 			return fmt.Errorf("Cannot use the token to instantiate a new client %s", err)
 		}
@@ -203,7 +205,7 @@ func testAccCheckGitlabGroupAccessTokenDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, resp, err := testGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
+		group, resp, err := testutil.TestGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
 		if err == nil {
 			if group != nil && fmt.Sprintf("%d", group.ID) == rs.Primary.ID {
 				if group.MarkedForDeletionOn == nil {

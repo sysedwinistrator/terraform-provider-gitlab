@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func testResourceGitlabProjectShareGroupStateDataV0() map[string]interface{} {
@@ -73,12 +75,12 @@ func TestAccGitlabProjectShareGroup_basic(t *testing.T) {
 
 func testAccCheckGitlabProjectSharedWithGroup(projectName, groupName string, accessLevel gitlab.AccessLevelValue) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		project, _, err := testGitlabClient.Projects.GetProject(projectName, nil)
+		project, _, err := testutil.TestGitlabClient.Projects.GetProject(projectName, nil)
 		if err != nil {
 			return err
 		}
 
-		group, _, err := testGitlabClient.Groups.GetGroup(groupName, nil)
+		group, _, err := testutil.TestGitlabClient.Groups.GetGroup(groupName, nil)
 		if err != nil {
 			return err
 		}
@@ -98,7 +100,7 @@ func testAccCheckGitlabProjectSharedWithGroup(projectName, groupName string, acc
 
 func testAccCheckGitlabProjectIsNotShared(projectName string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		project, _, err := testGitlabClient.Projects.GetProject(projectName, nil)
+		project, _, err := testutil.TestGitlabClient.Projects.GetProject(projectName, nil)
 		if err != nil {
 			return err
 		}
@@ -123,7 +125,7 @@ func testAccCheckGitlabProjectShareGroupDestroy(s *terraform.State) error {
 				return fmt.Errorf("[ERROR] cannot get project ID and group ID from input: %v", rs.Primary.ID)
 			}
 
-			proj, _, err := testGitlabClient.Projects.GetProject(projectId, nil)
+			proj, _, err := testutil.TestGitlabClient.Projects.GetProject(projectId, nil)
 			if err != nil {
 				return err
 			}

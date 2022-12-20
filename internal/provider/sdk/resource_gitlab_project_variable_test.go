@@ -13,6 +13,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func testAccCheckGitlabProjectVariableExists(name string) resource.TestCheckFunc {
@@ -30,7 +34,7 @@ func testAccCheckGitlabProjectVariableExists(name string) resource.TestCheckFunc
 		func(state *terraform.State) error {
 			attributes := state.RootModule().Resources[name].Primary.Attributes
 
-			got, _, err := testGitlabClient.ProjectVariables.GetVariable(attributes["project"], attributes["key"], nil, gitlab.WithContext(context.Background()), withEnvironmentScopeFilter(context.Background(), attributes["environment_scope"]))
+			got, _, err := testutil.TestGitlabClient.ProjectVariables.GetVariable(attributes["project"], attributes["key"], nil, gitlab.WithContext(context.Background()), withEnvironmentScopeFilter(context.Background(), attributes["environment_scope"]))
 			if err != nil {
 				return err
 			}
@@ -57,9 +61,9 @@ func testAccCheckGitlabProjectVariableExists(name string) resource.TestCheckFunc
 	)
 }
 
-func testAccGitlabProjectVariableCheckAllVariablesDestroyed(ctx testAccGitlabProjectContext) func(state *terraform.State) error {
+func testAccGitlabProjectVariableCheckAllVariablesDestroyed(project *gitlab.Project) func(state *terraform.State) error {
 	return func(state *terraform.State) error {
-		vars, _, err := testGitlabClient.ProjectVariables.ListVariables(ctx.project.ID, nil)
+		vars, _, err := testutil.TestGitlabClient.ProjectVariables.ListVariables(project.ID, nil)
 		if err != nil {
 			return err
 		}
@@ -73,11 +77,11 @@ func testAccGitlabProjectVariableCheckAllVariablesDestroyed(ctx testAccGitlabPro
 }
 
 func TestAccGitlabProjectVariable_basic(t *testing.T) {
-	ctx := testAccGitlabProjectStart(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccGitlabProjectVariableCheckAllVariablesDestroyed(ctx),
+		CheckDestroy:             testAccGitlabProjectVariableCheckAllVariablesDestroyed(testProject),
 		Steps: []resource.TestStep{
 			// Create a project variable from a project name.
 			{
@@ -87,7 +91,7 @@ resource "gitlab_project_variable" "foo" {
   key = "my_key"
   value = "my_value"
 }
-`, ctx.project.PathWithNamespace),
+`, testProject.PathWithNamespace),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			{
@@ -103,13 +107,13 @@ resource "gitlab_project_variable" "foo" {
   key = "my_key"
   value = "my_value"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			// Check that the variable is recreated if deleted out-of-band.
 			{
 				PreConfig: func() {
-					if _, err := testGitlabClient.ProjectVariables.RemoveVariable(ctx.project.ID, "my_key", nil); err != nil {
+					if _, err := testutil.TestGitlabClient.ProjectVariables.RemoveVariable(testProject.ID, "my_key", nil); err != nil {
 						t.Fatalf("failed to remove variable: %v", err)
 					}
 				},
@@ -119,7 +123,7 @@ resource "gitlab_project_variable" "foo" {
   key = "my_key"
   value = "my_value"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			// Update the variable_type.
@@ -131,7 +135,7 @@ resource "gitlab_project_variable" "foo" {
   value = "my_value"
   variable_type = "file"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			// Update all other attributes.
@@ -144,7 +148,7 @@ resource "gitlab_project_variable" "foo" {
   protected = true
   masked = true
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			{
@@ -164,7 +168,7 @@ i am multiline
 EOF
   masked = true
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta(
 					"Invalid value for a masked variable. Check the masked variable requirements: https://docs.gitlab.com/ee/ci/variables/#masked-variable-requirements",
 				)),
@@ -174,17 +178,17 @@ EOF
 }
 
 func TestAccGitlabProjectVariable_scoped(t *testing.T) {
-	ctx := testAccGitlabProjectStart(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy: func(state *terraform.State) error {
 			// Destroy behavior is nondeterministic for variables with scopes in GitLab versions prior to 13.4
 			// ref: https://gitlab.com/gitlab-org/gitlab/-/merge_requests/39209
-			if isAtLeast134, err := isGitLabVersionAtLeast(context.Background(), testGitlabClient, "13.4")(); err != nil {
+			if isAtLeast134, err := client.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "13.4")(); err != nil {
 				return err
 			} else if isAtLeast134 {
-				return testAccGitlabProjectVariableCheckAllVariablesDestroyed(ctx)(state)
+				return testAccGitlabProjectVariableCheckAllVariablesDestroyed(testProject)(state)
 			}
 			return nil
 		},
@@ -197,7 +201,7 @@ resource "gitlab_project_variable" "foo" {
   key = "my_key"
   value = "my_value"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			// Update the scope.
@@ -209,7 +213,7 @@ resource "gitlab_project_variable" "foo" {
   value = "my_value"
   environment_scope = "foo"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 			},
 			// Add a second variable with the same key and different scope.
@@ -228,7 +232,7 @@ resource "gitlab_project_variable" "bar" {
   value = "my_value_2"
   environment_scope = "bar"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 					testAccCheckGitlabProjectVariableExists("gitlab_project_variable.bar"),
@@ -247,7 +251,7 @@ resource "gitlab_project_variable" "bar" {
 			// Update an attribute on one of the variables.
 			// Updating a variable with a non-unique key only works reliably on GitLab v13.4+.
 			{
-				SkipFunc: isGitLabVersionLessThan(context.Background(), testGitlabClient, "13.4"),
+				SkipFunc: client.IsGitLabVersionLessThan(context.Background(), testutil.TestGitlabClient, "13.4"),
 				Config: fmt.Sprintf(`
 resource "gitlab_project_variable" "foo" {
   project = %[1]d
@@ -262,7 +266,7 @@ resource "gitlab_project_variable" "bar" {
   value = "my_value_2_updated"
   environment_scope = "bar"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckGitlabProjectVariableExists("gitlab_project_variable.foo"),
 					testAccCheckGitlabProjectVariableExists("gitlab_project_variable.bar"),
@@ -271,7 +275,7 @@ resource "gitlab_project_variable" "bar" {
 			// Try to have two variables with the same keys and scopes.
 			// On versions of GitLab < 13.4 this can sometimes result in an inconsistent state instead of an error.
 			{
-				SkipFunc: isGitLabVersionLessThan(context.Background(), testGitlabClient, "13.4"),
+				SkipFunc: client.IsGitLabVersionLessThan(context.Background(), testutil.TestGitlabClient, "13.4"),
 				Config: fmt.Sprintf(`
 resource "gitlab_project_variable" "foo" {
   project = %[1]d
@@ -286,7 +290,7 @@ resource "gitlab_project_variable" "bar" {
   value = "my_value_2"
   environment_scope = "foo"
 }
-`, ctx.project.ID),
+`, testProject.ID),
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta("(my_key) has already been taken")),
 			},
 		},

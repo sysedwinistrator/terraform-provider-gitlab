@@ -9,14 +9,16 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectLevelMRApprovals_basic(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	var projectApprovals gitlab.ProjectApprovals
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -145,7 +147,7 @@ func testAccCheckGitlabProjectLevelMRApprovalsDestroy(s *terraform.State) error 
 			continue
 		}
 
-		gotRepo, resp, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, resp, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err == nil {
 			if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 				if gotRepo.MarkedForDeletionAt == nil {
@@ -173,7 +175,7 @@ func testAccCheckGitlabProjectLevelMRApprovalsExists(n string, projectApprovals 
 			return fmt.Errorf("No project ID is set")
 		}
 
-		gotApprovalConfig, _, err := testGitlabClient.Projects.GetApprovalConfiguration(projectId)
+		gotApprovalConfig, _, err := testutil.TestGitlabClient.Projects.GetApprovalConfiguration(projectId)
 		if err != nil {
 			return err
 		}

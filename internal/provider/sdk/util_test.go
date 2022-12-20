@@ -3,7 +3,7 @@ package sdk
 import (
 	"testing"
 
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
 )
 
 func TestGitlab_extractIIDFromGlobalID(t *testing.T) {

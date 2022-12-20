@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabLabel_basic(t *testing.T) {
@@ -101,7 +103,7 @@ func testAccCheckGitlabLabelExists(n string, label *gitlab.Label) resource.TestC
 			return fmt.Errorf("No project ID is set")
 		}
 
-		labels, _, err := testGitlabClient.Labels.ListLabels(repoName, &gitlab.ListLabelsOptions{ListOptions: gitlab.ListOptions{PerPage: 1000}})
+		labels, _, err := testutil.TestGitlabClient.Labels.ListLabels(repoName, &gitlab.ListLabelsOptions{ListOptions: gitlab.ListOptions{PerPage: 1000}})
 		if err != nil {
 			return err
 		}
@@ -148,7 +150,7 @@ func testAccCheckGitlabLabelDestroy(s *terraform.State) error {
 		project := rs.Primary.Attributes["project"]
 		labelName := rs.Primary.ID
 
-		_, _, err := testGitlabClient.Labels.GetLabel(project, labelName)
+		_, _, err := testutil.TestGitlabClient.Labels.GetLabel(project, labelName)
 		if err == nil {
 			return fmt.Errorf("Label %s in project %s still exists", labelName, project)
 		}

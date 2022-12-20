@@ -11,19 +11,21 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectIssue_basic(t *testing.T) {
 	var testIssue gitlab.Issue
 	var updatedTestIssue gitlab.Issue
 
-	testProject := testAccCreateProject(t)
-	testUser := testAccCreateUsers(t, 1)[0]
-	testAccAddProjectMembers(t, testProject.ID, []*gitlab.User{testUser})
-	testMilestone := testAccAddProjectMilestones(t, testProject, 1)[0]
+	testProject := testutil.CreateProject(t)
+	testUser := testutil.CreateUsers(t, 1)[0]
+	testutil.AddProjectMembers(t, testProject.ID, []*gitlab.User{testUser})
+	testMilestone := testutil.AddProjectMilestones(t, testProject, 1)[0]
 
-	currentUser, _, err := testGitlabClient.Users.CurrentUser()
+	currentUser, _, err := testutil.TestGitlabClient.Users.CurrentUser()
 	if err != nil {
 		t.Fatalf("Failed to get current user: %v", err)
 	}
@@ -148,12 +150,12 @@ func TestAccGitlabProjectIssue_basic(t *testing.T) {
 }
 
 func TestAccGitlabProjectIssue_basicEE(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
-	testProject := testAccCreateProject(t)
-	testUser := testAccCreateUsers(t, 1)[0]
-	testAccAddProjectMembers(t, testProject.ID, []*gitlab.User{testUser})
-	testMilestone := testAccAddProjectMilestones(t, testProject, 1)[0]
+	testProject := testutil.CreateProject(t)
+	testUser := testutil.CreateUsers(t, 1)[0]
+	testutil.AddProjectMembers(t, testProject.ID, []*gitlab.User{testUser})
+	testMilestone := testutil.AddProjectMilestones(t, testProject, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -175,7 +177,7 @@ func TestAccGitlabProjectIssue_basicEE(t *testing.T) {
 }
 
 func TestAccGitlabProjectIssue_deleteOnDestroy(t *testing.T) {
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -201,7 +203,7 @@ func testAccCheckGitlabProjectIssueExists(n string, issue *gitlab.Issue) resourc
 			return fmt.Errorf("Error parsing issue ID: %s", err)
 		}
 
-		gotIssue, _, err := testGitlabClient.Issues.GetIssue(project, issueIID)
+		gotIssue, _, err := testutil.TestGitlabClient.Issues.GetIssue(project, issueIID)
 		if err != nil {
 			return fmt.Errorf("Cannot get issue: %v", err)
 		}
@@ -224,7 +226,7 @@ func testAccCheckGitlabProjectIssueDestroy(s *terraform.State) error {
 			return err
 		}
 
-		issue, _, err := testGitlabClient.Issues.GetIssue(project, issueIID)
+		issue, _, err := testutil.TestGitlabClient.Issues.GetIssue(project, issueIID)
 		if err == nil && issue != nil && issue.IID == issueIID {
 			if val, ok := rs.Primary.Attributes["delete_on_destory"]; ok && val == "true" {
 				return fmt.Errorf("Issue still exists")

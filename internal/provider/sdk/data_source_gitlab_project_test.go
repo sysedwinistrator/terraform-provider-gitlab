@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataGitlabProject_basic(t *testing.T) {
@@ -29,7 +31,7 @@ func TestAccDataGitlabProject_basic(t *testing.T) {
 					[]string{"id", "name", "path", "visibility", "description"}),
 			},
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccDataGitlabProjectConfigPushRules(projectname),
 				Check: testAccDataSourceGitlabProject("gitlab_project.test", "data.gitlab_project.foo",
 					[]string{"push_rules.0.author_email_regex"}),

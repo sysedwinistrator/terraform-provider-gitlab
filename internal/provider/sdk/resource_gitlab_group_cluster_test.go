@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupCluster_basic(t *testing.T) {
@@ -18,7 +20,7 @@ func TestAccGitlabGroupCluster_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccRequiresLessThan(t, "15.0") },
+		PreCheck:                 func() { testutil.RunIfLessThan(t, "15.0") },
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabGroupClusterDestroy,
 		Steps: []resource.TestStep{
@@ -130,7 +132,7 @@ func testAccCheckGitlabGroupClusterExists(n string, cluster *gitlab.GroupCluster
 			return err
 		}
 
-		gotCluster, _, err := testGitlabClient.GroupCluster.GetCluster(group, clusterID)
+		gotCluster, _, err := testutil.TestGitlabClient.GroupCluster.GetCluster(group, clusterID)
 		if err != nil {
 			return err
 		}
@@ -153,7 +155,7 @@ func testAccCheckGitlabGroupClusterDestroy(s *terraform.State) error {
 			return err
 		}
 
-		gotCluster, _, err := testGitlabClient.GroupCluster.GetCluster(group, clusterID)
+		gotCluster, _, err := testutil.TestGitlabClient.GroupCluster.GetCluster(group, clusterID)
 		if err == nil {
 			if gotCluster != nil && fmt.Sprintf("%d", gotCluster.ID) == group {
 				return fmt.Errorf("group cluster still exists")

@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabInstanceCluster_basic(t *testing.T) {
@@ -19,7 +21,7 @@ func TestAccGitlabInstanceCluster_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccRequiresLessThan(t, "15.0") },
+		PreCheck:                 func() { testutil.RunIfLessThan(t, "15.0") },
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabInstanceClusterDestroy,
 		Steps: []resource.TestStep{
@@ -133,7 +135,7 @@ func testAccCheckGitlabInstanceClusterExists(n string, cluster *gitlab.InstanceC
 			return err
 		}
 
-		gotCluster, _, err := testGitlabClient.InstanceCluster.GetCluster(instanceClusterID)
+		gotCluster, _, err := testutil.TestGitlabClient.InstanceCluster.GetCluster(instanceClusterID)
 		if err != nil {
 			return err
 		}
@@ -155,7 +157,7 @@ func testAccCheckGitlabInstanceClusterDestroy(s *terraform.State) error {
 			return err
 		}
 
-		gotCluster, resp, err := testGitlabClient.InstanceCluster.GetCluster(instanceClusterID)
+		gotCluster, resp, err := testutil.TestGitlabClient.InstanceCluster.GetCluster(instanceClusterID)
 
 		if err == nil {
 			if gotCluster != nil && gotCluster.ID == instanceClusterID {

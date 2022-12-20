@@ -3,8 +3,9 @@ package main
 import (
 	"os"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes/apiunused"
 	"golang.org/x/tools/go/analysis/singlechecker"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/tools/passes/apiunused"
 )
 
 func main() {

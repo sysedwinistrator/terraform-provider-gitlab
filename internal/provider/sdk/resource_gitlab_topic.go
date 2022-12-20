@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_topic", func() *schema.Resource {
@@ -206,7 +208,7 @@ func resourceGitlabTopicDelete(ctx context.Context, d *schema.ResourceData, meta
 	}
 	softDestroy := d.Get("soft_destroy").(bool)
 
-	deleteNotSupported, err := isGitLabVersionLessThan(ctx, client, "14.9")()
+	deleteNotSupported, err := providerclient.IsGitLabVersionLessThan(ctx, client, "14.9")()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -253,7 +255,7 @@ func resourceGitlabTopicGetAvatar(avatarPath string) (*gitlab.TopicAvatar, error
 }
 
 func resourceGitlabTopicEnsureTitleSupport(ctx context.Context, client *gitlab.Client, d *schema.ResourceData) error {
-	isTitleSupported, err := isGitLabVersionAtLeast(ctx, client, "15.0")()
+	isTitleSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "15.0")()
 	if err != nil {
 		return err
 	}

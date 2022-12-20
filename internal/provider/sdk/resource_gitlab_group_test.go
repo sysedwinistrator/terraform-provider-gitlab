@@ -5,11 +5,14 @@ package sdk
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"testing"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroup_basic(t *testing.T) {
@@ -240,7 +243,7 @@ func TestAccGitlabGroup_nested(t *testing.T) {
 }
 
 func TestAccGitlabGroup_EE(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	testGroupName := acctest.RandomWithPrefix("acctest-group")
 
@@ -297,7 +300,7 @@ func TestAccGitlabGroup_PreventForkingOutsideGroup(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabGroupPreventForkingOutsideGroupConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.foo", &group),
@@ -305,7 +308,7 @@ func TestAccGitlabGroup_PreventForkingOutsideGroup(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabGroupPreventForkingOutsideGroupUpdateConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.foo", &group),
@@ -358,7 +361,7 @@ func testAccCheckGitlabGroupExists(n string, group *gitlab.Group) resource.TestC
 			return fmt.Errorf("No group ID is set")
 		}
 
-		gotGroup, _, err := testGitlabClient.Groups.GetGroup(groupID, nil)
+		gotGroup, _, err := testutil.TestGitlabClient.Groups.GetGroup(groupID, nil)
 		if err != nil {
 			return err
 		}
@@ -468,7 +471,7 @@ func testAccCheckGitlabGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, _, err := testGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
+		group, _, err := testutil.TestGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
 		if err == nil {
 			if group != nil && fmt.Sprintf("%d", group.ID) == rs.Primary.ID {
 				if group.MarkedForDeletionOn == nil {

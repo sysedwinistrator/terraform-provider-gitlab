@@ -9,13 +9,15 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupSamlLink_basic(t *testing.T) {
-	testAccCheckEE(t)
-	testAccRequiresAtLeast(t, "15.3")
+	testutil.SkipIfCE(t)
+	testutil.RunIfAtLeast(t, "15.3")
 
-	testGroup := testAccCreateGroups(t, 1)[0]
+	testGroup := testutil.CreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
@@ -65,7 +67,7 @@ func testAccCheckGitlabGroupSamlLinkDestroy(s *terraform.State) error {
 			return err
 		}
 
-		samlGroupLink, _, err := testGitlabClient.Groups.GetGroupSAMLLink(group, samlGroupName)
+		samlGroupLink, _, err := testutil.TestGitlabClient.Groups.GetGroupSAMLLink(group, samlGroupName)
 		if err == nil {
 			if samlGroupLink != nil {
 				return fmt.Errorf("SAML Group Link still exists")

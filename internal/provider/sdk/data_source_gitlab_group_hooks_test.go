@@ -8,13 +8,15 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabGroupHooks_basic(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
-	testGroup := testAccCreateGroups(t, 1)[0]
-	testHooks := testAccCreateGroupHooks(t, testGroup.ID, 25)
+	testGroup := testutil.CreateGroups(t, 1)[0]
+	testHooks := testutil.CreateGroupHooks(t, testGroup.ID, 25)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

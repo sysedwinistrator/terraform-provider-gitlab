@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataSourceGitlabGroupMembership_basic(t *testing.T) {
@@ -49,9 +51,9 @@ func TestAccDataSourceGitlabGroupMembership_basic(t *testing.T) {
 func TestAccDataSourceGitlabGroupMembership_pagination(t *testing.T) {
 	userCount := 21
 
-	group := testAccCreateGroups(t, 1)[0]
-	users := testAccCreateUsers(t, userCount)
-	testAccAddGroupMembers(t, group.ID, users)
+	group := testutil.CreateGroups(t, 1)[0]
+	users := testutil.CreateUsers(t, userCount)
+	testutil.AddGroupMembers(t, group.ID, users)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,

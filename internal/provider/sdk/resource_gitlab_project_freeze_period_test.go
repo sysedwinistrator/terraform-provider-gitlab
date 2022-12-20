@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabProjectFreezePeriod_basic(t *testing.T) {
@@ -91,7 +93,7 @@ func testAccCheckGitlabProjectFreezePeriodExists(n string, freezePeriod *gitlab.
 			return err
 		}
 
-		gotFreezePeriod, _, err := testGitlabClient.FreezePeriods.GetFreezePeriod(projectID, freezePeriodID)
+		gotFreezePeriod, _, err := testutil.TestGitlabClient.FreezePeriods.GetFreezePeriod(projectID, freezePeriodID)
 		if err != nil {
 			return err
 		}

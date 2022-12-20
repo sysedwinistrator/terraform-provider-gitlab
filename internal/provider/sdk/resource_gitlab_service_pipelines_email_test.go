@@ -12,7 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServicePipelinesEmail_basic(t *testing.T) {
@@ -87,7 +89,7 @@ func testAccCheckGitlabServicePipelinesEmailExists(n string, service *gitlab.Pip
 		if project == "" {
 			return fmt.Errorf("No project ID is set")
 		}
-		pipelinesEmailService, _, err := testGitlabClient.Services.GetPipelinesEmailService(project)
+		pipelinesEmailService, _, err := testutil.TestGitlabClient.Services.GetPipelinesEmailService(project)
 		if err != nil {
 			return fmt.Errorf("PipelinesEmail service does not exist in project %s: %v", project, err)
 		}
@@ -123,7 +125,7 @@ func testAccCheckGitlabServicePipelinesEmailDestroy(s *terraform.State) error {
 			continue
 		}
 
-		gotRepo, resp, err := testGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
+		gotRepo, resp, err := testutil.TestGitlabClient.Projects.GetProject(rs.Primary.ID, nil)
 		if err == nil {
 			if gotRepo != nil && fmt.Sprintf("%d", gotRepo.ID) == rs.Primary.ID {
 				if gotRepo.MarkedForDeletionAt == nil {

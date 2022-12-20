@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabInstanceVariable_basic(t *testing.T) {
@@ -113,7 +115,7 @@ func testAccCheckGitlabInstanceVariableExists(n string, instanceVariable *gitlab
 			return fmt.Errorf("No variable key is set")
 		}
 
-		gotVariable, _, err := testGitlabClient.InstanceVariables.GetVariable(key)
+		gotVariable, _, err := testutil.TestGitlabClient.InstanceVariables.GetVariable(key)
 		if err != nil {
 			return err
 		}
@@ -131,7 +133,7 @@ func testAccCheckGitlabInstanceVariableDestroy(s *terraform.State) error {
 		}
 	}
 
-	iv, _, err := testGitlabClient.InstanceVariables.GetVariable(key)
+	iv, _, err := testutil.TestGitlabClient.InstanceVariables.GetVariable(key)
 	if err == nil {
 		if iv != nil {
 			return fmt.Errorf("Instance Variable %s still exists", key)

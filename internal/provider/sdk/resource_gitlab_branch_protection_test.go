@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabBranchProtection_basic(t *testing.T) {
@@ -112,7 +114,7 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 			},
 			// Update the Branch Protection code owner approval setting
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
@@ -154,7 +156,7 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Start with code owner approval required disabled
 			{
-				SkipFunc: isRunningInEE,
+				SkipFunc: testutil.IsRunningInEE,
 				Config:   testAccGitlabBranchProtectionConfigRequiredFields(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
@@ -169,7 +171,7 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 			},
 			// Create a project and Branch Protection with code owner approval enabled
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
@@ -185,7 +187,7 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 			},
 			// Attempting to update code owner approval setting on CE should fail safely and with an informative error message
 			{
-				SkipFunc:    isRunningInEE,
+				SkipFunc:    testutil.IsRunningInEE,
 				Config:      testAccGitlabBranchProtectionUpdateConfigCodeOwnerTrue(rInt),
 				ExpectError: regexp.MustCompile("feature unavailable: `code_owner_approval_required`"),
 			},
@@ -303,22 +305,22 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 }
 
 func TestAccGitlabBranchProtection_createWithMultipleAccessLevels(t *testing.T) {
-	testAccCheckEE(t)
+	testutil.SkipIfCE(t)
 
 	// Set up the project for the protected branch
-	testProject := testAccCreateProject(t)
+	testProject := testutil.CreateProject(t)
 	// Set up the groups to share the `testProject` with
-	testGroups := testAccCreateGroups(t, 2)
+	testGroups := testutil.CreateGroups(t, 2)
 	// Set up the users to add as members to the `testProject`
-	testUsers := testAccCreateUsers(t, 2)
+	testUsers := testutil.CreateUsers(t, 2)
 	// Add users as members to project
-	testAccAddProjectMembers(t, testProject.ID, testUsers)
+	testutil.AddProjectMembers(t, testProject.ID, testUsers)
 	// Add users to groups
-	testAccAddGroupMembers(t, testGroups[0].ID, []*gitlab.User{testUsers[0]})
-	testAccAddGroupMembers(t, testGroups[1].ID, []*gitlab.User{testUsers[1]})
+	testutil.AddGroupMembers(t, testGroups[0].ID, []*gitlab.User{testUsers[0]})
+	testutil.AddGroupMembers(t, testGroups[1].ID, []*gitlab.User{testUsers[1]})
 	// Share project with groups
-	testAccProjectShareGroup(t, testProject.ID, testGroups[0].ID)
-	testAccProjectShareGroup(t, testProject.ID, testGroups[1].ID)
+	testutil.ProjectShareGroup(t, testProject.ID, testGroups[0].ID)
+	testutil.ProjectShareGroup(t, testProject.ID, testGroups[1].ID)
 
 	var pb gitlab.ProtectedBranch
 
@@ -539,7 +541,7 @@ func testAccCheckGitlabBranchProtectionExists(n string, pb *gitlab.ProtectedBran
 			return fmt.Errorf("Error in Splitting Project and Branch Ids")
 		}
 
-		pbs, _, err := testGitlabClient.ProtectedBranches.ListProtectedBranches(project, nil)
+		pbs, _, err := testutil.TestGitlabClient.ProtectedBranches.ListProtectedBranches(project, nil)
 		if err != nil {
 			return err
 		}
@@ -622,7 +624,7 @@ func testAccCheckGitlabBranchProtectionAttributes(pb *gitlab.ProtectedBranch, wa
 
 		remainingWantedUserIDsAllowedToPush := map[int]struct{}{}
 		for _, v := range want.UsersAllowedToPush {
-			users, _, err := testGitlabClient.Users.ListUsers(&gitlab.ListUsersOptions{
+			users, _, err := testutil.TestGitlabClient.Users.ListUsers(&gitlab.ListUsersOptions{
 				Username: gitlab.String(v),
 			})
 			if err != nil {
@@ -635,7 +637,7 @@ func testAccCheckGitlabBranchProtectionAttributes(pb *gitlab.ProtectedBranch, wa
 		}
 		remainingWantedGroupIDsAllowedToPush := map[int]struct{}{}
 		for _, v := range want.GroupsAllowedToPush {
-			group, _, err := testGitlabClient.Groups.GetGroup(v, nil)
+			group, _, err := testutil.TestGitlabClient.Groups.GetGroup(v, nil)
 			if err != nil {
 				return fmt.Errorf("error looking up group by path %v: %v", v, err)
 			}
@@ -663,7 +665,7 @@ func testAccCheckGitlabBranchProtectionAttributes(pb *gitlab.ProtectedBranch, wa
 
 		remainingWantedUserIDsAllowedToMerge := map[int]struct{}{}
 		for _, v := range want.UsersAllowedToMerge {
-			users, _, err := testGitlabClient.Users.ListUsers(&gitlab.ListUsersOptions{
+			users, _, err := testutil.TestGitlabClient.Users.ListUsers(&gitlab.ListUsersOptions{
 				Username: gitlab.String(v),
 			})
 			if err != nil {
@@ -676,7 +678,7 @@ func testAccCheckGitlabBranchProtectionAttributes(pb *gitlab.ProtectedBranch, wa
 		}
 		remainingWantedGroupIDsAllowedToMerge := map[int]struct{}{}
 		for _, v := range want.GroupsAllowedToMerge {
-			group, _, err := testGitlabClient.Groups.GetGroup(v, nil)
+			group, _, err := testutil.TestGitlabClient.Groups.GetGroup(v, nil)
 			if err != nil {
 				return fmt.Errorf("error looking up group by path %v: %v", v, err)
 			}
@@ -704,7 +706,7 @@ func testAccCheckGitlabBranchProtectionAttributes(pb *gitlab.ProtectedBranch, wa
 
 		remainingWantedUserIDsAllowedToUnprotect := map[int]struct{}{}
 		for _, v := range want.UsersAllowedToUnprotect {
-			users, _, err := testGitlabClient.Users.ListUsers(&gitlab.ListUsersOptions{
+			users, _, err := testutil.TestGitlabClient.Users.ListUsers(&gitlab.ListUsersOptions{
 				Username: gitlab.String(v),
 			})
 			if err != nil {
@@ -717,7 +719,7 @@ func testAccCheckGitlabBranchProtectionAttributes(pb *gitlab.ProtectedBranch, wa
 		}
 		remainingWantedGroupIDsAllowedToUnprotect := map[int]struct{}{}
 		for _, v := range want.GroupsAllowedToUnprotect {
-			group, _, err := testGitlabClient.Groups.GetGroup(v, nil)
+			group, _, err := testutil.TestGitlabClient.Groups.GetGroup(v, nil)
 			if err != nil {
 				return fmt.Errorf("error looking up group by path %v: %v", v, err)
 			}
@@ -762,7 +764,7 @@ func testAccCheckGitlabBranchProtectionDestroy(s *terraform.State) error {
 		}
 	}
 
-	pb, _, err := testGitlabClient.ProtectedBranches.GetProtectedBranch(project, branch)
+	pb, _, err := testutil.TestGitlabClient.ProtectedBranches.GetProtectedBranch(project, branch)
 	if err == nil {
 		if pb != nil {
 			return fmt.Errorf("project branch protection %s still exists", branch)

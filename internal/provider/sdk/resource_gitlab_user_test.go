@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabUser_basic(t *testing.T) {
@@ -448,7 +450,7 @@ func testAccCheckGitlabUserExists(n string, user *gitlab.User) resource.TestChec
 		}
 		id, _ := strconv.Atoi(userID)
 
-		gotUser, _, err := testGitlabClient.Users.GetUser(id, gitlab.GetUsersOptions{})
+		gotUser, _, err := testutil.TestGitlabClient.Users.GetUser(id, gitlab.GetUsersOptions{})
 		if err != nil {
 			return err
 		}
@@ -520,7 +522,7 @@ func testAccCheckGitlabUserDestroy(s *terraform.State) error {
 
 		id, _ := strconv.Atoi(rs.Primary.ID)
 
-		user, _, err := testGitlabClient.Users.GetUser(id, gitlab.GetUsersOptions{})
+		user, _, err := testutil.TestGitlabClient.Users.GetUser(id, gitlab.GetUsersOptions{})
 		if err == nil {
 			if user != nil && fmt.Sprintf("%d", user.ID) == rs.Primary.ID {
 				return fmt.Errorf("User still exists")

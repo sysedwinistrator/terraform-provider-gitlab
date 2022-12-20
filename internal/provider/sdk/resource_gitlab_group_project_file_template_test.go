@@ -11,20 +11,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupProjectFileTemplate_basic(t *testing.T) {
 	// Since we do some manual setup in this test, we need to handle the test skip first.
-	baseGroup := testAccCreateGroups(t, 1)[0]
-	firstProject := testAccCreateProjectWithNamespace(t, baseGroup.ID)
-	secondProject := testAccCreateProjectWithNamespace(t, baseGroup.ID)
+	baseGroup := testutil.CreateGroups(t, 1)[0]
+	firstProject := testutil.CreateProjectWithNamespace(t, baseGroup.ID)
+	secondProject := testutil.CreateProjectWithNamespace(t, baseGroup.ID)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckProjectFileTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGroupProjectFileTemplateConfig(baseGroup.ID, firstProject.ID),
 				Check: resource.ComposeTestCheckFunc(
 					// Note - we can't use the testAccCheckGitlabGroupAttributes, because that checks the TF
@@ -36,7 +38,7 @@ func TestAccGitlabGroupProjectFileTemplate_basic(t *testing.T) {
 			},
 			{
 				//Test that when we update the project name, it re-links the group to the new project
-				SkipFunc: isRunningInCE,
+				SkipFunc: testutil.IsRunningInCE,
 				Config:   testAccGroupProjectFileTemplateConfig(baseGroup.ID, secondProject.ID),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupFileTemplateValue(baseGroup, secondProject),
@@ -52,7 +54,7 @@ func TestAccGitlabGroupProjectFileTemplate_basic(t *testing.T) {
 func testAccCheckGitlabGroupFileTemplateValue(g *gitlab.Group, p *gitlab.Project) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		//Re-retrieve the group to ensure we have the most up-to-date group info
-		g, _, err := testGitlabClient.Groups.GetGroup(g.ID, &gitlab.GetGroupOptions{})
+		g, _, err := testutil.TestGitlabClient.Groups.GetGroup(g.ID, &gitlab.GetGroupOptions{})
 		if is404(err) {
 			return fmt.Errorf("Group no longer exists, expected group to exist with a file_template_project_id")
 		}
@@ -72,7 +74,7 @@ func testAccCheckProjectFileTemplateDestroy(state *terraform.State) error {
 
 		// To test if the resource was destroyed, we need to retrieve the group.
 		gid := rs.Primary.ID
-		group, _, err := testGitlabClient.Groups.GetGroup(gid, nil)
+		group, _, err := testutil.TestGitlabClient.Groups.GetGroup(gid, nil)
 		if err != nil {
 			return err
 		}

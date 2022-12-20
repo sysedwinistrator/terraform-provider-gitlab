@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabGroupLabel_basic(t *testing.T) {
@@ -97,7 +99,7 @@ func testAccCheckGitlabGroupLabelExists(n string, label *gitlab.GroupLabel) reso
 			return fmt.Errorf("No group ID is set")
 		}
 
-		labels, _, err := testGitlabClient.GroupLabels.ListGroupLabels(groupName, &gitlab.ListGroupLabelsOptions{ListOptions: gitlab.ListOptions{PerPage: 1000}})
+		labels, _, err := testutil.TestGitlabClient.GroupLabels.ListGroupLabels(groupName, &gitlab.ListGroupLabelsOptions{ListOptions: gitlab.ListOptions{PerPage: 1000}})
 		if err != nil {
 			return err
 		}
@@ -141,7 +143,7 @@ func testAccCheckGitlabGroupLabelDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, _, err := testGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
+		group, _, err := testutil.TestGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
 		if err == nil {
 			if group != nil && fmt.Sprintf("%d", group.ID) == rs.Primary.ID {
 				if group.MarkedForDeletionOn == nil {

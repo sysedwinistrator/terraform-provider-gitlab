@@ -6,7 +6,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_service_jira", func() *schema.Resource {
@@ -186,7 +188,7 @@ func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, 
 	d.Set("username", jiraService.Properties.Username)
 	d.Set("project_key", jiraService.Properties.ProjectKey)
 
-	hasJiraIssueTransitionIDFixed, err := isGitLabVersionAtLeast(ctx, client, "15.2")()
+	hasJiraIssueTransitionIDFixed, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "15.2")()
 	if err != nil {
 		return diag.Errorf("failed to check if `jira_issue_transition_id` is properly supported in GitLab version: %v", err)
 	}

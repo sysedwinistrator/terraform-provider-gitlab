@@ -168,7 +168,7 @@ func dataSourceGitlabGroupMembershipRead(ctx context.Context, d *schema.Resource
 func flattenGitlabGroupMembers(d *schema.ResourceData, members []*gitlab.GroupMember) []interface{} {
 	membersList := []interface{}{}
 
-	var filterAccessLevel gitlab.AccessLevelValue = gitlab.NoPermissions
+	var filterAccessLevel = gitlab.NoPermissions
 	if data, ok := d.GetOk("access_level"); ok {
 		filterAccessLevel = accessLevelNameToValue[data.(string)]
 	}

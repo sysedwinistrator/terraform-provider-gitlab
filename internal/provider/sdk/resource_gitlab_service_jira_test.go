@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccGitlabServiceJira_basic(t *testing.T) {
@@ -106,7 +108,7 @@ func testAccCheckGitlabServiceJiraExists(n string, service *gitlab.JiraService) 
 		if project == "" {
 			return fmt.Errorf("No project ID is set")
 		}
-		jiraService, _, err := testGitlabClient.Services.GetJiraService(project)
+		jiraService, _, err := testutil.TestGitlabClient.Services.GetJiraService(project)
 		if err != nil {
 			return fmt.Errorf("Jira service does not exist in project %s: %v", project, err)
 		}
@@ -124,7 +126,7 @@ func testAccCheckGitlabServiceJiraDestroy(s *terraform.State) error {
 
 		project := rs.Primary.ID
 
-		_, _, err := testGitlabClient.Services.GetJiraService(project)
+		_, _, err := testutil.TestGitlabClient.Services.GetJiraService(project)
 		if err == nil {
 			return fmt.Errorf("Jira Service Integration in project %s still exists", project)
 		}
