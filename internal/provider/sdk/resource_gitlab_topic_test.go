@@ -153,7 +153,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -163,7 +163,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is not supported by your version of GitLab. At least GitLab 15.0 is required`),
 			},
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -172,7 +172,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is a required attribute for GitLab 15.0 and newer. Please specify it in the configuration.`),
 			},
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
