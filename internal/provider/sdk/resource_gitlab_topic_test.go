@@ -6,7 +6,6 @@ package sdk
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -15,9 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
-
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
@@ -25,7 +22,7 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 	var topic gitlab.Topic
 	rInt := acctest.RandInt()
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
@@ -44,9 +41,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Update the topics values
 			{
@@ -57,8 +51,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 						Name:        fmt.Sprintf("foo-full-%d", rInt),
 						Description: "Terraform acceptance tests",
 					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
 				),
 			},
 			// Verify import
@@ -66,111 +58,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update back to the default topics avatar
-			{
-				Config: testAccGitlabTopicFullConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update the topics avatar
-			{
-				Config: testAccGitlabTopicFullUpdatedAvatarConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update back to the default topics avatar
-			{
-				Config: testAccGitlabTopicFullConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "8d29d9c393facb9d86314eb347a03fde503f2c0422bf55af7df086deb126107e"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
-			},
-			// Update the avatar image, but keep the filename to test the `CustomizeDiff` function
-			{
-				Config: testAccGitlabTopicFullConfig(t, rInt),
-				PreConfig: func() {
-					// overwrite the avatar image file
-					if err := testutil.CopyFile("testdata/gitlab_topic/avatar.png", "testdata/gitlab_topic/avatar.png.bak"); err != nil {
-						t.Fatalf("failed to backup the avatar image file: %v", err)
-					}
-					if err := testutil.CopyFile("testdata/gitlab_topic/avatar-update.png", "testdata/gitlab_topic/avatar.png"); err != nil {
-						t.Fatalf("failed to overwrite the avatar image file: %v", err)
-					}
-					t.Cleanup(func() {
-						if err := os.Rename("testdata/gitlab_topic/avatar.png.bak", "testdata/gitlab_topic/avatar.png"); err != nil {
-							t.Fatalf("failed to restore the avatar image file: %v", err)
-						}
-					})
-				},
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
-						Name:        fmt.Sprintf("foo-full-%d", rInt),
-						Description: "Terraform acceptance tests",
-					}),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", "a58bd926fd3baabd41c56e810f62ade8705d18a4e280fb35764edb4b778444db"),
-				),
-			},
-			// Verify import
-			{
-				ResourceName:      "gitlab_topic.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Update the topics values back to their initial state
 			{
@@ -180,8 +67,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 					testAccCheckGitlabTopicAttributes(&topic, &testAccGitlabTopicExpectedAttributes{
 						Name: fmt.Sprintf("foo-req-%d", rInt),
 					}),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_url", ""),
-					resource.TestCheckResourceAttr("gitlab_topic.foo", "avatar_hash", ""),
 				),
 			},
 			// Verify import
@@ -189,9 +74,6 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 			// Updating the topic to have a description before it is deleted
 			{
@@ -209,38 +91,39 @@ func TestAccGitlabTopic_basic(t *testing.T) {
 				ResourceName:      "gitlab_topic.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"avatar", "avatar_hash", "soft_destroy",
-				},
 			},
 		},
 	})
 }
 
-func TestAccGitlabTopic_withoutAvatarHash(t *testing.T) {
-	var topic gitlab.Topic
-	rInt := acctest.RandInt()
+func TestAccGitlabTopic_WithoutAvatarHash(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_topic" "test" {
+		name  = "%[1]s"
+		title = "%[1]s"
 
-	resource.ParallelTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabTopicDestroy,
-		Steps: []resource.TestStep{
-			// Create a topic with avatar, but without giving a hash
-			{
-				Config: testAccGitlabTopicAvatarWithoutHashConfig(t, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabTopicExists("gitlab_topic.foo", &topic),
-					resource.TestCheckResourceAttrSet("gitlab_topic.foo", "avatar_url"),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-			// Update the avatar image, but keep the filename to test the `CustomizeDiff` function
-			{
-				Config:             testAccGitlabTopicAvatarWithoutHashConfig(t, rInt),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithoutAvatarHash(t, "gitlab_topic.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabTopicDestroy
+	resource.Test(t, testCase)
+}
+
+func TestAccGitlabTopic_WithAvatar(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_topic" "test" {
+		name  = "%[1]s"
+		title = "%[1]s"
+
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithAvatar(t, "gitlab_topic.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabTopicDestroy
+	resource.Test(t, testCase)
 }
 
 func TestAccGitlabTopic_softDestroy(t *testing.T) {
@@ -280,7 +163,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is not supported by your version of GitLab. At least GitLab 15.0 is required`),
 			},
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -289,7 +172,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is a required attribute for GitLab 15.0 and newer. Please specify it in the configuration.`),
 			},
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -438,36 +321,6 @@ resource "gitlab_topic" "foo" {
   name        = "foo-full-%d"
   %s
   description = "Terraform acceptance tests"
-  avatar      = "${path.module}/testdata/gitlab_topic/avatar.png"
-  avatar_hash = filesha256("${path.module}/testdata/gitlab_topic/avatar.png")
-}`, rInt, titleConfig)
-}
-
-func testAccGitlabTopicFullUpdatedAvatarConfig(t *testing.T, rInt int) string {
-	var titleConfig string
-	if testutil.IsRunningAtLeast(t, "15.0") {
-		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
-	}
-	return fmt.Sprintf(`
-resource "gitlab_topic" "foo" {
-  name        = "foo-full-%d"
-  %s
-  description = "Terraform acceptance tests"
-  avatar 	  = "${path.module}/testdata/gitlab_topic/avatar-update.png"
-  avatar_hash = filesha256("${path.module}/testdata/gitlab_topic/avatar-update.png")
-}`, rInt, titleConfig)
-}
-
-func testAccGitlabTopicAvatarWithoutHashConfig(t *testing.T, rInt int) string {
-	var titleConfig string
-	if testutil.IsRunningAtLeast(t, "15.0") {
-		titleConfig = fmt.Sprintf(`title = "Foo Req %d"`, rInt)
-	}
-	return fmt.Sprintf(`
-resource "gitlab_topic" "foo" {
-  name   = "foo-%d"
-  %s
-  avatar = "${path.module}/testdata/gitlab_topic/avatar.png"
 }`, rInt, titleConfig)
 }
 

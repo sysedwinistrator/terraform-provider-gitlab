@@ -1560,6 +1560,36 @@ func TestAccGitlabProject_ContainerExpirationPolicy(t *testing.T) {
 	})
 }
 
+func TestAccGitlabProject_WithoutAvatarHash(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_project" "test" {
+		name             =  "%s"
+		visibility_level = "public"
+
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithoutAvatarHash(t, "gitlab_project.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabProjectDestroy
+	resource.Test(t, testCase)
+}
+
+func TestAccGitlabProject_WithAvatar(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_project" "test" {
+		name             =  "%s"
+		visibility_level = "public"
+
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithAvatar(t, "gitlab_project.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabProjectDestroy
+	resource.Test(t, testCase)
+}
+
 func testAccCheckGitlabProjectExists(n string, project *gitlab.Project) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		var err error

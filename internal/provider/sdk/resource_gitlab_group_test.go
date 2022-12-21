@@ -349,6 +349,38 @@ func TestAccGitlabGroup_SetDefaultFalseBooleansOnCreate(t *testing.T) {
 	})
 }
 
+func TestAccGitlabGroup_WithoutAvatarHash(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_group" "test" {
+		name             =  "%[1]s"
+		path             =  "%[1]s"
+		visibility_level = "public"
+
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithoutAvatarHash(t, "gitlab_group.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabGroupDestroy
+	resource.Test(t, testCase)
+}
+
+func TestAccGitlabGroup_WithAvatar(t *testing.T) {
+	testConfig := fmt.Sprintf(`
+	resource "gitlab_group" "test" {
+		name             =  "%[1]s"
+		path             =  "%[1]s"
+		visibility_level = "public"
+
+		{{.AvatarableAttributeConfig}}
+	}
+	`, acctest.RandomWithPrefix("acctest"))
+
+	testCase := createAvatarableTestCase_WithAvatar(t, "gitlab_group.test", testConfig)
+	testCase.CheckDestroy = testAccCheckGitlabGroupDestroy
+	resource.Test(t, testCase)
+}
+
 func testAccCheckGitlabGroupExists(n string, group *gitlab.Group) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
