@@ -27,9 +27,9 @@ func TestAccGitlabUserCustomAttribute_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 resource "gitlab_user" "user" {
-  name        = "foo-%d"
-  username    = "foo-%d"
-  password    = "foofoofoo"
+  name        = "foo%d"
+  username    = "foo%d"
+  password    = "SvNwfHhbvPmHZr%d"
   email       = "foo@email.com"
 }
 
@@ -37,7 +37,7 @@ resource "gitlab_user_custom_attribute" "attr" {
 	user  = gitlab_user.user.id
 	key   = "foo"
 	value = "bar"
-}`, rInt, rInt),
+}`, rInt, rInt, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabUserExists("gitlab_user.user", &user),
 					testAccCheckGitlabUserCustomAttributeExists("gitlab_user_custom_attribute.attr", &customAttribute),
@@ -51,9 +51,9 @@ resource "gitlab_user_custom_attribute" "attr" {
 			{
 				Config: fmt.Sprintf(`
 resource "gitlab_user" "user" {
-  name        = "foo-%d"
-  username    = "foo-%d"
-  password    = "foofoofoo"
+  name        = "foo%d"
+  username    = "foo%d"
+  password    = "SvNwfHhbvPmHZr%d"
   email       = "foo@email.com"
 }
 
@@ -61,7 +61,7 @@ resource "gitlab_user_custom_attribute" "attr" {
 	user  = gitlab_user.user.id
 	key   = "foo"
 	value = "updated"
-}`, rInt, rInt),
+}`, rInt, rInt, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabUserExists("gitlab_user.user", &user),
 					testAccCheckGitlabUserCustomAttributeExists("gitlab_user_custom_attribute.attr", &customAttribute),

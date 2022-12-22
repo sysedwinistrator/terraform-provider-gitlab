@@ -10,7 +10,7 @@ services:
     ports:
       - 8080:80
     environment:
-      GITLAB_ROOT_PASSWORD: adminadmin
+      GITLAB_ROOT_PASSWORD: 'FoQ7PaTZqWaftrZ7zvAK'
     labels:
       terraform-provider-gitlab/owned: ''
     volumes:
@@ -32,7 +32,7 @@ services:
     ports:
       - 8080:80
     environment:
-      GITLAB_ROOT_PASSWORD: adminadmin
+      GITLAB_ROOT_PASSWORD: 'FoQ7PaTZqWaftrZ7zvAK'
       GITLAB_LICENSE_FILE: /Gitlab-license.txt
     labels:
       terraform-provider-gitlab/owned: ''

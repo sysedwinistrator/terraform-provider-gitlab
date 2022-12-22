@@ -71,6 +71,7 @@ go:build:
         - "**/*.go"
         - go.mod
         - go.sum
+        - .gitlab-ci.yml
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
   needs: []
@@ -125,6 +126,7 @@ go:test:
         - "**/*.go"
         - go.mod
         - go.sum
+        - .gitlab-ci.yml
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
   stage: test
@@ -158,7 +160,7 @@ go:test:
     - make testacc
   parallel:
     matrix:
-      - GITLAB_VERSION: ["15.4.4-${GITLAB_EDITION}.0", "15.5.4-${GITLAB_EDITION}.0", "15.6.0-${GITLAB_EDITION}.0"]
+      - GITLAB_VERSION: ["15.5.6-${GITLAB_EDITION}.0", "15.6.3-${GITLAB_EDITION}.0", "15.7.0-${GITLAB_EDITION}.0"]
   artifacts:
     paths:
       - $GITLAB_EDITION-$GITLAB_VERSION-docker-compose-pull-logs.txt
@@ -174,6 +176,7 @@ testacc:ce:
         - "**/*.go"
         - go.mod
         - go.sum
+        - .gitlab-ci.yml
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
   variables:
@@ -191,6 +194,7 @@ testacc:ee:
         - "**/*.go"
         - go.mod
         - go.sum
+        - .gitlab-ci.yml
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $ENABLE_EE_ACCEPTANCE_TESTS == "true" 
     - if: $CI_COMMIT_TAG && $ENABLE_EE_ACCEPTANCE_TESTS == "true" 
 

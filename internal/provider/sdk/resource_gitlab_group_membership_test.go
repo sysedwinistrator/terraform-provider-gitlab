@@ -178,7 +178,7 @@ resource "gitlab_group" "foo" {
 resource "gitlab_user" "test" {
   name 		= "foo%d"
   username  = "listest%d"
-  password  = "test%dtt"
+  password  = "SvNwfHhbvPmHZr-%d"
   email 	= "listest%d@ssss.com"
 }
 
@@ -199,7 +199,7 @@ resource "gitlab_group" "foo" {
 resource "gitlab_user" "test" {
   name 		= "foo%d"
   username 	= "listest%d"
-  password 	= "test%dtt"
+  password 	= "SvNwfHhbvPmHZr-%d"
   email 	= "listest%d@ssss.com"
 }
 

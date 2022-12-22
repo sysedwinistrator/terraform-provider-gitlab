@@ -76,7 +76,7 @@ resource "gitlab_group" "foo" {
 resource "gitlab_user" "test" {
   name     = "foo%d"
   username = "listest%d"
-  password = "test%dtt"
+  password = "%s"
   email    = "listest%d@ssss.com"
 }
 
@@ -84,7 +84,7 @@ resource "gitlab_group_membership" "foo" {
   group_id     = "${gitlab_group.foo.id}"
   user_id      = "${gitlab_user.test.id}"
   access_level = "developer"
-}`, rInt, rInt, rInt, rInt, rInt, rInt)
+}`, rInt, rInt, rInt, rInt, acctest.RandString(16), rInt)
 }
 
 func testAccDataSourceGitlabGroupMembershipConfig_basic(rInt int) string {
