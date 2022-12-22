@@ -29,7 +29,7 @@ func TestAccGitlabUserCustomAttribute_basic(t *testing.T) {
 resource "gitlab_user" "user" {
   name        = "foo-%d"
   username    = "foo-%d"
-  password    = "siuqbhiksl-%d"
+  password    = "SvNwfHhbvPmHZr-%d"
   email       = "foo@email.com"
 }
 
@@ -53,7 +53,7 @@ resource "gitlab_user_custom_attribute" "attr" {
 resource "gitlab_user" "user" {
   name        = "foo-%d"
   username    = "foo-%d"
-  password    = "siuqbhiksl-%d"
+  password    = "SvNwfHhbvPmHZr-%d"
   email       = "foo@email.com"
 }
 
