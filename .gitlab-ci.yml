@@ -160,7 +160,7 @@ go:test:
     - make testacc
   parallel:
     matrix:
-      - GITLAB_VERSION: ["15.4.4-${GITLAB_EDITION}.0", "15.5.4-${GITLAB_EDITION}.0", "15.6.0-${GITLAB_EDITION}.0"]
+      - GITLAB_VERSION: ["15.5.6-${GITLAB_EDITION}.0", "15.6.3-${GITLAB_EDITION}.0", "15.7.0-${GITLAB_EDITION}.0"]
   artifacts:
     paths:
       - $GITLAB_EDITION-$GITLAB_VERSION-docker-compose-pull-logs.txt
