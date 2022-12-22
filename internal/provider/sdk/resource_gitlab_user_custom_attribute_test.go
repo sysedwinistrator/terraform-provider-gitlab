@@ -27,9 +27,9 @@ func TestAccGitlabUserCustomAttribute_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 resource "gitlab_user" "user" {
-  name        = "foo-%d"
-  username    = "foo-%d"
-  password    = "SvNwfHhbvPmHZr-%d"
+  name        = "foo%d"
+  username    = "foo%d"
+  password    = "SvNwfHhbvPmHZr%d"
   email       = "foo@email.com"
 }
 
@@ -51,9 +51,9 @@ resource "gitlab_user_custom_attribute" "attr" {
 			{
 				Config: fmt.Sprintf(`
 resource "gitlab_user" "user" {
-  name        = "foo-%d"
-  username    = "foo-%d"
-  password    = "SvNwfHhbvPmHZr-%d"
+  name        = "foo%d"
+  username    = "foo%d"
+  password    = "SvNwfHhbvPmHZr%d"
   email       = "foo@email.com"
 }
 
