@@ -14,27 +14,28 @@ import (
 
 func TestAccDataSourceGitlabUser_basic(t *testing.T) {
 	rString := fmt.Sprintf("%s", acctest.RandString(5)) // nolint // TODO: Resolve this golangci-lint issue: S1025: the argument is already a string, there's no need to use fmt.Sprintf (gosimple)
+	password := acctest.RandString(16)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
 			// Get user using its email
 			{
-				Config: testAccDataGitlabUserConfigEmail(rString),
+				Config: testAccDataGitlabUserConfigEmail(rString, password),
 				Check: resource.ComposeTestCheckFunc(
 					testAccDataSourceGitlabUser("gitlab_user.foo", "data.gitlab_user.foo"),
 				),
 			},
 			// Get user using its ID
 			{
-				Config: testAccDataGitlabUserConfigUserID(rString),
+				Config: testAccDataGitlabUserConfigUserID(rString, password),
 				Check: resource.ComposeTestCheckFunc(
 					testAccDataSourceGitlabUser("gitlab_user.foo2", "data.gitlab_user.foo2"),
 				),
 			},
 			// Get user using its username
 			{
-				Config: testAccDataGitlabUserConfigUsername(rString),
+				Config: testAccDataGitlabUserConfigUsername(rString, password),
 				Check: resource.ComposeTestCheckFunc(
 					testAccDataSourceGitlabUser("gitlab_user.foo", "data.gitlab_user.foo"),
 				),
@@ -71,12 +72,12 @@ func testAccDataSourceGitlabUser(src, n string) resource.TestCheckFunc {
 	}
 }
 
-func testAccDataGitlabUserConfigEmail(rString string) string {
+func testAccDataGitlabUserConfigEmail(rString string, password string) string {
 	return fmt.Sprintf(`
 resource "gitlab_user" "foo" {
   name     = "foo%s"
   username = "listest%s"
-  password = "test%stt"
+  password = "%s"
   email    = "listest%s@ssss.com"
   is_admin = false
 }
@@ -84,22 +85,22 @@ resource "gitlab_user" "foo" {
 resource "gitlab_user" "foo2" {
   name     = "foo2%s"
   username = "listest2%s"
-  password = "test2%stt"
+  password = "%s"
   email    = "listest2%s@ssss.com"
 }
 
 data "gitlab_user" "foo" {
   email = "${gitlab_user.foo.email}"
 }
-`, rString, rString, rString, rString, rString, rString, rString, rString)
+`, rString, rString, password, rString, rString, rString, password, rString)
 }
 
-func testAccDataGitlabUserConfigUserID(rString string) string {
+func testAccDataGitlabUserConfigUserID(rString string, password string) string {
 	return fmt.Sprintf(`
 resource "gitlab_user" "foo" {
   name     = "foo%s"
   username = "listest%s"
-  password = "test%stt"
+  password = "%s"
   email    = "listest%s@ssss.com"
   is_admin = false
 }
@@ -107,22 +108,22 @@ resource "gitlab_user" "foo" {
 resource "gitlab_user" "foo2" {
   name     = "foo2%s"
   username = "listest2%s"
-  password = "test2%stt"
+  password = "%s"
   email    = "listest2%s@ssss.com"
 }
 
 data "gitlab_user" "foo2" {
   user_id = "${gitlab_user.foo2.id}"
 }
-`, rString, rString, rString, rString, rString, rString, rString, rString)
+`, rString, rString, password, rString, rString, rString, password, rString)
 }
 
-func testAccDataGitlabUserConfigUsername(rString string) string {
+func testAccDataGitlabUserConfigUsername(rString string, password string) string {
 	return fmt.Sprintf(`
 resource "gitlab_user" "foo" {
   name     = "foo%s"
   username = "listest%s"
-  password = "test%stt"
+  password = "%s"
   email    = "listest%s@ssss.com"
   is_admin = false
 }
@@ -130,12 +131,12 @@ resource "gitlab_user" "foo" {
 resource "gitlab_user" "foo2" {
   name     = "foo2%s"
   username = "listest2%s"
-  password = "test2%stt"
+  password = "%s"
   email    = "listest2%s@ssss.com"
 }
 
 data "gitlab_user" "foo" {
   username = "${gitlab_user.foo.username}"
 }
-`, rString, rString, rString, rString, rString, rString, rString, rString)
+`, rString, rString, password, rString, rString, rString, password, rString)
 }
