@@ -48,6 +48,7 @@ code_navigation:
   allow_failure: true # recommended
   script:
     - lsif-go
+    - ls -lh dump.lsif
   artifacts:
     reports:
       lsif: dump.lsif
