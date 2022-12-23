@@ -41,20 +41,22 @@ cache:
   paths:
     - .go/pkg/mod
 
-code_navigation:
-  needs: []
-  stage: build
-  image: sourcegraph/lsif-go:v1
-  allow_failure: true # recommended
-  script:
-    - lsif-go
-    - ls -lh dump.lsif
-  artifacts:
-    reports:
-      lsif: dump.lsif
-  rules:
-    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_REF_NAME
-    - if: $CI_COMMIT_TAG
+# Disabling code navigatino with LSIF, until the upload issue is solved.
+# see https://gitlab.com/gitlab-org/gitlab/-/issues/365885#note_1219840952
+# code_navigation:
+#   needs: []
+#   stage: build
+#   image: sourcegraph/lsif-go:v1
+#   allow_failure: true # recommended
+#   script:
+#     - lsif-go
+#     - ls -lh dump.lsif
+#   artifacts:
+#     reports:
+#       lsif: dump.lsif
+#   rules:
+#     - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_REF_NAME
+#     - if: $CI_COMMIT_TAG
 
 make:lint:
   needs: []
