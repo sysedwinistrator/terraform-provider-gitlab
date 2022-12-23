@@ -1,3 +1,11 @@
+## 15.7.1 (2022-12-23)
+
+This release was tested against GitLab 15.5, 15.6 and 15.7 for both CE and EE.
+
+BUG FIXES:
+
+* provider: default to `gitlab.com` as base URL if it is not provided ([#1400](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1400))
+
 ## 15.7.0 (2022-12-22)
 
 * This release was tested against GitLab 15.5, 15.6 and 15.7 for both CE and EE.
