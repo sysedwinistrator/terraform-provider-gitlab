@@ -25,10 +25,6 @@ type Config struct {
 
 // Client returns a *gitlab.Client to interact with the configured gitlab instance
 func (c *Config) NewGitLabClient(ctx context.Context) (*gitlab.Client, error) {
-	if c.BaseURL == "" {
-		return nil, errors.New("No GitLab Base URL configured, either use the `base_url` provider argument or set it as `GITLAB_BASE_URL` environment variable")
-	}
-
 	if c.Token == "" {
 		return nil, errors.New("No GitLab token configured, either use the `token` provider argument or set it as `GITLAB_TOKEN` environment variable")
 	}
