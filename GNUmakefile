@@ -62,11 +62,11 @@ apiunused: tool-apiunused ## Run an analysis tool to output unused parts of the 
 	@$(GOBIN)/apiunused ./gitlab
 
 SERVICE ?= gitlab-ce
-GITLAB_TOKEN ?= ACCTEST1234567890123
+GITLAB_TOKEN ?= glpat-ACCTEST1234567890123
 GITLAB_BASE_URL ?= http://127.0.0.1:8080/api/v4
 
 testacc-up: | certs ## Launch a GitLab instance.
-	docker-compose up -d $(SERVICE)
+	GITLAB_TOKEN=$(GITLAB_TOKEN) docker-compose up -d $(SERVICE)
 	GITLAB_BASE_URL=$(GITLAB_BASE_URL) ./scripts/await-healthy.sh
 
 testacc-down: ## Teardown a GitLab instance.

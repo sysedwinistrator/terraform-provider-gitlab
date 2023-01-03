@@ -11,5 +11,5 @@ echo
 echo "GitLab is healthy at $GITLAB_BASE_URL"
 
 # Print the version, since it is useful debugging information.
-curl --silent --show-error --header 'Authorization: Bearer ACCTEST1234567890123' "$GITLAB_BASE_URL/version"
+curl --silent --show-error --header "Authorization: Bearer $GITLAB_TOKEN" "$GITLAB_BASE_URL/version"
 echo
