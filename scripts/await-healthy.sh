@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 printf 'Waiting for GitLab container to become healthy'
 
 until test -n "$(docker ps --quiet --filter label=terraform-provider-gitlab/owned --filter health=healthy)"; do
