@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 // Ensure GitLabProvider satisfies various provider interfaces.
@@ -182,6 +183,9 @@ func (p *GitLabProvider) Configure(ctx context.Context, req provider.ConfigureRe
 	}
 
 	// TODO(@timofurrer): validate configuration values
+
+	// Configure our logger masking
+	ctx = utils.ApplyLogMaskingToContext(ctx)
 
 	// Creating a new GitLab Client from the provider configuration
 	gitlabClient, err := evaluatedConfig.NewGitLabClient(ctx)

@@ -8,7 +8,7 @@ terraform {
 
 provider "gitlab" {
   base_url = "http://localhost:8080"
-  token    = "ACCTEST1234567890123"
+  token    = "glpat-ACCTEST1234567890123"
 }
 
 data "gitlab_metadata" "this" {}

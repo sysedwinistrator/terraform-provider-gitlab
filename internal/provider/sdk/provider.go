@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -114,6 +115,9 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		if _, ok := d.GetOk("early_auth_check"); !ok {
 			config.EarlyAuthFail = true
 		}
+
+		// Configure our logger masking
+		ctx = utils.ApplyLogMaskingToContext(ctx)
 
 		gitlabClient, err := config.NewGitLabClient(ctx)
 		if err != nil {
