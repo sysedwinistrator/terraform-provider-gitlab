@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -170,6 +171,12 @@ var _ = registerResource("gitlab_group", func() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 			},
+			"ip_restriction_ranges": {
+				Description: "A list of IP addresses or subnet masks to restrict group access. Will be concatenated together into a comma separated string. Only allowed on top level groups.",
+				Type:        schema.TypeList,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Optional:    true,
+			},
 		}, avatarableSchema()),
 		CustomizeDiff: avatarableDiff,
 	}
@@ -287,6 +294,11 @@ func resourceGitlabGroupCreate(ctx context.Context, d *schema.ResourceData, meta
 		updateOptions.PreventForkingOutsideGroup = gitlab.Bool(v.(bool))
 	}
 
+	// IP Restriction can only be set on update.
+	if v, ok := d.GetOk("ip_restriction_ranges"); ok {
+		updateOptions.IPRestrictionRanges = stringListToCommaSeparatedString(v.([]interface{}))
+	}
+
 	if (updateOptions != gitlab.UpdateGroupOptions{}) {
 		if _, _, err = client.Groups.UpdateGroup(d.Id(), &updateOptions, gitlab.WithContext(ctx)); err != nil {
 			return diag.Errorf("could not update group after creation %q: %s", d.Id(), err)
@@ -341,6 +353,19 @@ func resourceGitlabGroupRead(ctx context.Context, d *schema.ResourceData, meta i
 	d.Set("extra_shared_runners_minutes_limit", group.ExtraSharedRunnersMinutesLimit)
 	d.Set("shared_runners_minutes_limit", group.SharedRunnersMinutesLimit)
 	d.Set("avatar_url", group.AvatarURL)
+
+	// The value comes back from the API as a comma separated string, and stores in TF as a set.
+	// We need to set the value only if it's "", otherwise the split gives up [""] which will result
+	// in a non-empty plan.
+	var IPValue []string = []string{}
+	if group.IPRestrictionRanges != "" {
+		IPValue = strings.Split(group.IPRestrictionRanges, ",")
+	}
+
+	if err := d.Set("ip_restriction_ranges", IPValue); err != nil {
+		tflog.Error(ctx, "Error setting ip_restriction_ranges.")
+		return diag.FromErr(err)
+	}
 
 	return nil
 }
@@ -426,6 +451,10 @@ func resourceGitlabGroupUpdate(ctx context.Context, d *schema.ResourceData, meta
 
 	if d.HasChange("shared_runners_minutes_limit") {
 		options.SharedRunnersMinutesLimit = gitlab.Int(d.Get("shared_runners_minutes_limit").(int))
+	}
+
+	if d.HasChange("ip_restriction_ranges") {
+		options.IPRestrictionRanges = stringListToCommaSeparatedString(d.Get("ip_restriction_ranges").([]interface{}))
 	}
 
 	avatar, err := handleAvatarOnUpdate(d)
