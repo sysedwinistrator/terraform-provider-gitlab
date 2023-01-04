@@ -223,6 +223,55 @@ testacc:ee:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $ENABLE_EE_ACCEPTANCE_TESTS == "true" 
     - if: $CI_COMMIT_TAG && $ENABLE_EE_ACCEPTANCE_TESTS == "true" 
 
+testacc:ce:nightly:
+  extends: .testacc
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    GITLAB_EDITION: ce
+    GITLAB_VERSION: nightly
+  allow_failure: true
+
+testacc:ee:nightly:
+  extends: .testacc
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $ENABLE_EE_ACCEPTANCE_TESTS == "true" && $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    GITLAB_EDITION: ee
+    GITLAB_VERSION: nightly
+  allow_failure: true
+  
+testacc:nightly:failure:
+  image: alpine:latest
+  stage: acceptance-test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "schedule"
+      when: on_failure
+  needs:
+    # needs to be set to optional for pipelines in forks that may not have 
+    # EE tests enabled.
+    - job: testacc:ee:nightly
+      optional: true
+    - job: testacc:ee
+      optional: true
+    # CE jobs will always be present in the pipeline
+    - job: testacc:ce:nightly
+    - job: testacc:ce
+  before_script:
+    - apk add --update curl jq
+  script:
+    - sed -i "s@REPLACE_ME@$CI_PIPELINE_URL@g" .gitlab/ci-issue-template.md
+    - template=$(cat .gitlab/ci-issue-template.md)
+    - |
+      request=$(cat <<EOF
+      {
+          "title": "Nightly Pipeline Build Issue for Pipeline $CI_PIPELINE_ID",
+          "description": $(echo "$template" | jq -R -s ".")
+      }
+      EOF
+      )
+    - 'curl --silent --show-error --fail --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN_ACCEPTANCE_TESTS_NIGHTLY" --header "Content-Type: application/json" $CI_API_V4_URL/projects/$CI_PROJECT_ID/issues --data "$request" | jq'
+
 goreleaser:
   stage: release
   dependencies: []
