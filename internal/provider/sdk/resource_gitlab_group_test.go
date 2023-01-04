@@ -135,6 +135,126 @@ func TestAccGitlabGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccGitlabGroup_IPRestricted(t *testing.T) {
+	var group gitlab.Group
+	rInt := acctest.RandInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupDestroy,
+		Steps: []resource.TestStep{
+			// Create a group
+			{
+				SkipFunc: testutil.IsRunningInCE,
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "this" {
+					name = "test-ip-restrictions-%d"
+					path = "path-%d"
+
+					ip_restriction_ranges = ["192.168.0.0/24"]
+				}
+				`, rInt, rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabGroupExists("gitlab_group.this", &group),
+					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
+						//Test values
+						Name:                fmt.Sprintf("test-ip-restrictions-%d", rInt),
+						Path:                fmt.Sprintf("path-%d", rInt),
+						IPRestrictionRanges: "192.168.0.0/24",
+
+						//defaults:
+						LFSEnabled:              true,
+						Visibility:              "private",
+						ProjectCreationLevel:    "maintainer",
+						SubGroupCreationLevel:   "owner",
+						TwoFactorGracePeriod:    48,
+						DefaultBranchProtection: 2,
+					}),
+				),
+			},
+			// Verify Import
+			{
+				SkipFunc:          testutil.IsRunningInCE,
+				ResourceName:      "gitlab_group.this",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update the group to generate a comma in the ranges
+			{
+				SkipFunc: testutil.IsRunningInCE,
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "this" {
+					name = "test-ip-restrictions-%d"
+					path = "path-%d"
+
+					ip_restriction_ranges = ["192.168.0.0/24", "10.1.0.0/24"]
+				}
+				`, rInt, rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabGroupExists("gitlab_group.this", &group),
+					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
+						//Test values
+						Name:                fmt.Sprintf("test-ip-restrictions-%d", rInt),
+						Path:                fmt.Sprintf("path-%d", rInt),
+						IPRestrictionRanges: "192.168.0.0/24,10.1.0.0/24",
+
+						//defaults:
+						LFSEnabled:              true,
+						Visibility:              "private",
+						ProjectCreationLevel:    "maintainer",
+						SubGroupCreationLevel:   "owner",
+						TwoFactorGracePeriod:    48,
+						DefaultBranchProtection: 2,
+					}),
+				),
+			},
+			// Verify Import
+			{
+				SkipFunc:          testutil.IsRunningInCE,
+				ResourceName:      "gitlab_group.this",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update the group back to unrestricted
+			{
+				SkipFunc: testutil.IsRunningInCE,
+				Config: fmt.Sprintf(`
+				resource "gitlab_group" "this" {
+					name = "test-ip-restrictions-%d"
+					path = "path-%d"
+
+					ip_restriction_ranges = []
+				}
+				`, rInt, rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabGroupExists("gitlab_group.this", &group),
+					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
+						//Test values
+						Name:                fmt.Sprintf("test-ip-restrictions-%d", rInt),
+						Path:                fmt.Sprintf("path-%d", rInt),
+						IPRestrictionRanges: "",
+
+						//defaults:
+						LFSEnabled:              true,
+						Visibility:              "private",
+						ProjectCreationLevel:    "maintainer",
+						SubGroupCreationLevel:   "owner",
+						TwoFactorGracePeriod:    48,
+						DefaultBranchProtection: 2,
+					}),
+				),
+			},
+			// Verify Import
+			{
+				SkipFunc:          testutil.IsRunningInCE,
+				ResourceName:      "gitlab_group.this",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabGroup_nested(t *testing.T) {
 	var group gitlab.Group
 	var group2 gitlab.Group
@@ -419,6 +539,7 @@ type testAccGitlabGroupExpectedAttributes struct {
 	RequireTwoFactorAuth    bool
 	TwoFactorGracePeriod    int
 	DefaultBranchProtection int
+	IPRestrictionRanges     string
 }
 
 func testAccCheckGitlabGroupAttributes(group *gitlab.Group, want *testAccGitlabGroupExpectedAttributes) resource.TestCheckFunc {
@@ -481,6 +602,10 @@ func testAccCheckGitlabGroupAttributes(group *gitlab.Group, want *testAccGitlabG
 
 		if group.DefaultBranchProtection != want.DefaultBranchProtection {
 			return fmt.Errorf("got default_branch_protection %d; want %d", group.DefaultBranchProtection, want.DefaultBranchProtection)
+		}
+
+		if group.IPRestrictionRanges != want.IPRestrictionRanges {
+			return fmt.Errorf("got ip_restriction_ranges %s; want %s", group.IPRestrictionRanges, want.IPRestrictionRanges)
 		}
 
 		if want.Parent != nil {
