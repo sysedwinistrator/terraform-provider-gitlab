@@ -35,6 +35,11 @@ var _ = registerDataSource("gitlab_group_membership", func() *schema.Resource {
 				Optional:     true,
 				ExactlyOneOf: []string{"group_id", "full_path"},
 			},
+			"inherited": {
+				Description: "Return all project members including members through ancestor groups.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+			},
 			"access_level": {
 				Description:      "Only return members with the desired access level. Acceptable values are: `guest`, `reporter`, `developer`, `maintainer`, `owner`.",
 				Type:             schema.TypeString,
@@ -133,8 +138,14 @@ func dataSourceGitlabGroupMembershipRead(ctx context.Context, d *schema.Resource
 	}
 
 	var allGms []*gitlab.GroupMember
+
+	listMembers := client.Groups.ListGroupMembers
+
+	if inherited, ok := d.GetOk("inherited"); ok && inherited.(bool) {
+		listMembers = client.Groups.ListAllGroupMembers
+	}
 	for {
-		gms, resp, err := client.Groups.ListGroupMembers(group.ID, listOptions, gitlab.WithContext(ctx))
+		gms, resp, err := listMembers(group.ID, listOptions, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -146,7 +157,6 @@ func dataSourceGitlabGroupMembershipRead(ctx context.Context, d *schema.Resource
 		}
 		listOptions.Page = resp.NextPage
 	}
-
 	d.Set("group_id", group.ID)
 	d.Set("full_path", group.FullPath)
 
