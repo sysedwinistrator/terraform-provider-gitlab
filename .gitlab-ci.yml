@@ -46,6 +46,11 @@ cache:
   paths:
     - .go/pkg/mod
 
+.run-for-supported-versions:
+  parallel:
+    matrix:
+      - GITLAB_VERSION: ["15.5.6-${GITLAB_EDITION}.0", "15.6.3-${GITLAB_EDITION}.0", "15.7.0-${GITLAB_EDITION}.0"]
+
 # Disabling code navigatino with LSIF, until the upload issue is solved.
 # see https://gitlab.com/gitlab-org/gitlab/-/issues/365885#note_1219840952
 # code_navigation:
@@ -173,9 +178,6 @@ go:test:
     - make testacc-up SERVICE=gitlab-${GITLAB_EDITION} GITLAB_$(echo "${GITLAB_EDITION}" | tr '[:lower:]' '[:upper:]')_VERSION=${GITLAB_VERSION}
   script:
     - make testacc
-  parallel:
-    matrix:
-      - GITLAB_VERSION: ["15.5.6-${GITLAB_EDITION}.0", "15.6.3-${GITLAB_EDITION}.0", "15.7.0-${GITLAB_EDITION}.0"]
   artifacts:
     paths:
       - $GITLAB_EDITION-$GITLAB_VERSION-docker-compose-pull-logs.txt
@@ -184,7 +186,9 @@ go:test:
     when: always
 
 testacc:ce:
-  extends: .testacc
+  extends: 
+    - .testacc
+    - .run-for-supported-versions
   rules:
     - if: $CI_MERGE_REQUEST_IID
       changes:
@@ -203,7 +207,9 @@ testacc:ce:
     GITLAB_EDITION: ce
 
 testacc:ee:
-  extends: .testacc
+  extends: 
+    - .testacc
+    - .run-for-supported-versions
   variables:
     GITLAB_EDITION: ee
   rules:
