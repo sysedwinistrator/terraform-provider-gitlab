@@ -236,7 +236,6 @@ testacc:ce:nightly:
   variables:
     GITLAB_EDITION: ce
     GITLAB_VERSION: nightly
-  allow_failure: true
 
 testacc:ee:nightly:
   extends: .testacc
@@ -245,7 +244,6 @@ testacc:ee:nightly:
   variables:
     GITLAB_EDITION: ee
     GITLAB_VERSION: nightly
-  allow_failure: true
   
 testacc:nightly:failure:
   image: alpine:latest
