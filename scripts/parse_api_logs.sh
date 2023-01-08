@@ -17,7 +17,7 @@
 #
 
 printed_requests=()
-cat - | jq -R 'fromjson?' | jq -c '. | select(."@module" == "gitlab.GitLab" and (."@message" == "Sending HTTP Request" or ."@message" == "Received HTTP Response"))' | while read -r record; do
+cat - | jq -R 'fromjson?' | jq -c '. | select(has("@module") and (."@module" | endswith(".GitLab")) and (."@message" == "Sending HTTP Request" or ."@message" == "Received HTTP Response"))' | while read -r record; do
   is_request=$(echo $record | jq -r ".tf_http_req_uri != null")
   trans_id=$(echo $record | jq -r ".tf_http_trans_id")
   if [[ $is_request == "true" ]]; then
