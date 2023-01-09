@@ -871,12 +871,15 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 
 		if v, ok := d.GetOk("tags"); ok {
+			// TODO: Remove TagList on next breaking change. TagList and Topics aren't completely synonymous.
+			// nolint:staticcheck // SA1019
 			options.TagList = stringSetToStringSlice(v.(*schema.Set))
 		}
 
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("container_registry_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			options.ContainerRegistryEnabled = gitlab.Bool(v.(bool))
 		}
 
@@ -889,6 +892,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("pipelines_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			options.JobsEnabled = gitlab.Bool(v.(bool))
 		}
 
@@ -1057,6 +1061,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("merge_requests_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			options.MergeRequestsEnabled = gitlab.Bool(v.(bool))
 		}
 
@@ -1067,11 +1072,13 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("wiki_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			options.WikiEnabled = gitlab.Bool(v.(bool))
 		}
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("snippets_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			options.SnippetsEnabled = gitlab.Bool(v.(bool))
 		}
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
@@ -1462,6 +1469,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("pipelines_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			editProjectOptions.JobsEnabled = gitlab.Bool(v.(bool))
 		}
 
@@ -1472,12 +1480,14 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("wiki_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			editProjectOptions.WikiEnabled = gitlab.Bool(v.(bool))
 		}
 
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("snippets_enabled"); ok {
+			// nolint:staticcheck // SA1019
 			editProjectOptions.SnippetsEnabled = gitlab.Bool(v.(bool))
 		}
 
@@ -1488,6 +1498,8 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 
 		if v, ok := d.GetOk("tags"); ok {
+			// TODO: Remove TagList on next breaking change. TagList and Topics aren't completely synonymous.
+			// nolint:staticcheck // SA1019
 			editProjectOptions.TagList = stringSetToStringSlice(v.(*schema.Set))
 		}
 
@@ -1789,14 +1801,21 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	if d.HasChange("issues_enabled") {
+		// TODO: Remove issuesEnabled on the next breaking update, since it will need to be replaced with a
+		// issue access level integer.
+		// nolint:staticcheck // SA1019
 		options.IssuesEnabled = gitlab.Bool(d.Get("issues_enabled").(bool))
 	}
 
 	if d.HasChange("merge_requests_enabled") {
+		// TODO: Remove mergeRequestsEnabled on the next breaking update, since it will need to be replaced with a
+		// merge request access level integer.
+		// nolint:staticcheck // SA1019
 		options.MergeRequestsEnabled = gitlab.Bool(d.Get("merge_requests_enabled").(bool))
 	}
 
 	if d.HasChange("pipelines_enabled") {
+		// nolint:staticcheck // SA1019
 		options.JobsEnabled = gitlab.Bool(d.Get("pipelines_enabled").(bool))
 	}
 
@@ -1805,10 +1824,12 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	if d.HasChange("wiki_enabled") {
+		// nolint:staticcheck // SA1019
 		options.WikiEnabled = gitlab.Bool(d.Get("wiki_enabled").(bool))
 	}
 
 	if d.HasChange("snippets_enabled") {
+		// nolint:staticcheck // SA1019
 		options.SnippetsEnabled = gitlab.Bool(d.Get("snippets_enabled").(bool))
 	}
 
@@ -1817,10 +1838,12 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	if d.HasChange("tags") {
+		// nolint:staticcheck // SA1019
 		options.TagList = stringSetToStringSlice(d.Get("tags").(*schema.Set))
 	}
 
 	if d.HasChange("container_registry_enabled") {
+		// nolint:staticcheck // SA1019
 		options.ContainerRegistryEnabled = gitlab.Bool(d.Get("container_registry_enabled").(bool))
 	}
 
