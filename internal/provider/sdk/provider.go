@@ -112,7 +112,9 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		if _, ok := d.GetOk("base_url"); !ok {
 			config.BaseURL = os.Getenv("GITLAB_BASE_URL")
 		}
-		if _, ok := d.GetOk("early_auth_check"); !ok {
+		// It is the only way to differentiate between unset boolean attributes and attributes set to false
+		//nolint:staticcheck, tfproviderlint
+		if _, ok := d.GetOkExists("early_auth_check"); !ok {
 			config.EarlyAuthFail = true
 		}
 
