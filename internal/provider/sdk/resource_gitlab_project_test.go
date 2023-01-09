@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -750,6 +751,75 @@ func TestAccGitlabProject_importURL(t *testing.T) {
 						if err != nil {
 							return fmt.Errorf("failed to get file from imported project: %w", err)
 						}
+
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+// lintignore: AT002 // specialized import test
+func TestAccGitlabProject_importURLWithPassword(t *testing.T) {
+	rInt := acctest.RandInt()
+
+	// Create a base project for importing.
+	baseProject, _, err := testutil.TestGitlabClient.Projects.CreateProject(&gitlab.CreateProjectOptions{
+		Name:       gitlab.String(fmt.Sprintf("base-%d", rInt)),
+		Visibility: gitlab.Visibility(gitlab.PrivateVisibility),
+	})
+	if err != nil {
+		t.Fatalf("failed to create base project: %v", err)
+	}
+
+	// Get an access token to use for cloning a private project
+	token, _, err := testutil.TestGitlabClient.ProjectAccessTokens.CreateProjectAccessToken(baseProject.ID, &gitlab.CreateProjectAccessTokenOptions{
+		Name:        gitlab.String("clone"),
+		Scopes:      &[]string{"api", "read_repository"},
+		AccessLevel: gitlab.AccessLevel(gitlab.MaintainerPermissions),
+	})
+	if err != nil {
+		t.Fatalf("failed to create project access token: %v", err)
+	}
+
+	defer testutil.TestGitlabClient.Projects.DeleteProject(baseProject.ID) // nolint // TODO: Resolve this golangci-lint issue: Error return value of `TestGitlabClient.Projects.DeleteProject` is not checked (errcheck)
+
+	// Add a file to the base project, for later verifying the import.
+	_, _, err = testutil.TestGitlabClient.RepositoryFiles.CreateFile(baseProject.ID, "foo.txt", &gitlab.CreateFileOptions{
+		Branch:        gitlab.String("main"),
+		CommitMessage: gitlab.String("add file"),
+		Content:       gitlab.String(""),
+	})
+	if err != nil {
+		t.Fatalf("failed to commit file to base project: %v", err)
+	}
+
+	// add our username and token so we can clone a private project.
+	importUrl := strings.ReplaceAll(baseProject.HTTPURLToRepo, "://", fmt.Sprintf("://root:%s@", token.Token))
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "this" {
+					name        = "import-url-with-password-%d"
+					import_url  = "%s"
+				}	
+				`, rInt, importUrl),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("gitlab_project.this", "import_url"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["gitlab_project.this"]
+						if !ok {
+							return fmt.Errorf("gitlab_project.this not found")
+						}
+
+						projectId := rs.Primary.ID
+						thisProject, _, _ := testutil.TestGitlabClient.Projects.GetProject(projectId, &gitlab.GetProjectOptions{})
+						tflog.Trace(context.TODO(), fmt.Sprintf("%d", thisProject.ID))
 
 						return nil
 					},
