@@ -444,7 +444,9 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 	d.Set("issues_access_level", string(found.IssuesAccessLevel))
 	d.Set("merge_requests_access_level", string(found.MergeRequestsAccessLevel))
 	d.Set("operations_access_level", string(found.OperationsAccessLevel))
-	d.Set("public_builds", found.PublicBuilds)
+
+	// Map PublicJobs -> PublicBuild until we have a breaking version.
+	d.Set("public_builds", found.PublicJobs)
 	d.Set("repository_access_level", string(found.RepositoryAccessLevel))
 	d.Set("repository_storage", found.RepositoryStorage)
 	d.Set("requirements_access_level", string(found.RequirementsAccessLevel))
