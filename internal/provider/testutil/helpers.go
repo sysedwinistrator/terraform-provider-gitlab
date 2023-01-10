@@ -46,18 +46,32 @@ func init() {
 	})
 }
 
+// Global variable to cache the result of EE evaluation for all the tests
+var isEE *bool
+
 // Returns true if the acceptance test is running Gitlab EE.
 // Meant to be used as SkipFunc to skip tests that work only on Gitlab CE.
 func IsRunningInEE() (bool, error) {
-	version, _, err := TestGitlabClient.Version.GetVersion()
+	if isEE != nil {
+		return *isEE, nil
+	}
+	metadata, _, err := TestGitlabClient.Metadata.GetMetadata()
 	if err != nil {
 		return false, err
 	}
-	if strings.Contains(version.String(), "-ee") {
-		return true, nil
+	if metadata.Enterprise {
+		isEE = gitlab.Bool(true)
+		return *isEE, nil
+	}
+	// This is only to support 15.5. From 15.8 on, we can remove this code
+	// as we won't be supporting 15.5 anymore.
+	if strings.Contains(metadata.Version, "-ee") {
+		isEE = gitlab.Bool(true)
+		return *isEE, nil
 	}
 
-	return false, nil
+	isEE = gitlab.Bool(false)
+	return *isEE, nil
 }
 
 // Returns true if the acceptance test is running Gitlab CE.
@@ -72,13 +86,12 @@ func IsRunningInCE() (bool, error) {
 func SkipIfCE(t *testing.T) {
 	t.Helper()
 
-	version, _, err := TestGitlabClient.Version.GetVersion()
+	isCE, err := IsRunningInCE()
 	if err != nil {
-		t.Fatalf("could not check GitLab version: %v", err)
+		t.Fatalf("could not check GitLab version is CE: %v", err)
 	}
-
-	if !strings.HasSuffix(version.Version, "-ee") {
-		t.Skipf("Test is skipped for CE (non-Enterprise) version of GitLab (was %q)", version.String())
+	if isCE {
+		t.Skipf("Test is skipped for CE (non-Enterprise) version of GitLab")
 	}
 }
 
