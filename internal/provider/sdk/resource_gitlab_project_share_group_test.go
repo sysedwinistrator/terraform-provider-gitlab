@@ -73,6 +73,54 @@ func TestAccGitlabProjectShareGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccGitlabProjectShareGroup_modifiedOutsideTerraform(t *testing.T) {
+
+	// Create the project and groups to use
+	project := testutil.CreateProject(t)
+	group := testutil.CreateGroups(t, 1)[0]
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectShareGroupDestroy,
+		Steps: []resource.TestStep{
+			// Share a new project with a new group.
+			{
+				Config: fmt.Sprintf(`
+				  resource "gitlab_project_share_group" "test" {
+					project_id = %d
+					group_id = %d
+					group_access = "reporter"
+				  }
+				`, project.ID, group.ID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("gitlab_project_share_group.test", "project_id"),
+				),
+			},
+			{
+				// Remove the group outside of terraform before we do our `Plan` run
+				PreConfig: func() {
+					// Remove the project share group since we're simulating removing it between steps.
+					_, err := testutil.TestGitlabClient.Projects.DeleteSharedProjectFromGroup(project.ID, group.ID, nil)
+					if err != nil {
+						t.Fatalf("Failed to remove the project share outside terraform")
+					}
+				},
+
+				// Then run our plan
+				Config: fmt.Sprintf(`
+				  resource "gitlab_project_share_group" "test" {
+					project_id = %d
+					group_id = %d
+					group_access = "reporter"
+				  }
+				`, project.ID, group.ID),
+				ExpectNonEmptyPlan: true,
+				PlanOnly:           true,
+			},
+		},
+	})
+}
+
 func testAccCheckGitlabProjectSharedWithGroup(projectName, groupName string, accessLevel gitlab.AccessLevelValue) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		project, _, err := testutil.TestGitlabClient.Projects.GetProject(projectName, nil)

@@ -117,10 +117,18 @@ func resourceGitlabProjectShareGroupRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
+	foundGroup := false
 	for _, v := range projectInformation.SharedWithGroups {
 		if groupId == v.GroupID {
 			resourceGitlabProjectShareGroupSetToState(d, v, &projectId)
+			foundGroup = true
+			break
 		}
+	}
+	// If we didn't find our group, we need to remove it from state
+	if !foundGroup {
+		log.Printf("[DEBUG] Gitlab project group share not found for group %v and project %s; removing from state.", groupId, projectId)
+		d.SetId("")
 	}
 
 	return nil
