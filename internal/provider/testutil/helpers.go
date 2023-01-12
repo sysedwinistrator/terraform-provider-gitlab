@@ -28,7 +28,7 @@ var testGitlabConfig = client.Config{
 	Insecure:      false,
 	ClientCert:    "",
 	ClientKey:     "",
-	EarlyAuthFail: true,
+	EarlyAuthFail: false,
 }
 
 var TestGitlabClient *gitlab.Client
@@ -59,22 +59,25 @@ func IsRunningInEE() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	isEE = gitlab.Bool(isEnterpriseInstance(metadata))
+	return *isEE, err
+}
+
+// isEnterpriseInstance is an auxiliary func so that we can skip
+// TestGitlabClient.Metadata.GetMetadata server calls and unit test it.
+func isEnterpriseInstance(metadata *gitlab.Metadata) bool {
 	if metadata.Enterprise {
-		isEE = gitlab.Bool(true)
-		return *isEE, nil
+		return true
 	}
 	// This is only to support 15.5. From 15.8 on, we can remove this code
 	// as we won't be supporting 15.5 anymore.
 	if strings.Contains(metadata.Version, "-ee") {
-		isEE = gitlab.Bool(true)
-		return *isEE, nil
+		return true
 	}
-
-	isEE = gitlab.Bool(false)
-	return *isEE, nil
+	return false
 }
 
-// Returns true if the acceptance test is running Gitlab CE.
+// IsRunningInCE returns true if the acceptance test is running Gitlab CE.
 // Meant to be used as SkipFunc to skip tests that work only on Gitlab EE.
 func IsRunningInCE() (bool, error) {
 	isEE, err := IsRunningInEE()
