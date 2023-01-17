@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
@@ -156,7 +157,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		ValidateFunc: validation.StringInSlice([]string{"private", "internal", "public"}, true),
 	},
 	"merge_method": {
-		Description:  fmt.Sprintf("Set the merge method. Valid values are %s.", renderValueListForDocs(validMergeMethods)),
+		Description:  fmt.Sprintf("Set the merge method. Valid values are %s.", utils.RenderValueListForDocs(validMergeMethods)),
 		Type:         schema.TypeString,
 		Optional:     true,
 		Computed:     true,
@@ -440,7 +441,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 	},
 	"analytics_access_level": {
-		Description:      fmt.Sprintf("Set the analytics access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the analytics access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -454,7 +455,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAutoCancelPendingPipelinesValues, false)),
 	},
 	"auto_devops_deploy_strategy": {
-		Description:      fmt.Sprintf("Auto Deploy strategy. Valid values are %s.", renderValueListForDocs(validProjectAutoDevOpsDeployStrategyValues)),
+		Description:      fmt.Sprintf("Auto Deploy strategy. Valid values are %s.", utils.RenderValueListForDocs(validProjectAutoDevOpsDeployStrategyValues)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -486,7 +487,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"builds_access_level": {
-		Description:      fmt.Sprintf("Set the builds access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the builds access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -501,7 +502,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"container_registry_access_level": {
-		Description:      fmt.Sprintf("Set visibility of container registry, for this project. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set visibility of container registry, for this project. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -518,28 +519,28 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 	},
 	"forking_access_level": {
-		Description:      fmt.Sprintf("Set the forking access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the forking access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
 	},
 	"issues_access_level": {
-		Description:      fmt.Sprintf("Set the issues access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the issues access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
 	},
 	"merge_requests_access_level": {
-		Description:      fmt.Sprintf("Set the merge requests access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the merge requests access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
 	},
 	"operations_access_level": {
-		Description:      fmt.Sprintf("Set the operations access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the operations access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -552,7 +553,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"repository_access_level": {
-		Description:      fmt.Sprintf("Set the repository access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the repository access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -565,21 +566,21 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"requirements_access_level": {
-		Description:      fmt.Sprintf("Set the requirements access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the requirements access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
 	},
 	"security_and_compliance_access_level": {
-		Description:      fmt.Sprintf("Set the security and compliance access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the security and compliance access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
 	},
 	"snippets_access_level": {
-		Description:      fmt.Sprintf("Set the snippets access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the snippets access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -599,7 +600,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"wiki_access_level": {
-		Description:      fmt.Sprintf("Set the wiki access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+		Description:      fmt.Sprintf("Set the wiki access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 		Type:             schema.TypeString,
 		Optional:         true,
 		Computed:         true,
@@ -642,7 +643,7 @@ var validContainerExpirationPolicyAttributesCadenceValues = []string{
 var containerExpirationPolicyAttributesSchema = &schema.Resource{
 	Schema: map[string]*schema.Schema{
 		"cadence": {
-			Description:      fmt.Sprintf("The cadence of the policy. Valid values are: %s.", renderValueListForDocs(validContainerExpirationPolicyAttributesCadenceValues)),
+			Description:      fmt.Sprintf("The cadence of the policy. Valid values are: %s.", utils.RenderValueListForDocs(validContainerExpirationPolicyAttributesCadenceValues)),
 			Type:             schema.TypeString,
 			Optional:         true,
 			Computed:         true,
@@ -1246,7 +1247,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	if _, ok := d.GetOk("push_rules"); ok {
 		err := editOrAddPushRules(ctx, client, d.Id(), d)
 		if err != nil {
-			if is404(err) {
+			if providerclient.Is404(err) {
 				log.Printf("[DEBUG] Failed to edit push rules for project %q: %v", d.Id(), err)
 				return diag.Errorf("Project push rules are not supported in your version of GitLab")
 			}
@@ -1295,7 +1296,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 
 			log.Printf("[DEBUG] check for protection on old default branch %q for project %q", oldDefaultBranch, d.Id())
 			branch, _, err := client.ProtectedBranches.GetProtectedBranch(project.ID, oldDefaultBranch, gitlab.WithContext(ctx))
-			if err != nil && !is404(err) {
+			if err != nil && !providerclient.Is404(err) {
 				return diag.Errorf("Failed to check for protected default branch %q for project %q: %v", oldDefaultBranch, d.Id(), err)
 			}
 			if branch == nil {
@@ -1340,7 +1341,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 				Refresh: func() (interface{}, string, error) {
 					branch, _, err := client.Branches.GetBranch(project.ID, project.DefaultBranch, gitlab.WithContext(ctx))
 					if err != nil {
-						if is404(err) {
+						if providerclient.Is404(err) {
 							// When we hit a 404 here, it means the default branch wasn't created at all as part of the project
 							// this will happen when "default_branch" isn't set, or "initialize_with_readme" is set to false.
 							// We don't need to wait anymore, so return "true" to exist the wait loop.
@@ -1708,7 +1709,7 @@ func resourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, meta
 
 	project, _, err := client.Projects.GetProject(d.Id(), nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab project %s has already been deleted, removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -1728,7 +1729,7 @@ func resourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, meta
 	log.Printf("[DEBUG] read gitlab project %q push rules", d.Id())
 
 	pushRules, _, err := client.Projects.GetProjectPushRules(d.Id(), gitlab.WithContext(ctx))
-	if is404(err) {
+	if providerclient.Is404(err) {
 		log.Printf("[DEBUG] Failed to get push rules for project %q: %v", d.Id(), err)
 	} else if err != nil {
 		return diag.Errorf("Failed to get push rules for project %q: %s", d.Id(), err)
@@ -2119,7 +2120,7 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 	if d.HasChange("push_rules") {
 		err := editOrAddPushRules(ctx, client, d.Id(), d)
 		if err != nil {
-			if is404(err) {
+			if providerclient.Is404(err) {
 				log.Printf("[DEBUG] Failed to get push rules for project %q: %v", d.Id(), err)
 				return diag.Errorf("Project push rules are not supported in your version of GitLab")
 			}
@@ -2148,7 +2149,7 @@ func resourceGitlabProjectDelete(ctx context.Context, d *schema.ResourceData, me
 			Refresh: func() (interface{}, string, error) {
 				out, _, err := client.Projects.GetProject(d.Id(), nil, gitlab.WithContext(ctx))
 				if err != nil {
-					if is404(err) {
+					if providerclient.Is404(err) {
 						return out, "Deleted", nil
 					}
 					log.Printf("[ERROR] Received error: %#v", err)

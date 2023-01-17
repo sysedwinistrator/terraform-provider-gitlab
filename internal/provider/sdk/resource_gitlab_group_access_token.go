@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var validGroupAccessTokenScopes = []string{
@@ -58,7 +60,7 @@ var _ = registerResource("gitlab_group_access_token", func() *schema.Resource {
 				ForceNew:    true,
 			},
 			"scopes": {
-				Description: fmt.Sprintf("The scope for the group access token. It determines the actions which can be performed when authenticating with this token. Valid values are: %s.", renderValueListForDocs(validGroupAccessTokenScopes)),
+				Description: fmt.Sprintf("The scope for the group access token. It determines the actions which can be performed when authenticating with this token. Valid values are: %s.", utils.RenderValueListForDocs(validGroupAccessTokenScopes)),
 				Type:        schema.TypeSet,
 				Required:    true,
 				ForceNew:    true,
@@ -68,11 +70,11 @@ var _ = registerResource("gitlab_group_access_token", func() *schema.Resource {
 				},
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level for the group access token. Valid values are: %s.", renderValueListForDocs(validAccessLevels)),
+				Description:      fmt.Sprintf("The access level for the group access token. Valid values are: %s.", utils.RenderValueListForDocs(validAccessLevels)),
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				Default:          accessLevelValueToName[gitlab.MaintainerPermissions],
+				Default:          providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions],
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validAccessLevels, false)),
 			},
 			"expires_at": {
@@ -121,7 +123,7 @@ func resourceGitlabGroupAccessTokenCreate(ctx context.Context, d *schema.Resourc
 		Scopes: stringSetToStringSlice(d.Get("scopes").(*schema.Set)),
 	}
 	if v, ok := d.GetOk("access_level"); ok {
-		accessLevel := accessLevelNameToValue[v.(string)]
+		accessLevel := providerclient.AccessLevelNameToValue[v.(string)]
 		options.AccessLevel = &accessLevel
 	}
 
@@ -145,7 +147,7 @@ func resourceGitlabGroupAccessTokenCreate(ctx context.Context, d *schema.Resourc
 	log.Printf("[DEBUG] created gitlab GroupAccessToken %d - %s for group ID %s", groupAccessToken.ID, *options.Name, group)
 
 	tokenId := strconv.Itoa(groupAccessToken.ID)
-	d.SetId(buildTwoPartID(&group, &tokenId))
+	d.SetId(utils.BuildTwoPartID(&group, &tokenId))
 	// NOTE: the token can only be read once after creating it
 	d.Set("token", groupAccessToken.Token)
 
@@ -153,7 +155,7 @@ func resourceGitlabGroupAccessTokenCreate(ctx context.Context, d *schema.Resourc
 }
 
 func resourceGitlabGroupAccessTokenRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	group, tokenId, err := parseTwoPartID(d.Id())
+	group, tokenId, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.Errorf("Error parsing ID: %s", d.Id())
 	}
@@ -168,7 +170,7 @@ func resourceGitlabGroupAccessTokenRead(ctx context.Context, d *schema.ResourceD
 	log.Printf("[DEBUG] read gitlab GroupAccessToken %d, group ID %s", groupAccessTokenId, group)
 	groupAccessToken, _, err := client.GroupAccessTokens.GetGroupAccessToken(group, groupAccessTokenId, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] GitLab GroupAccessToken %d, group ID %s not found, removing from state", groupAccessTokenId, group)
 			d.SetId("")
 			return nil
@@ -183,7 +185,7 @@ func resourceGitlabGroupAccessTokenRead(ctx context.Context, d *schema.ResourceD
 	}
 	d.Set("active", groupAccessToken.Active)
 	d.Set("created_at", groupAccessToken.CreatedAt.Format(time.RFC3339))
-	d.Set("access_level", accessLevelValueToName[groupAccessToken.AccessLevel])
+	d.Set("access_level", providerclient.AccessLevelValueToName[groupAccessToken.AccessLevel])
 	d.Set("revoked", groupAccessToken.Revoked)
 	d.Set("user_id", groupAccessToken.UserID)
 
@@ -196,7 +198,7 @@ func resourceGitlabGroupAccessTokenRead(ctx context.Context, d *schema.ResourceD
 
 func resourceGitlabGroupAccessTokenDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
-	group, tokenId, err := parseTwoPartID(d.Id())
+	group, tokenId, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.Errorf("Error parsing ID: %s", d.Id())
 	}

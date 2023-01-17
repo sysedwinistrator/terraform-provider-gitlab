@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -161,7 +162,7 @@ func testAccCheckGitlabGroupClusterDestroy(s *terraform.State) error {
 				return fmt.Errorf("group cluster still exists")
 			}
 		}
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 	}

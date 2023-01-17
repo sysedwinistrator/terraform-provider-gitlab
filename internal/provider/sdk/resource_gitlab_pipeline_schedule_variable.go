@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_pipeline_schedule_variable", func() *schema.Resource {
@@ -72,7 +73,7 @@ func resourceGitlabPipelineScheduleVariableCreate(ctx context.Context, d *schema
 	}
 
 	id := strconv.Itoa(scheduleID)
-	d.SetId(buildTwoPartID(&id, &scheduleVar.Key))
+	d.SetId(utils.BuildTwoPartID(&id, &scheduleVar.Key))
 
 	return resourceGitlabPipelineScheduleVariableRead(ctx, d, meta)
 }
@@ -153,7 +154,7 @@ func resourceGitlabPipelineScheduleVariableImporter(ctx context.Context, d *sche
 	if err != nil {
 		return nil, err
 	}
-	d.SetId(buildTwoPartID(&pipelineScheduleId, &key))
+	d.SetId(utils.BuildTwoPartID(&pipelineScheduleId, &key))
 	if err := d.Set("project", project); err != nil {
 		return nil, err
 	}

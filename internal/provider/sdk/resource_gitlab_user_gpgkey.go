@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_user_gpgkey", func() *schema.Resource {
@@ -90,7 +92,7 @@ func resourceGitlabUserGPGKeyCreate(ctx context.Context, d *schema.ResourceData,
 	keyIDForID := fmt.Sprintf("%d", key.ID)
 	if userIDOk {
 		userIDForID := fmt.Sprintf("%d", userID)
-		d.SetId(buildTwoPartID(&userIDForID, &keyIDForID))
+		d.SetId(utils.BuildTwoPartID(&userIDForID, &keyIDForID))
 	} else {
 		d.SetId(keyIDForID)
 	}
@@ -112,7 +114,7 @@ func resourceGitlabUserGPGKeyRead(ctx context.Context, d *schema.ResourceData, m
 		key, _, err = client.Users.GetGPGKey(keyID, gitlab.WithContext(ctx))
 	}
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("Could not find GPG key %d for user %d, removing from state", keyID, userID)
 			d.SetId("")
 			return nil
@@ -158,7 +160,7 @@ func resourceGitlabUserGPGKeyDelete(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceGitlabUserGPGKeyParseID(id string) (int, int, error) {
-	userIDFromID, keyIDFromID, err := parseTwoPartID(id)
+	userIDFromID, keyIDFromID, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		keyID, errKeyID := strconv.Atoi(id)
 		if errKeyID != nil {

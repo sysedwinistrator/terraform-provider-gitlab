@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_deploy_key_enable", func() *schema.Resource {
@@ -101,7 +103,7 @@ func resourceGitlabDeployKeyEnableRead(ctx context.Context, d *schema.ResourceDa
 
 	deployKey, _, err := client.DeployKeys.GetDeployKey(project, deployKeyID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab deploy key not found %s/%d", project, deployKeyID)
 			d.SetId("")
 			return nil
@@ -143,7 +145,7 @@ func resourceGitlabDeployKeyEnableDelete(ctx context.Context, d *schema.Resource
 }
 
 func resourceGitLabDeployKeyEnableParseId(id string) (string, int, error) {
-	projectID, deployTokenID, err := parseTwoPartID(id)
+	projectID, deployTokenID, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}

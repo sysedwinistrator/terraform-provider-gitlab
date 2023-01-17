@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var issueStateToStateEvent = map[string]string{
@@ -135,7 +137,7 @@ func resourceGitlabProjectIssueRead(ctx context.Context, d *schema.ResourceData,
 
 	issue, _, err := client.Issues.GetIssue(project, issueIID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[WARN] issue %d in project %s not found, removing from state", issueIID, project)
 			d.SetId("")
 			return nil
@@ -238,7 +240,7 @@ func resourceGitlabProjectIssueDelete(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceGitLabProjectIssueParseId(id string) (string, int, error) {
-	project, issue, err := parseTwoPartID(id)
+	project, issue, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}
@@ -253,5 +255,5 @@ func resourceGitLabProjectIssueParseId(id string) (string, int, error) {
 
 func resourceGitLabProjectIssueBuildId(project string, issueIID int) string {
 	stringIssueIID := fmt.Sprintf("%d", issueIID)
-	return buildTwoPartID(&project, &stringIssueIID)
+	return utils.BuildTwoPartID(&project, &stringIssueIID)
 }

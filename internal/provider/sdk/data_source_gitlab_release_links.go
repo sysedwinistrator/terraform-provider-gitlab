@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerDataSource("gitlab_release_links", func() *schema.Resource {
@@ -57,7 +59,7 @@ func dataSourceGitlabReleaseLinksRead(ctx context.Context, d *schema.ResourceDat
 	for options.Page != 0 {
 		paginatedReleaseLinks, resp, err := client.ReleaseLinks.ListReleaseLinks(project, tagName, &options, gitlab.WithContext(ctx))
 		if err != nil {
-			if is404(err) && (options.Page == 1) {
+			if providerclient.Is404(err) && (options.Page == 1) {
 				break
 			} else {
 				return diag.FromErr(err)
@@ -68,7 +70,7 @@ func dataSourceGitlabReleaseLinksRead(ctx context.Context, d *schema.ResourceDat
 	}
 
 	log.Printf("[DEBUG] get list release links project/tagName: %s/%s", project, tagName)
-	d.SetId(buildTwoPartID(&project, &tagName))
+	d.SetId(utils.BuildTwoPartID(&project, &tagName))
 	if err := d.Set("release_links", flattenGitlabReleaseLinks(project, tagName, releaseLinks)); err != nil {
 		return diag.Errorf("Failed to set release links to state: %v", err)
 	}

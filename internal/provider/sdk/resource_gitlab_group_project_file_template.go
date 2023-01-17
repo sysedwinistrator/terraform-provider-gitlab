@@ -9,7 +9,8 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_group_project_file_template", func() *schema.Resource {
@@ -59,7 +60,7 @@ func resourceGitLabGroupProjectFileTemplateRead(ctx context.Context, d *schema.R
 	groupID := d.Get("group_id").(int)
 	group, _, err := client.Groups.GetGroup(groupID, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab group %d not found, removing from state", groupID)
 			d.SetId("")
 			return nil

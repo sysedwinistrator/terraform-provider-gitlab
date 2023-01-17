@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_user_sshkey", func() *schema.Resource {
@@ -53,7 +54,7 @@ func resourceGitlabUserSSHKeyCreate(ctx context.Context, d *schema.ResourceData,
 
 	userIDForID := fmt.Sprintf("%d", userID)
 	keyIDForID := fmt.Sprintf("%d", key.ID)
-	d.SetId(buildTwoPartID(&userIDForID, &keyIDForID))
+	d.SetId(utils.BuildTwoPartID(&userIDForID, &keyIDForID))
 	return resourceGitlabUserSSHKeyRead(ctx, d, meta)
 }
 
@@ -122,7 +123,7 @@ func resourceGitlabUserSSHKeyDelete(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceGitlabUserSSHKeyParseID(id string) (int, int, error) {
-	userIDFromID, keyIDFromID, err := parseTwoPartID(id)
+	userIDFromID, keyIDFromID, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return 0, 0, err
 	}

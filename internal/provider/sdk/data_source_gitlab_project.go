@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerDataSource("gitlab_project", func() *schema.Resource {
@@ -162,7 +163,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"analytics_access_level": {
-				Description: fmt.Sprintf("Set the analytics access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the analytics access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -172,7 +173,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"auto_devops_deploy_strategy": {
-				Description: fmt.Sprintf("Auto Deploy strategy. Valid values are %s.", renderValueListForDocs(validProjectAutoDevOpsDeployStrategyValues)),
+				Description: fmt.Sprintf("Auto Deploy strategy. Valid values are %s.", utils.RenderValueListForDocs(validProjectAutoDevOpsDeployStrategyValues)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -197,7 +198,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"builds_access_level": {
-				Description: fmt.Sprintf("Set the builds access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the builds access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -208,7 +209,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"container_registry_access_level": {
-				Description: fmt.Sprintf("Set visibility of container registry, for this project. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set visibility of container registry, for this project. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -223,22 +224,22 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"forking_access_level": {
-				Description: fmt.Sprintf("Set the forking access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the forking access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"issues_access_level": {
-				Description: fmt.Sprintf("Set the issues access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the issues access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"merge_requests_access_level": {
-				Description: fmt.Sprintf("Set the merge requests access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the merge requests access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"operations_access_level": {
-				Description: fmt.Sprintf("Set the operations access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the operations access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -248,7 +249,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Optional:    true,
 			},
 			"repository_access_level": {
-				Description: fmt.Sprintf("Set the repository access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the repository access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -258,17 +259,17 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"requirements_access_level": {
-				Description: fmt.Sprintf("Set the requirements access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the requirements access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"security_and_compliance_access_level": {
-				Description: fmt.Sprintf("Set the security and compliance access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the security and compliance access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"snippets_access_level": {
-				Description: fmt.Sprintf("Set the snippets access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the snippets access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -285,7 +286,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"wiki_access_level": {
-				Description: fmt.Sprintf("Set the wiki access level. Valid values are %s.", renderValueListForDocs(validProjectAccessLevels)),
+				Description: fmt.Sprintf("Set the wiki access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},

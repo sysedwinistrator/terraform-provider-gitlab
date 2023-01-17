@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_runner_enablement", func() *schema.Resource {
@@ -55,7 +56,7 @@ func resourceGitlabProjectRunnerEnablementCreate(ctx context.Context, d *schema.
 	}
 
 	runnerIDString := strconv.Itoa(runnerID)
-	d.SetId(buildTwoPartID(&projectID, &runnerIDString))
+	d.SetId(utils.BuildTwoPartID(&projectID, &runnerIDString))
 
 	return resourceGitlabProjectRunnerEnablementRead(ctx, d, meta)
 }
@@ -103,7 +104,7 @@ func resourceGitlabProjectRunnerEnablementRead(ctx context.Context, d *schema.Re
 
 func projectAndRunnerFromID(id string) (string, int, error) {
 	var runnerID int
-	projectID, runnerIDString, err := parseTwoPartID(id)
+	projectID, runnerIDString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		log.Printf("[WARN] could not get project and runner ids from resource id %v", id)
 		return projectID, runnerID, err

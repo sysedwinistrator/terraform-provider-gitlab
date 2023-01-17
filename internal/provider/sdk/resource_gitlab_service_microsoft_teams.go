@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_service_microsoft_teams", func() *schema.Resource {
@@ -147,7 +148,7 @@ func resourceGitlabServiceMicrosoftTeamsRead(ctx context.Context, d *schema.Reso
 
 	teamsService, _, err := client.Services.GetMicrosoftTeamsService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] Unable to find Gitlab Microsoft Teams service in project %s, removing from state", project)
 			d.SetId("")
 			return nil

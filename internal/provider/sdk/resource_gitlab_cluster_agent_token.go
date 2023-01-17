@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_cluster_agent_token", func() *schema.Resource {
@@ -68,7 +69,7 @@ func resourceGitlabClusterAgentTokenRead(ctx context.Context, d *schema.Resource
 	log.Printf("[DEBUG] read token for GitLab Agent for Kubernetes %d in project %s with id %d", agentID, project, tokenID)
 	clusterAgentToken, _, err := client.ClusterAgents.GetAgentToken(project, agentID, tokenID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] read token for GitLab Agent for Kubernetes %d in project %s with id %d not found, removing from state", agentID, project, tokenID)
 			d.SetId("")
 			return nil

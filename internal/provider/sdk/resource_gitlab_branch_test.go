@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -110,7 +112,7 @@ func testAccCheckGitlabBranchDestroy(s *terraform.State) error {
 		project := rs.Primary.Attributes["project"]
 		_, _, err := testutil.TestGitlabClient.Branches.GetBranch(project, name)
 		if err != nil {
-			if is404(err) {
+			if client.Is404(err) {
 				return nil
 			}
 			return err
@@ -159,7 +161,7 @@ func testAccCheckGitlabBranchExists(n string, branch *gitlab.Branch, rInt int) r
 		if !ok {
 			return fmt.Errorf("Not Found: %s", n)
 		}
-		pid, name, err := parseTwoPartID(rs.Primary.ID)
+		pid, name, err := utils.ParseTwoPartID(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error in splitting project and branch IDs")
 		}

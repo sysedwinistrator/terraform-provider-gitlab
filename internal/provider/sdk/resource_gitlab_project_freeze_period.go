@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_freeze_period", func() *schema.Resource {
@@ -69,7 +71,7 @@ func resourceGitlabProjectFreezePeriodCreate(ctx context.Context, d *schema.Reso
 	}
 
 	FreezePeriodIDString := fmt.Sprintf("%d", FreezePeriod.ID)
-	d.SetId(buildTwoPartID(&projectID, &FreezePeriodIDString))
+	d.SetId(utils.BuildTwoPartID(&projectID, &FreezePeriodIDString))
 
 	return resourceGitlabProjectFreezePeriodRead(ctx, d, meta)
 }
@@ -85,7 +87,7 @@ func resourceGitlabProjectFreezePeriodRead(ctx context.Context, d *schema.Resour
 
 	freezePeriod, _, err := client.FreezePeriods.GetFreezePeriod(projectID, freezePeriodID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] project freeze period for %s not found so removing it from state", d.Id())
 			d.SetId("")
 			return nil
@@ -149,7 +151,7 @@ func resourceGitlabProjectFreezePeriodDelete(ctx context.Context, d *schema.Reso
 }
 
 func projectIDAndFreezePeriodIDFromID(id string) (string, int, error) {
-	project, freezePeriodIDString, err := parseTwoPartID(id)
+	project, freezePeriodIDString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}

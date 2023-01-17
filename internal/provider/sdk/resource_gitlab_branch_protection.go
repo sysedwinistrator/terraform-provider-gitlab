@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var (
@@ -75,27 +77,27 @@ var _ = registerResource("gitlab_branch_protection", func() *schema.Resource {
 				Required:    true,
 			},
 			"merge_access_level": {
-				Description:      fmt.Sprintf("Access levels allowed to merge. Valid values are: %s.", renderValueListForDocs(validProtectedBranchTagAccessLevelNames)),
+				Description:      fmt.Sprintf("Access levels allowed to merge. Valid values are: %s.", utils.RenderValueListForDocs(providerclient.ValidProtectedBranchTagAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProtectedBranchTagAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProtectedBranchTagAccessLevelNames, false)),
 				Optional:         true,
-				Default:          accessLevelValueToName[gitlab.MaintainerPermissions],
+				Default:          providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions],
 				ForceNew:         true,
 			},
 			"push_access_level": {
-				Description:      fmt.Sprintf("Access levels allowed to push. Valid values are: %s.", renderValueListForDocs(validProtectedBranchTagAccessLevelNames)),
+				Description:      fmt.Sprintf("Access levels allowed to push. Valid values are: %s.", utils.RenderValueListForDocs(providerclient.ValidProtectedBranchTagAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProtectedBranchTagAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProtectedBranchTagAccessLevelNames, false)),
 				Optional:         true,
-				Default:          accessLevelValueToName[gitlab.MaintainerPermissions],
+				Default:          providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions],
 				ForceNew:         true,
 			},
 			"unprotect_access_level": {
-				Description:      fmt.Sprintf("Access levels allowed to unprotect. Valid values are: %s.", renderValueListForDocs(validProtectedBranchUnprotectAccessLevelNames)),
+				Description:      fmt.Sprintf("Access levels allowed to unprotect. Valid values are: %s.", utils.RenderValueListForDocs(providerclient.ValidProtectedBranchUnprotectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProtectedBranchUnprotectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProtectedBranchUnprotectAccessLevelNames, false)),
 				Optional:         true,
-				Default:          accessLevelValueToName[gitlab.MaintainerPermissions],
+				Default:          providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions],
 				ForceNew:         true,
 			},
 			"allow_force_push": {
@@ -148,14 +150,14 @@ func resourceGitlabBranchProtectionCreate(ctx context.Context, d *schema.Resourc
 				return diag.Errorf("protected branch %q on project %q already exists: %+v", branch, project, *existing)
 			}
 		}
-		if err != nil && !is404(err) {
+		if err != nil && !providerclient.Is404(err) {
 			return diag.Errorf("error looking up protected branch %q on project %q: %v", branch, project, err)
 		}
 	}
 
-	mergeAccessLevel := accessLevelNameToValue[d.Get("merge_access_level").(string)]
-	pushAccessLevel := accessLevelNameToValue[d.Get("push_access_level").(string)]
-	unprotectAccessLevel := accessLevelNameToValue[d.Get("unprotect_access_level").(string)]
+	mergeAccessLevel := providerclient.AccessLevelNameToValue[d.Get("merge_access_level").(string)]
+	pushAccessLevel := providerclient.AccessLevelNameToValue[d.Get("push_access_level").(string)]
+	unprotectAccessLevel := providerclient.AccessLevelNameToValue[d.Get("unprotect_access_level").(string)]
 
 	allowForcePush := d.Get("allow_force_push").(bool)
 	codeOwnerApprovalRequired := d.Get("code_owner_approval_required").(bool)
@@ -183,7 +185,7 @@ func resourceGitlabBranchProtectionCreate(ctx context.Context, d *schema.Resourc
 		return diag.Errorf("feature unavailable: `code_owner_approval_required`, Premium or Ultimate license required.")
 	}
 
-	d.SetId(buildTwoPartID(&project, &pb.Name))
+	d.SetId(utils.BuildTwoPartID(&project, &pb.Name))
 
 	return resourceGitlabBranchProtectionRead(ctx, d, meta)
 }
@@ -209,19 +211,19 @@ func resourceGitlabBranchProtectionRead(ctx context.Context, d *schema.ResourceD
 	d.Set("branch", pb.Name)
 
 	if pushAccessLevel, err := firstValidAccessLevel(pb.PushAccessLevels); err == nil {
-		if err := d.Set("push_access_level", accessLevelValueToName[*pushAccessLevel]); err != nil {
+		if err := d.Set("push_access_level", providerclient.AccessLevelValueToName[*pushAccessLevel]); err != nil {
 			return diag.Errorf("error setting push_access_level: %v", err)
 		}
 	}
 
 	if mergeAccessLevels, err := firstValidAccessLevel(pb.MergeAccessLevels); err == nil {
-		if err := d.Set("merge_access_level", accessLevelValueToName[*mergeAccessLevels]); err != nil {
+		if err := d.Set("merge_access_level", providerclient.AccessLevelValueToName[*mergeAccessLevels]); err != nil {
 			return diag.Errorf("error setting merge_access_level: %v", err)
 		}
 	}
 
 	if unprotectAccessLevels, err := firstValidAccessLevel(pb.UnprotectAccessLevels); err == nil {
-		if err := d.Set("unprotect_access_level", accessLevelValueToName[*unprotectAccessLevels]); err != nil {
+		if err := d.Set("unprotect_access_level", providerclient.AccessLevelValueToName[*unprotectAccessLevels]); err != nil {
 			return diag.Errorf("error setting unprotect_access_level: %v", err)
 		}
 	}
@@ -247,7 +249,7 @@ func resourceGitlabBranchProtectionRead(ctx context.Context, d *schema.ResourceD
 
 	d.Set("branch_protection_id", pb.ID)
 
-	d.SetId(buildTwoPartID(&project, &pb.Name))
+	d.SetId(utils.BuildTwoPartID(&project, &pb.Name))
 
 	return nil
 }
@@ -270,7 +272,7 @@ func resourceGitlabBranchProtectionUpdate(ctx context.Context, d *schema.Resourc
 	if _, err := client.ProtectedBranches.RequireCodeOwnerApprovals(project, branch, options, gitlab.WithContext(ctx)); err != nil {
 		// The user might be running a version of GitLab that does not support this feature.
 		// We enhance the generic 404 error with a more informative message.
-		if is404(err) {
+		if providerclient.Is404(err) {
 			return featureNotAvailableError
 		}
 		return diag.FromErr(err)
@@ -304,7 +306,7 @@ func resourceGitlabBranchProtectionDelete(ctx context.Context, d *schema.Resourc
 }
 
 func projectAndBranchFromID(id string) (string, string, error) {
-	project, branch, err := parseTwoPartID(id)
+	project, branch, err := utils.ParseTwoPartID(id)
 
 	if err != nil {
 		log.Printf("[WARN] cannot get branch protection id from input: %v", id)
@@ -356,7 +358,7 @@ func flattenNonZeroBranchAccessDescriptions(descriptions []*gitlab.BranchAccessD
 			continue
 		}
 		values = append(values, map[string]interface{}{
-			"access_level":             accessLevelValueToName[description.AccessLevel],
+			"access_level":             providerclient.AccessLevelValueToName[description.AccessLevel],
 			"access_level_description": description.AccessLevelDescription,
 			"user_id":                  description.UserID,
 			"group_id":                 description.GroupID,

@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerDataSource("gitlab_project_protected_branch", func() *schema.Resource {
@@ -60,7 +62,7 @@ func dataSourceGitlabProjectProtectedBranchSchemaAccessLevels() *schema.Schema {
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"access_level": {
-					Description: fmt.Sprintf("The access level allowed to perform the respective action (shows as 40 - \"maintainer\" if `user_id` or `group_id` are present). Valid values are: %s", renderValueListForDocs(validProtectedBranchTagAccessLevelNames)),
+					Description: fmt.Sprintf("The access level allowed to perform the respective action (shows as 40 - \"maintainer\" if `user_id` or `group_id` are present). Valid values are: %s", utils.RenderValueListForDocs(client.ValidProtectedBranchTagAccessLevelNames)),
 					Type:        schema.TypeString,
 					Computed:    true,
 				},
@@ -121,7 +123,7 @@ func dataSourceGitlabProjectProtectedBranchRead(ctx context.Context, d *schema.R
 func flattenBranchAccessDescriptions(descriptions []*gitlab.BranchAccessDescription) (values []map[string]interface{}) {
 	for _, description := range descriptions {
 		v := map[string]interface{}{
-			"access_level":             accessLevelValueToName[description.AccessLevel],
+			"access_level":             client.AccessLevelValueToName[description.AccessLevel],
 			"access_level_description": description.AccessLevelDescription,
 		}
 		if description.UserID != 0 {

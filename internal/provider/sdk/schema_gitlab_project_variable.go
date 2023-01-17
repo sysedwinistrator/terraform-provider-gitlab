@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var gitlabVariableTypeValues = []string{"env_var", "file"}
@@ -32,7 +33,7 @@ func gitlabProjectVariableGetSchema() map[string]*schema.Schema {
 			Sensitive:   true,
 		},
 		"variable_type": {
-			Description:      fmt.Sprintf("The type of a variable. Valid values are: %s. Default is `env_var`.", renderValueListForDocs(gitlabVariableTypeValues)),
+			Description:      fmt.Sprintf("The type of a variable. Valid values are: %s. Default is `env_var`.", utils.RenderValueListForDocs(gitlabVariableTypeValues)),
 			Type:             schema.TypeString,
 			Optional:         true,
 			Default:          "env_var",

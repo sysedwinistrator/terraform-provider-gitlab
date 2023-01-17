@@ -1,4 +1,4 @@
-package sdk
+package client
 
 import (
 	"github.com/xanzy/go-gitlab"
@@ -16,9 +16,9 @@ import (
 // and consult the upstream API docs to verify what's possible and keep
 // your fingers crossed it's correct :)
 
-// see the source of truth for `accessLevelNameToValue` and `accessLevelValueToName`
+// see the source of truth for `AccessLevelNameToValue` and `AccessLevelValueToName`
 // here: https://docs.gitlab.com/ee/api/members.html#valid-access-levels
-var validGroupAccessLevelNames = []string{
+var ValidGroupAccessLevelNames = []string{
 	"no one",
 	"minimal",
 	"guest",
@@ -30,7 +30,7 @@ var validGroupAccessLevelNames = []string{
 	// Deprecated and should be removed in v4 of this provider
 	"master",
 }
-var validProjectAccessLevelNames = []string{
+var ValidProjectAccessLevelNames = []string{
 	"no one",
 	"minimal",
 	"guest",
@@ -47,25 +47,25 @@ var validProjectAccessLevelNames = []string{
 //
 //	mentions an `60 => Admin access` level, but it actually seems to not exist.
 //	Ignoring here that I've every read about this ...
-var validProtectedBranchTagAccessLevelNames = []string{
+var ValidProtectedBranchTagAccessLevelNames = []string{
 	"no one", "developer", "maintainer",
 }
 
 // The only access levels allowed to be configured to unprotect a protected branch
 // The API states the others are either forbidden (via 403) or invalid
-var validProtectedBranchUnprotectAccessLevelNames = []string{
+var ValidProtectedBranchUnprotectAccessLevelNames = []string{
 	"no one", "developer", "maintainer",
 }
 
-var validProtectedEnvironmentDeploymentLevelNames = []string{
+var ValidProtectedEnvironmentDeploymentLevelNames = []string{
 	"developer", "maintainer",
 }
 
-var validProjectEnvironmentStates = []string{
+var ValidProjectEnvironmentStates = []string{
 	"available", "stopped",
 }
 
-var accessLevelNameToValue = map[string]gitlab.AccessLevelValue{
+var AccessLevelNameToValue = map[string]gitlab.AccessLevelValue{
 	"no one":     gitlab.NoPermissions,
 	"minimal":    gitlab.MinimalAccessPermissions,
 	"guest":      gitlab.GuestPermissions,
@@ -78,7 +78,7 @@ var accessLevelNameToValue = map[string]gitlab.AccessLevelValue{
 	"master": gitlab.MaintainerPermissions,
 }
 
-var accessLevelValueToName = map[gitlab.AccessLevelValue]string{
+var AccessLevelValueToName = map[gitlab.AccessLevelValue]string{
 	gitlab.NoPermissions:            "no one",
 	gitlab.MinimalAccessPermissions: "minimal",
 	gitlab.GuestPermissions:         "guest",

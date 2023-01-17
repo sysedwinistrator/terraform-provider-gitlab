@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_runner", func() *schema.Resource {
@@ -67,7 +68,7 @@ The runner will be registered at a group level if the token used is from a group
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"access_level": {
-				Description:  fmt.Sprintf(`The access_level of the runner. Valid values are: %s.`, renderValueListForDocs(runnerAccessLevelAllowedValues)),
+				Description:  fmt.Sprintf(`The access_level of the runner. Valid values are: %s.`, utils.RenderValueListForDocs(runnerAccessLevelAllowedValues)),
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice(runnerAccessLevelAllowedValues, true),

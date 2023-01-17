@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_group_variable", func() *schema.Resource {
@@ -57,14 +59,14 @@ func resourceGitlabGroupVariableCreate(ctx context.Context, d *schema.ResourceDa
 
 	keyScope := fmt.Sprintf("%s:%s", key, environmentScope)
 
-	d.SetId(buildTwoPartID(&group, &keyScope))
+	d.SetId(utils.BuildTwoPartID(&group, &keyScope))
 	return resourceGitlabGroupVariableRead(ctx, d, meta)
 }
 
 func resourceGitlabGroupVariableRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
-	group, key, err := parseTwoPartID(d.Id())
+	group, key, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -85,7 +87,7 @@ func resourceGitlabGroupVariableRead(ctx context.Context, d *schema.ResourceData
 		withEnvironmentScopeFilter(ctx, scope),
 	)
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab group variable not found %s/%s", group, key)
 			d.SetId("")
 			return nil

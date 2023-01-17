@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_service_github", func() *schema.Resource {
@@ -115,7 +116,7 @@ func resourceGitlabServiceGithubRead(ctx context.Context, d *schema.ResourceData
 
 	service, _, err := client.Services.GetGithubService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab service github not found %s / %s / %s",
 				project,
 				service.Title,

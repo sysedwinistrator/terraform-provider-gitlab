@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_group_ldap_link", func() *schema.Resource {
@@ -39,18 +41,18 @@ var _ = registerResource("gitlab_group_ldap_link", func() *schema.Resource {
 				ForceNew:    true,
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("Minimum access level for members of the LDAP group. Valid values are: %s", renderValueListForDocs(validGroupAccessLevelNames)),
+				Description:      fmt.Sprintf("Minimum access level for members of the LDAP group. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidGroupAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validGroupAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidGroupAccessLevelNames, false)),
 				Optional:         true,
 				ForceNew:         true,
 				Deprecated:       "Use `group_access` instead of the `access_level` attribute.",
 				ExactlyOneOf:     []string{"access_level", "group_access"},
 			},
 			"group_access": {
-				Description:      fmt.Sprintf("Minimum access level for members of the LDAP group. Valid values are: %s", renderValueListForDocs(validGroupAccessLevelNames)),
+				Description:      fmt.Sprintf("Minimum access level for members of the LDAP group. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidGroupAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validGroupAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidGroupAccessLevelNames, false)),
 				Optional:         true,
 				ForceNew:         true,
 				ExactlyOneOf:     []string{"access_level", "group_access"},
@@ -81,9 +83,9 @@ func resourceGitlabGroupLdapLinkCreate(ctx context.Context, d *schema.ResourceDa
 
 	var groupAccess gitlab.AccessLevelValue
 	if v, ok := d.GetOk("group_access"); ok {
-		groupAccess = gitlab.AccessLevelValue(accessLevelNameToValue[v.(string)])
+		groupAccess = gitlab.AccessLevelValue(providerclient.AccessLevelNameToValue[v.(string)])
 	} else if v, ok := d.GetOk("access_level"); ok {
-		groupAccess = gitlab.AccessLevelValue(accessLevelNameToValue[v.(string)])
+		groupAccess = gitlab.AccessLevelValue(providerclient.AccessLevelNameToValue[v.(string)])
 	} else {
 		return diag.Errorf("Neither `group_access` nor `access_level` (deprecated) is set")
 	}
@@ -109,7 +111,7 @@ func resourceGitlabGroupLdapLinkCreate(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildTwoPartID(&LdapLink.Provider, &LdapLink.CN))
+	d.SetId(utils.BuildTwoPartID(&LdapLink.Provider, &LdapLink.CN))
 
 	return resourceGitlabGroupLdapLinkRead(ctx, d, meta)
 }
@@ -141,10 +143,10 @@ func resourceGitlabGroupLdapLinkRead(ctx context.Context, d *schema.ResourceData
 		// Check if the LDAP link exists in the returned list of links
 		found := false
 		for _, ldapLink := range ldapLinks {
-			if buildTwoPartID(&ldapLink.Provider, &ldapLink.CN) == d.Id() {
+			if utils.BuildTwoPartID(&ldapLink.Provider, &ldapLink.CN) == d.Id() {
 				d.Set("group_id", groupId)
 				d.Set("cn", ldapLink.CN)
-				d.Set("group_access", accessLevelValueToName[ldapLink.GroupAccess])
+				d.Set("group_access", providerclient.AccessLevelValueToName[ldapLink.GroupAccess])
 				d.Set("ldap_provider", ldapLink.Provider)
 				found = true
 				break
@@ -192,7 +194,7 @@ func resourceGitlabGroupLdapLinkImporter(ctx context.Context, d *schema.Resource
 	}
 
 	groupId, ldapProvider, ldapCN := parts[0], parts[1], parts[2]
-	d.SetId(buildTwoPartID(&ldapProvider, &ldapCN))
+	d.SetId(utils.BuildTwoPartID(&ldapProvider, &ldapCN))
 	d.Set("group_id", groupId)
 	d.Set("force", false)
 

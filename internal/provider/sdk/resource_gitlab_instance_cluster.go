@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_instance_cluster", func() *schema.Resource {
@@ -182,7 +183,7 @@ func resourceGitlabInstanceClusterRead(ctx context.Context, d *schema.ResourceDa
 
 	cluster, _, err := client.InstanceCluster.GetCluster(clusterId, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab instance cluster not found %d", clusterId)
 			d.SetId("")
 			return nil

@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerDataSource("gitlab_project_tag", func() *schema.Resource {
@@ -40,7 +41,7 @@ func dataSourceGitlabProjectTagRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildTwoPartID(&project, &name))
+	d.SetId(utils.BuildTwoPartID(&project, &name))
 	d.Set("name", tag.Name)
 	d.Set("project", project)
 	d.Set("message", tag.Message)

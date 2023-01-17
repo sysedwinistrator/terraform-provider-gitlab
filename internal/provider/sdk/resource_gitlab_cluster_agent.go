@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_cluster_agent", func() *schema.Resource {
@@ -65,7 +67,7 @@ func resourceGitlabClusterAgentRead(ctx context.Context, d *schema.ResourceData,
 	log.Printf("[DEBUG] read GitLab Agent for Kubernetes in project %s with id %d", project, agentID)
 	clusterAgent, _, err := client.ClusterAgents.GetAgent(project, agentID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] read GitLab Agent for Kubernetes in project %s with id %d not found, removing from state", project, agentID)
 			d.SetId("")
 			return nil
@@ -100,7 +102,7 @@ func resourceGitlabClusterAgentBuildID(project string, agentID int) string {
 }
 
 func resourceGitlabClusterAgentParseID(id string) (string, int, error) {
-	project, rawAgentID, err := parseTwoPartID(id)
+	project, rawAgentID, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}

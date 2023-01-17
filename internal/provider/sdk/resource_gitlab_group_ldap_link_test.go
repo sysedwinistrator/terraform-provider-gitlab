@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -116,7 +118,7 @@ type testAccGitlabGroupLdapLinkExpectedAttributes struct {
 func testAccCheckGitlabGroupLdapLinkAttributes(ldapLink *gitlab.LDAPGroupLink, want *testAccGitlabGroupLdapLinkExpectedAttributes) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		accessLevelId, ok := accessLevelValueToName[ldapLink.GroupAccess]
+		accessLevelId, ok := client.AccessLevelValueToName[ldapLink.GroupAccess]
 		if !ok {
 			return fmt.Errorf("Invalid access level '%s'", accessLevelId)
 		}
@@ -142,7 +144,7 @@ func testAccCheckGitlabGroupLdapLinkDestroy(s *terraform.State) error {
 				}
 			}
 		}
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 		return nil
@@ -159,11 +161,11 @@ func testAccGetGitlabGroupLdapLink(ldapLink *gitlab.LDAPGroupLink, resourceState
 	// Construct our desired LDAP Link from the config values
 	desiredLdapLink := gitlab.LDAPGroupLink{
 		CN:          resourceState.Primary.Attributes["cn"],
-		GroupAccess: accessLevelNameToValue[resourceState.Primary.Attributes["group_access"]],
+		GroupAccess: client.AccessLevelNameToValue[resourceState.Primary.Attributes["group_access"]],
 		Provider:    resourceState.Primary.Attributes["ldap_provider"],
 	}
 
-	desiredLdapLinkId := buildTwoPartID(&desiredLdapLink.Provider, &desiredLdapLink.CN)
+	desiredLdapLinkId := utils.BuildTwoPartID(&desiredLdapLink.Provider, &desiredLdapLink.CN)
 
 	// Try to fetch all group links from GitLab
 	currentLdapLinks, _, err := testutil.TestGitlabClient.Groups.ListGroupLDAPLinks(groupId, nil)
@@ -188,7 +190,7 @@ func testAccGetGitlabGroupLdapLink(ldapLink *gitlab.LDAPGroupLink, resourceState
 
 		// Check if the LDAP link exists in the returned list of links
 		for _, currentLdapLink := range currentLdapLinks {
-			if buildTwoPartID(&currentLdapLink.Provider, &currentLdapLink.CN) == desiredLdapLinkId {
+			if utils.BuildTwoPartID(&currentLdapLink.Provider, &currentLdapLink.CN) == desiredLdapLinkId {
 				found = true
 				*ldapLink = *currentLdapLink
 				break

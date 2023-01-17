@@ -174,7 +174,7 @@ func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, 
 
 	jiraService, _, err := client.Services.GetJiraService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab jira service not found %s, removing from state", project)
 			d.SetId("")
 			return nil

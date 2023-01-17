@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -147,7 +149,7 @@ func testAccCheckGitlabProjectEnvironmentExists(n string, env *gitlab.Environmen
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		project, environment, err := parseTwoPartID(rs.Primary.ID)
+		project, environment, err := utils.ParseTwoPartID(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error in Splitting Project ID and Environment Name")
 		}
@@ -199,7 +201,7 @@ func testAccCheckGitlabProjectEnvironmentDestroy(s *terraform.State) error {
 		if rs.Type == "gitlab_project" {
 			project = rs.Primary.ID
 		} else if rs.Type == "gitlab_project_environment" {
-			project, environmentIDString, err = parseTwoPartID(rs.Primary.ID)
+			project, environmentIDString, err = utils.ParseTwoPartID(rs.Primary.ID)
 			if err != nil {
 				return fmt.Errorf("[ERROR] cannot get project and environmentID from input: %v", rs.Primary.ID)
 			}
@@ -217,7 +219,7 @@ func testAccCheckGitlabProjectEnvironmentDestroy(s *terraform.State) error {
 			return fmt.Errorf("[ERROR] project Environment %v still exists", environmentIDInt)
 		}
 	} else {
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 	}

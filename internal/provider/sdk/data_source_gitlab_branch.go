@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerDataSource("gitlab_branch", func() *schema.Resource {
@@ -84,7 +85,7 @@ func dataSourceGitlabBranchRead(ctx context.Context, d *schema.ResourceData, met
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildTwoPartID(&project, &name))
+	d.SetId(utils.BuildTwoPartID(&project, &name))
 	d.Set("name", branch.Name)
 	d.Set("project", project)
 	d.Set("web_url", branch.WebURL)

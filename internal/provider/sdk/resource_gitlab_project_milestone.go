@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var milestoneStateToStateEvent = map[string]string{
@@ -91,7 +93,7 @@ func resourceGitlabProjectMilestoneRead(ctx context.Context, d *schema.ResourceD
 	log.Printf("[DEBUG] read gitlab milestone in project %s with ID %d", project, milestoneID)
 	milestone, resp, err := client.Milestones.GetMilestone(project, milestoneID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[WARN] recieved 404 for gitlab milestone ID %d in project %s, removing from state", milestoneID, project)
 			d.SetId("")
 			return nil
@@ -168,7 +170,7 @@ func resourceGitlabProjectMilestoneDelete(ctx context.Context, d *schema.Resourc
 }
 
 func resourceGitLabProjectMilestoneParseId(id string) (string, int, error) {
-	project, milestone, err := parseTwoPartID(id)
+	project, milestone, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}
@@ -183,5 +185,5 @@ func resourceGitLabProjectMilestoneParseId(id string) (string, int, error) {
 
 func resourceGitLabProjectMilestoneBuildId(project string, milestoneID int) string {
 	stringMilestoneID := fmt.Sprintf("%d", milestoneID)
-	return buildTwoPartID(&project, &stringMilestoneID)
+	return utils.BuildTwoPartID(&project, &stringMilestoneID)
 }

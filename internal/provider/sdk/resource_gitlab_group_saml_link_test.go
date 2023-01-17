@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -62,7 +64,7 @@ func testAccCheckGitlabGroupSamlLinkDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, samlGroupName, err := parseTwoPartID(resourceState.Primary.ID)
+		group, samlGroupName, err := utils.ParseTwoPartID(resourceState.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -73,7 +75,7 @@ func testAccCheckGitlabGroupSamlLinkDestroy(s *terraform.State) error {
 				return fmt.Errorf("SAML Group Link still exists")
 			}
 		}
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 		return nil

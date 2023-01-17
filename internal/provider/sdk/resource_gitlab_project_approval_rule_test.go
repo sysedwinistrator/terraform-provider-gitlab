@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 
@@ -224,7 +225,7 @@ func testAccCheckGitlabProjectApprovalRuleExists(n string, projectApprovalRule *
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		projectID, ruleID, err := parseTwoPartID(rs.Primary.ID)
+		projectID, ruleID, err := utils.ParseTwoPartID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}

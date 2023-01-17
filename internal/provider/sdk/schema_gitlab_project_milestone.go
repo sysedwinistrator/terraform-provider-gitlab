@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 func gitlabProjectMilestoneGetSchema() map[string]*schema.Schema {
@@ -43,7 +44,7 @@ func gitlabProjectMilestoneGetSchema() map[string]*schema.Schema {
 		},
 		// NOTE: not part of `CREATE`, but part of `UPDATE` with the `state_event` field.
 		"state": {
-			Description:      fmt.Sprintf("The state of the milestone. Valid values are: %s.", renderValueListForDocs(validMilestoneStates)),
+			Description:      fmt.Sprintf("The state of the milestone. Valid values are: %s.", utils.RenderValueListForDocs(validMilestoneStates)),
 			Type:             schema.TypeString,
 			Optional:         true,
 			Default:          "active",

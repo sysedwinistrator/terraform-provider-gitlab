@@ -255,7 +255,7 @@ func testAccCheckGitlabTopicDestroy(s *terraform.State) (err error) {
 				return fmt.Errorf("topic %s still exists", rs.Primary.ID)
 			}
 		}
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 		return nil
@@ -290,7 +290,7 @@ func testAccCheckGitlabTopicSoftDestroy(s *terraform.State) (err error) {
 				return nil
 			}
 		}
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 		return nil

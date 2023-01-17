@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
@@ -57,7 +58,7 @@ var _ = registerResource("gitlab_managed_license", func() *schema.Resource {
 				DiffSuppressFunc: checkDeprecatedValuesForDiff,
 				Description: fmt.Sprintf(`The approval status of the license. Valid values are: %s. "approved" and "blacklisted"
 				have been deprecated in favor of "allowed" and "denied"; use "allowed" and "denied" for GitLab versions 15.0 and higher.
-				Prior to version 15.0 and after 14.6, the values are equivalent.`, renderValueListForDocs(managedLicenseAllowedValues)),
+				Prior to version 15.0 and after 14.6, the values are equivalent.`, utils.RenderValueListForDocs(managedLicenseAllowedValues)),
 			},
 		},
 	}
@@ -85,7 +86,7 @@ func resourceGitlabManagedLicenseCreate(ctx context.Context, d *schema.ResourceD
 	}
 
 	licenseId := strconv.Itoa(addManagedLicense.ID)
-	d.SetId(buildTwoPartID(&project, &licenseId))
+	d.SetId(utils.BuildTwoPartID(&project, &licenseId))
 
 	return resourceGitlabManagedLicenseRead(ctx, d, meta)
 }
@@ -116,7 +117,7 @@ func resourceGitlabManagedLicenseRead(ctx context.Context, d *schema.ResourceDat
 	log.Printf("[DEBUG] read gitlab Managed License for project/licenseId %s/%d", project, licenseId)
 	license, _, err := client.ManagedLicenses.GetManagedLicense(project, licenseId, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] Managed License %s:%d no longer exists and is being removed from state", project, licenseId)
 			d.SetId("")
 			return nil
@@ -154,7 +155,7 @@ func resourceGitlabManagedLicenseUpdate(ctx context.Context, d *schema.ResourceD
 	}
 
 	licenseIdStr := strconv.Itoa(licenseId)
-	d.SetId(buildTwoPartID(&project, &licenseIdStr))
+	d.SetId(utils.BuildTwoPartID(&project, &licenseIdStr))
 
 	return resourceGitlabManagedLicenseRead(ctx, d, meta)
 }
@@ -189,7 +190,7 @@ func stringToApprovalStatus(ctx context.Context, client *gitlab.Client, s string
 }
 
 func projectIdAndLicenseIdFromId(id string) (string, int, error) {
-	projectId, id, err := parseTwoPartID(id)
+	projectId, id, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}
