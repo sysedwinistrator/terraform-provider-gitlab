@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 // https://docs.gitlab.com/ee/api/groups.html#share-groups-with-groups
@@ -40,9 +42,9 @@ var _ = registerResource("gitlab_group_share_group", func() *schema.Resource {
 				Required:    true,
 			},
 			"group_access": {
-				Description:      fmt.Sprintf("The access level to grant the group. Valid values are: %s", renderValueListForDocs(validGroupAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidGroupAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validGroupAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidGroupAccessLevelNames, false)),
 				ForceNew:         true,
 				Required:         true,
 			},
@@ -60,7 +62,7 @@ var _ = registerResource("gitlab_group_share_group", func() *schema.Resource {
 func resourceGitlabGroupShareGroupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	groupId := d.Get("group_id").(string)
 	shareGroupId := d.Get("share_group_id").(int)
-	groupAccess := accessLevelNameToValue[d.Get("group_access").(string)]
+	groupAccess := providerclient.AccessLevelNameToValue[d.Get("group_access").(string)]
 	options := &gitlab.ShareWithGroupOptions{
 		GroupID:     &shareGroupId,
 		GroupAccess: &groupAccess,
@@ -76,7 +78,7 @@ func resourceGitlabGroupShareGroupCreate(ctx context.Context, d *schema.Resource
 	}
 
 	shareGroupIdString := strconv.Itoa(shareGroupId)
-	d.SetId(buildTwoPartID(&groupId, &shareGroupIdString))
+	d.SetId(utils.BuildTwoPartID(&groupId, &shareGroupIdString))
 
 	return resourceGitlabGroupShareGroupRead(ctx, d, meta)
 }
@@ -94,7 +96,7 @@ func resourceGitlabGroupShareGroupRead(ctx context.Context, d *schema.ResourceDa
 	// Query main group
 	group, _, err := client.Groups.GetGroup(groupId, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab group %s not found so removing from state", groupId)
 			d.SetId("")
 			return nil
@@ -109,7 +111,7 @@ func resourceGitlabGroupShareGroupRead(ctx context.Context, d *schema.ResourceDa
 
 			d.Set("group_id", groupId)
 			d.Set("share_group_id", sharedGroup.GroupID)
-			d.Set("group_access", accessLevelValueToName[convertedAccessLevel])
+			d.Set("group_access", providerclient.AccessLevelValueToName[convertedAccessLevel])
 
 			if sharedGroup.ExpiresAt == nil {
 				d.Set("expires_at", "")
@@ -146,7 +148,7 @@ func resourceGitlabGroupShareGroupDelete(ctx context.Context, d *schema.Resource
 }
 
 func groupIdsFromId(id string) (string, int, error) {
-	groupId, sharedGroupIdString, err := parseTwoPartID(id)
+	groupId, sharedGroupIdString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, fmt.Errorf("Error parsing ID: %s", id)
 	}

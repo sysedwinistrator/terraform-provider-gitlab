@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_group_cluster", func() *schema.Resource {
@@ -167,7 +169,7 @@ func resourceGitlabGroupClusterCreate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	clusterIdString := fmt.Sprintf("%d", cluster.ID)
-	d.SetId(buildTwoPartID(&group, &clusterIdString))
+	d.SetId(utils.BuildTwoPartID(&group, &clusterIdString))
 
 	return resourceGitlabGroupClusterRead(ctx, d, meta)
 }
@@ -184,7 +186,7 @@ func resourceGitlabGroupClusterRead(ctx context.Context, d *schema.ResourceData,
 
 	cluster, _, err := client.GroupCluster.GetCluster(group, clusterId, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab group cluster not found %s/%d", group, clusterId)
 			d.SetId("")
 			return nil
@@ -287,7 +289,7 @@ func resourceGitlabGroupClusterDelete(ctx context.Context, d *schema.ResourceDat
 }
 
 func groupIdAndClusterIdFromId(id string) (string, int, error) {
-	group, clusterIdString, err := parseTwoPartID(id)
+	group, clusterIdString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
 	}

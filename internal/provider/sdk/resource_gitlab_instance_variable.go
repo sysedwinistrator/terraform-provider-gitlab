@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_instance_variable", func() *schema.Resource {
@@ -63,7 +64,7 @@ func resourceGitlabInstanceVariableRead(ctx context.Context, d *schema.ResourceD
 
 	v, _, err := client.InstanceVariables.GetVariable(key, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab instance level CI variable for %s not found so removing from state", d.Id())
 			d.SetId("")
 			return nil

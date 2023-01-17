@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerDataSource("gitlab_group_membership", func() *schema.Resource {
@@ -45,7 +46,7 @@ var _ = registerDataSource("gitlab_group_membership", func() *schema.Resource {
 				Type:             schema.TypeString,
 				Computed:         true,
 				Optional:         true,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validGroupAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(client.ValidGroupAccessLevelNames, false)),
 			},
 			"members": {
 				Description: "The list of group members.",
@@ -180,7 +181,7 @@ func flattenGitlabGroupMembers(d *schema.ResourceData, members []*gitlab.GroupMe
 
 	var filterAccessLevel = gitlab.NoPermissions
 	if data, ok := d.GetOk("access_level"); ok {
-		filterAccessLevel = accessLevelNameToValue[data.(string)]
+		filterAccessLevel = client.AccessLevelNameToValue[data.(string)]
 	}
 
 	for _, member := range members {
@@ -195,7 +196,7 @@ func flattenGitlabGroupMembers(d *schema.ResourceData, members []*gitlab.GroupMe
 			"state":        member.State,
 			"avatar_url":   member.AvatarURL,
 			"web_url":      member.WebURL,
-			"access_level": accessLevelValueToName[gitlab.AccessLevelValue(member.AccessLevel)],
+			"access_level": client.AccessLevelValueToName[gitlab.AccessLevelValue(member.AccessLevel)],
 		}
 
 		if member.ExpiresAt != nil {

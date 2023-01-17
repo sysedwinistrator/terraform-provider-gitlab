@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/mitchellh/hashstructure/v2"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var validIssueOrderByValues = []string{
@@ -152,13 +153,13 @@ var _ = registerDataSource("gitlab_project_issues", func() *schema.Resource {
 				Optional:    true,
 			},
 			"order_by": {
-				Description:      fmt.Sprintf("Return issues ordered by. Valid values are %s. Default is created_at", renderValueListForDocs(validIssueOrderByValues)),
+				Description:      fmt.Sprintf("Return issues ordered by. Valid values are %s. Default is created_at", utils.RenderValueListForDocs(validIssueOrderByValues)),
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validIssueOrderByValues, false)),
 			},
 			"scope": {
-				Description:      fmt.Sprintf("Return issues for the given scope. Valid values are %s. Defaults to all.", renderValueListForDocs(validIssueScopeValues)),
+				Description:      fmt.Sprintf("Return issues for the given scope. Valid values are %s. Defaults to all.", utils.RenderValueListForDocs(validIssueScopeValues)),
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validIssueScopeValues, false)),

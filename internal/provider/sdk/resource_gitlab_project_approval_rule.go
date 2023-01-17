@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_approval_rule", func() *schema.Resource {
@@ -49,7 +51,7 @@ var _ = registerResource("gitlab_project_approval_rule", func() *schema.Resource
 				Required:    true,
 			},
 			"rule_type": {
-				Description:      fmt.Sprintf("String, defaults to 'regular'. The type of rule. `any_approver` is a pre-configured default rule with `approvals_required` at `0`. Valid values are %s.", renderValueListForDocs(validRuleTypeValues)),
+				Description:      fmt.Sprintf("String, defaults to 'regular'. The type of rule. `any_approver` is a pre-configured default rule with `approvals_required` at `0`. Valid values are %s.", utils.RenderValueListForDocs(validRuleTypeValues)),
 				Type:             schema.TypeString,
 				ForceNew:         true,
 				Optional:         true,
@@ -107,7 +109,7 @@ func resourceGitlabProjectApprovalRuleCreate(ctx context.Context, d *schema.Reso
 
 	ruleIDString := strconv.Itoa(rule.ID)
 
-	d.SetId(buildTwoPartID(&project, &ruleIDString))
+	d.SetId(utils.BuildTwoPartID(&project, &ruleIDString))
 
 	return resourceGitlabProjectApprovalRuleRead(ctx, d, meta)
 }
@@ -115,7 +117,7 @@ func resourceGitlabProjectApprovalRuleCreate(ctx context.Context, d *schema.Reso
 func resourceGitlabProjectApprovalRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[DEBUG] read gitlab project-level rule %s", d.Id())
 
-	projectID, parsedRuleID, err := parseTwoPartID(d.Id())
+	projectID, parsedRuleID, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -128,7 +130,7 @@ func resourceGitlabProjectApprovalRuleRead(ctx context.Context, d *schema.Resour
 
 	rule, _, err := client.Projects.GetProjectApprovalRule(projectID, ruleID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] no project-level rule %s found, removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -157,7 +159,7 @@ func resourceGitlabProjectApprovalRuleRead(ctx context.Context, d *schema.Resour
 }
 
 func resourceGitlabProjectApprovalRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	projectID, ruleID, err := parseTwoPartID(d.Id())
+	projectID, ruleID, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -188,7 +190,7 @@ func resourceGitlabProjectApprovalRuleUpdate(ctx context.Context, d *schema.Reso
 }
 
 func resourceGitlabProjectApprovalRuleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	project, ruleID, err := parseTwoPartID(d.Id())
+	project, ruleID, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

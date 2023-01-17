@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_system_hook", func() *schema.Resource {
@@ -142,7 +143,7 @@ func resourceGitlabSystemHookRead(ctx context.Context, d *schema.ResourceData, m
 
 	hook, _, err := client.SystemHooks.GetHook(hookID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab system hook not found %d, removing from state", hookID)
 			d.SetId("")
 			return nil

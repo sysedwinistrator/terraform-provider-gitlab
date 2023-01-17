@@ -29,14 +29,6 @@ func extractIIDFromGlobalID(globalID string) (int, error) {
 	return iid, nil
 }
 
-func renderValueListForDocs(values []string) string {
-	inlineCodeValues := make([]string, 0, len(values))
-	for _, v := range values {
-		inlineCodeValues = append(inlineCodeValues, fmt.Sprintf("`%s`", v))
-	}
-	return strings.Join(inlineCodeValues, ", ")
-}
-
 var validateDateFunc = func(v interface{}, k string) (we []string, errors []error) {
 	value := v.(string)
 	//add zero hours and let time figure out correctness
@@ -188,21 +180,6 @@ var StringIsGitlabVariableType = func(v interface{}, k string) (s []string, es [
 	return
 }
 
-// return the pieces of id `a:b` as a, b
-func parseTwoPartID(id string) (string, string, error) {
-	parts := strings.SplitN(id, ":", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("Unexpected ID format (%q). Expected project:key", id)
-	}
-
-	return parts[0], parts[1], nil
-}
-
-// format the strings into an id `a:b`
-func buildTwoPartID(a, b *string) string {
-	return fmt.Sprintf("%s:%s", *a, *b)
-}
-
 var tagProtectionAccessLevelID = map[string]gitlab.AccessLevelValue{
 	"no one":     gitlab.NoPermissions,
 	"developer":  gitlab.DeveloperPermissions,
@@ -281,15 +258,6 @@ func fromIntegerMap(value interface{}) map[string]int {
 		integerMap[k] = v.(int)
 	}
 	return integerMap
-}
-
-func is404(err error) bool {
-	if errResponse, ok := err.(*gitlab.ErrorResponse); ok &&
-		errResponse.Response != nil &&
-		errResponse.Response.StatusCode == 404 {
-		return true
-	}
-	return false
 }
 
 func isCurrentUserAdmin(ctx context.Context, client *gitlab.Client) (bool, error) {

@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_access_token", func() *schema.Resource {
@@ -85,11 +87,11 @@ var _ = registerResource("gitlab_project_access_token", func() *schema.Resource 
 				Computed:    true,
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level for the project access token. Valid values are: %s. Default is `%s`.", renderValueListForDocs(validProjectAccessLevelNames), accessLevelValueToName[gitlab.MaintainerPermissions]),
+				Description:      fmt.Sprintf("The access level for the project access token. Valid values are: %s. Default is `%s`.", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames), providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions]),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
 				Optional:         true,
-				Default:          accessLevelValueToName[gitlab.MaintainerPermissions],
+				Default:          providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions],
 				ForceNew:         true,
 			},
 		},
@@ -98,7 +100,7 @@ var _ = registerResource("gitlab_project_access_token", func() *schema.Resource 
 
 func resourceGitlabProjectAccessTokenCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	accessLevelId := accessLevelNameToValue[d.Get("access_level").(string)]
+	accessLevelId := providerclient.AccessLevelNameToValue[d.Get("access_level").(string)]
 	project := d.Get("project").(string)
 
 	options := &gitlab.CreateProjectAccessTokenOptions{
@@ -124,14 +126,14 @@ func resourceGitlabProjectAccessTokenCreate(ctx context.Context, d *schema.Resou
 	}
 
 	PATstring := strconv.Itoa(projectAccessToken.ID)
-	d.SetId(buildTwoPartID(&project, &PATstring))
+	d.SetId(utils.BuildTwoPartID(&project, &PATstring))
 	d.Set("token", projectAccessToken.Token)
 
 	return resourceGitlabProjectAccessTokenRead(ctx, d, meta)
 }
 
 func resourceGitlabProjectAccessTokenRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	project, PATstring, err := parseTwoPartID(d.Id())
+	project, PATstring, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.Errorf("Error parsing ID: %s", d.Id())
 	}
@@ -147,7 +149,7 @@ func resourceGitlabProjectAccessTokenRead(ctx context.Context, d *schema.Resourc
 
 	projectAccessToken, _, err := client.ProjectAccessTokens.GetProjectAccessToken(project, projectAccessTokenID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] GitLab ProjectAccessToken %d, project ID %s not found, removing from state", projectAccessTokenID, project)
 			d.SetId("")
 			return nil
@@ -164,7 +166,7 @@ func resourceGitlabProjectAccessTokenRead(ctx context.Context, d *schema.Resourc
 	d.Set("created_at", projectAccessToken.CreatedAt.String())
 	d.Set("revoked", projectAccessToken.Revoked)
 	d.Set("user_id", projectAccessToken.UserID)
-	d.Set("access_level", accessLevelValueToName[projectAccessToken.AccessLevel])
+	d.Set("access_level", providerclient.AccessLevelValueToName[projectAccessToken.AccessLevel])
 	if err = d.Set("scopes", projectAccessToken.Scopes); err != nil {
 		return diag.FromErr(err)
 	}
@@ -173,7 +175,7 @@ func resourceGitlabProjectAccessTokenRead(ctx context.Context, d *schema.Resourc
 }
 
 func resourceGitlabProjectAccessTokenDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	project, patString, err := parseTwoPartID(d.Id())
+	project, patString, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.Errorf("Error parsing ID: %s", d.Id())
 	}
@@ -196,7 +198,7 @@ func resourceGitlabProjectAccessTokenDelete(ctx context.Context, d *schema.Resou
 	err = resource.RetryContext(ctx, 5*time.Minute, func() *resource.RetryError {
 		_, _, err := client.ProjectAccessTokens.GetProjectAccessToken(project, projectAccessTokenID, gitlab.WithContext(ctx))
 		if err != nil {
-			if is404(err) {
+			if providerclient.Is404(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

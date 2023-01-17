@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var validBranchesToBeNotified = []string{
@@ -65,7 +67,7 @@ var _ = registerResource("gitlab_service_emails_on_push", func() *schema.Resourc
 				Optional:    true,
 			},
 			"branches_to_be_notified": {
-				Description:      fmt.Sprintf("Branches to send notifications for. Valid options are %s. Notifications are always fired for tag pushes.", renderValueListForDocs(validBranchesToBeNotified)),
+				Description:      fmt.Sprintf("Branches to send notifications for. Valid options are %s. Notifications are always fired for tag pushes.", utils.RenderValueListForDocs(validBranchesToBeNotified)),
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          "all",
@@ -142,7 +144,7 @@ func resourceGitlabServiceEmailsOnPushRead(ctx context.Context, d *schema.Resour
 
 	service, _, err := client.Services.GetEmailsOnPushService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab emails on push service not found for project %s, removing from state", project)
 			d.SetId("")
 			return nil

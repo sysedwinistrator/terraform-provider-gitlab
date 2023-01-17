@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var validIssueTypes = []string{"issue", "incident", "test_case"}
@@ -93,7 +94,7 @@ func gitlabProjectIssueGetSchema() map[string]*schema.Schema {
 			// ValidateDiagFunc: validation.ToDiagFunc(validation.IntAtLeast(0)),
 		},
 		"issue_type": {
-			Description:      fmt.Sprintf("The type of issue. Valid values are: %s.", renderValueListForDocs(validIssueTypes)),
+			Description:      fmt.Sprintf("The type of issue. Valid values are: %s.", utils.RenderValueListForDocs(validIssueTypes)),
 			Type:             schema.TypeString,
 			Optional:         true,
 			Default:          "issue",
@@ -129,7 +130,7 @@ func gitlabProjectIssueGetSchema() map[string]*schema.Schema {
 		},
 		// NOTE: not part of `CREATE`, but part of `UPDATE` with the `state_event` field.
 		"state": {
-			Description:      fmt.Sprintf("The state of the issue. Valid values are: %s.", renderValueListForDocs(validIssueStates)),
+			Description:      fmt.Sprintf("The state of the issue. Valid values are: %s.", utils.RenderValueListForDocs(validIssueStates)),
 			Type:             schema.TypeString,
 			Optional:         true,
 			Default:          "opened",

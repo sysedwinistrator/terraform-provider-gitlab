@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_label", func() *schema.Resource {
@@ -87,7 +88,7 @@ func resourceGitlabLabelRead(ctx context.Context, d *schema.ResourceData, meta i
 
 	label, _, err := client.Labels.GetLabel(project, labelName, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] failed to read gitlab label %s/%s", project, labelName)
 			d.SetId("")
 			return nil

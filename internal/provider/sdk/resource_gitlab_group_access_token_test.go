@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -112,7 +113,7 @@ func testAccCheckGitlabGroupAccessTokenExists(n string, gat *testAccGitlabGroupA
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		group, tokenString, err := parseTwoPartID(rs.Primary.ID)
+		group, tokenString, err := utils.ParseTwoPartID(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error parsing ID: %s", rs.Primary.ID)
 		}

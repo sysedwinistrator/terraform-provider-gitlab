@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_group_membership", func() *schema.Resource {
@@ -43,9 +45,9 @@ var _ = registerResource("gitlab_group_membership", func() *schema.Resource {
 				Required:    true,
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("Access level for the member. Valid values are: %s.", renderValueListForDocs(validGroupAccessLevelNames)),
+				Description:      fmt.Sprintf("Access level for the member. Valid values are: %s.", utils.RenderValueListForDocs(providerclient.ValidGroupAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validGroupAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidGroupAccessLevelNames, false)),
 				Required:         true,
 			},
 			"expires_at": {
@@ -76,7 +78,7 @@ func resourceGitlabGroupMembershipCreate(ctx context.Context, d *schema.Resource
 	userId := d.Get("user_id").(int)
 	groupId := d.Get("group_id").(string)
 	expiresAt := d.Get("expires_at").(string)
-	accessLevelId := accessLevelNameToValue[d.Get("access_level").(string)]
+	accessLevelId := providerclient.AccessLevelNameToValue[d.Get("access_level").(string)]
 
 	options := &gitlab.AddGroupMemberOptions{
 		UserID:      &userId,
@@ -90,7 +92,7 @@ func resourceGitlabGroupMembershipCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 	userIdString := strconv.Itoa(groupMember.ID)
-	d.SetId(buildTwoPartID(&groupId, &userIdString))
+	d.SetId(utils.BuildTwoPartID(&groupId, &userIdString))
 	return resourceGitlabGroupMembershipRead(ctx, d, meta)
 }
 
@@ -106,7 +108,7 @@ func resourceGitlabGroupMembershipRead(ctx context.Context, d *schema.ResourceDa
 
 	groupMember, _, err := client.GroupMembers.GetGroupMember(groupId, userId, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab group membership for %s not found so removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -119,7 +121,7 @@ func resourceGitlabGroupMembershipRead(ctx context.Context, d *schema.ResourceDa
 }
 
 func groupIdAndUserIdFromId(id string) (string, int, error) {
-	groupId, userIdString, err := parseTwoPartID(id)
+	groupId, userIdString, err := utils.ParseTwoPartID(id)
 	userId, e := strconv.Atoi(userIdString)
 	if err != nil {
 		e = err
@@ -136,7 +138,7 @@ func resourceGitlabGroupMembershipUpdate(ctx context.Context, d *schema.Resource
 	userId := d.Get("user_id").(int)
 	groupId := d.Get("group_id").(string)
 	expiresAt := d.Get("expires_at").(string)
-	accessLevelId := accessLevelNameToValue[strings.ToLower(d.Get("access_level").(string))]
+	accessLevelId := providerclient.AccessLevelNameToValue[strings.ToLower(d.Get("access_level").(string))]
 
 	options := gitlab.EditGroupMemberOptions{
 		AccessLevel: &accessLevelId,
@@ -180,12 +182,12 @@ func resourceGitlabGroupMembershipSetToState(d *schema.ResourceData, groupMember
 
 	d.Set("group_id", groupId)
 	d.Set("user_id", groupMember.ID)
-	d.Set("access_level", accessLevelValueToName[groupMember.AccessLevel])
+	d.Set("access_level", providerclient.AccessLevelValueToName[groupMember.AccessLevel])
 	if groupMember.ExpiresAt != nil {
 		d.Set("expires_at", groupMember.ExpiresAt.String())
 	} else {
 		d.Set("expires_at", "")
 	}
 	userId := strconv.Itoa(groupMember.ID)
-	d.SetId(buildTwoPartID(groupId, &userId))
+	d.SetId(utils.BuildTwoPartID(groupId, &userId))
 }

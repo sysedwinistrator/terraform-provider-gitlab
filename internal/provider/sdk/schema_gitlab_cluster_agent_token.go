@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 func gitlabClusterAgentTokenSchema() map[string]*schema.Schema {
@@ -42,7 +43,7 @@ func gitlabClusterAgentTokenSchema() map[string]*schema.Schema {
 			Optional:    true,
 		},
 		"status": {
-			Description: fmt.Sprintf("The status of the token. Valid values are %s.", renderValueListForDocs(tokenStatuses)),
+			Description: fmt.Sprintf("The status of the token. Valid values are %s.", utils.RenderValueListForDocs(tokenStatuses)),
 			Type:        schema.TypeString,
 			Computed:    true,
 		},

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_pipeline_schedule", func() *schema.Resource {
@@ -100,7 +101,7 @@ func resourceGitlabPipelineScheduleRead(ctx context.Context, d *schema.ResourceD
 
 	pipelineSchedule, _, err := client.PipelineSchedules.GetPipelineSchedule(project, pipelineScheduleID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] PipelineSchedule %d in project %s does not exist, removing from state", pipelineScheduleID, project)
 			d.SetId("")
 			return nil

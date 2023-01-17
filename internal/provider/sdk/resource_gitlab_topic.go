@@ -110,7 +110,7 @@ func resourceGitlabTopicRead(ctx context.Context, d *schema.ResourceData, meta i
 
 	topic, _, err := client.Topics.GetTopic(topicID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab group %s not found so removing from state", d.Id())
 			d.SetId("")
 			return nil

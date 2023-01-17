@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var validPersonalAccessTokenScopes = []string{
@@ -53,7 +54,7 @@ var _ = registerResource("gitlab_personal_access_token", func() *schema.Resource
 				ForceNew:    true,
 			},
 			"scopes": {
-				Description: fmt.Sprintf("The scope for the personal access token. It determines the actions which can be performed when authenticating with this token. Valid values are: %s.", renderValueListForDocs(validPersonalAccessTokenScopes)),
+				Description: fmt.Sprintf("The scope for the personal access token. It determines the actions which can be performed when authenticating with this token. Valid values are: %s.", utils.RenderValueListForDocs(validPersonalAccessTokenScopes)),
 				Type:        schema.TypeSet,
 				Required:    true,
 				ForceNew:    true,
@@ -223,7 +224,7 @@ func resourceGitlabPersonalAccessTokenFind(ctx context.Context, client *gitlab.C
 }
 
 func resourceGitLabPersonalAccessTokenParseId(id string) (int, int, error) {
-	userID, tokenID, err := parseTwoPartID(id)
+	userID, tokenID, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return 0, 0, err
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_project_level_mr_approvals", func() *schema.Resource {
@@ -96,7 +97,7 @@ func resourceGitlabProjectLevelMRApprovalsRead(ctx context.Context, d *schema.Re
 
 	approvalConfig, _, err := client.Projects.GetApprovalConfiguration(projectId, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab project approval configuration not found for project %d", projectId)
 			d.SetId("")
 			return nil

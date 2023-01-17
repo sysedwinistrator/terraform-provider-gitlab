@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 func gitlabReleaseLinkGetSchema() map[string]*schema.Schema {
@@ -40,7 +41,7 @@ func gitlabReleaseLinkGetSchema() map[string]*schema.Schema {
 			Optional:    true,
 		},
 		"link_type": {
-			Description:      fmt.Sprintf("The type of the link. Valid values are %s. Defaults to %s.", renderValueListForDocs(validLinkTypes), validLinkTypes[0]),
+			Description:      fmt.Sprintf("The type of the link. Valid values are %s. Defaults to %s.", utils.RenderValueListForDocs(validLinkTypes), validLinkTypes[0]),
 			Type:             schema.TypeString,
 			Optional:         true,
 			Default:          validLinkTypes[0],

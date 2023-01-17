@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -89,7 +90,7 @@ type testAccGitlabProjectMembershipExpectedAttributes struct {
 func testAccCheckGitlabProjectMembershipAttributes(membership *gitlab.ProjectMember, want *testAccGitlabProjectMembershipExpectedAttributes) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		access_level_id, ok := accessLevelValueToName[membership.AccessLevel]
+		access_level_id, ok := client.AccessLevelValueToName[membership.AccessLevel]
 		if !ok {
 			return fmt.Errorf("Invalid access level '%s'", access_level_id)
 		}
@@ -119,7 +120,7 @@ func testAccCheckGitlabProjectMembershipDestroy(s *terraform.State) error {
 			return nil
 		}
 
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 		return nil

@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_tag_protection", func() *schema.Resource {
@@ -38,9 +40,9 @@ var _ = registerResource("gitlab_tag_protection", func() *schema.Resource {
 				Required:    true,
 			},
 			"create_access_level": {
-				Description:      fmt.Sprintf("Access levels which are allowed to create. Valid values are: %s.", renderValueListForDocs(validProtectedBranchTagAccessLevelNames)),
+				Description:      fmt.Sprintf("Access levels which are allowed to create. Valid values are: %s.", utils.RenderValueListForDocs(providerclient.ValidProtectedBranchTagAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProtectedBranchTagAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProtectedBranchTagAccessLevelNames, false)),
 				Required:         true,
 				ForceNew:         true,
 			},
@@ -75,7 +77,7 @@ func resourceGitlabTagProtectionCreate(ctx context.Context, d *schema.ResourceDa
 		}
 	}
 
-	d.SetId(buildTwoPartID(&project, &tp.Name))
+	d.SetId(utils.BuildTwoPartID(&project, &tp.Name))
 
 	return resourceGitlabTagProtectionRead(ctx, d, meta)
 }
@@ -91,7 +93,7 @@ func resourceGitlabTagProtectionRead(ctx context.Context, d *schema.ResourceData
 
 	pt, _, err := client.ProtectedTags.GetProtectedTag(project, tag, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab tag protection not found %s/%s", project, tag)
 			d.SetId("")
 			return nil
@@ -108,7 +110,7 @@ func resourceGitlabTagProtectionRead(ctx context.Context, d *schema.ResourceData
 	d.Set("tag", pt.Name)
 	d.Set("create_access_level", accessLevel)
 
-	d.SetId(buildTwoPartID(&project, &pt.Name))
+	d.SetId(utils.BuildTwoPartID(&project, &pt.Name))
 
 	return nil
 }
@@ -129,7 +131,7 @@ func resourceGitlabTagProtectionDelete(ctx context.Context, d *schema.ResourceDa
 }
 
 func projectAndTagFromID(id string) (string, string, error) {
-	project, tag, err := parseTwoPartID(id)
+	project, tag, err := utils.ParseTwoPartID(id)
 
 	if err != nil {
 		log.Printf("[WARN] cannot get group member id from input: %v", id)

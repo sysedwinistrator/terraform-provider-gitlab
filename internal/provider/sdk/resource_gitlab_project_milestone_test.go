@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -90,7 +91,7 @@ func testAccCheckGitlabProjectMilestoneDestroy(s *terraform.State) error {
 		if err == nil && milestone != nil {
 			return errors.New("Milestone still exists")
 		}
-		if !is404(err) {
+		if !client.Is404(err) {
 			return err
 		}
 		return nil

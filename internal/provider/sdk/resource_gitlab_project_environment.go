@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_environment", func() *schema.Resource {
@@ -67,7 +69,7 @@ Set the ` + "`stop_before_destroy`" + ` flag to attempt to automatically stop th
 				Computed:    true,
 			},
 			"state": {
-				Description: fmt.Sprintf("State the environment is in. Valid values are %s.", renderValueListForDocs(validProjectEnvironmentStates)),
+				Description: fmt.Sprintf("State the environment is in. Valid values are %s.", utils.RenderValueListForDocs(providerclient.ValidProjectEnvironmentStates)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -98,14 +100,14 @@ func resourceGitlabProjectEnvironmentCreate(ctx context.Context, d *schema.Resou
 
 	environment, _, err := client.Environments.CreateEnvironment(project, &options, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			return diag.Errorf("feature Environments is not available")
 		}
 		return diag.FromErr(err)
 	}
 
 	environmentID := fmt.Sprintf("%d", environment.ID)
-	d.SetId(buildTwoPartID(&project, &environmentID))
+	d.SetId(utils.BuildTwoPartID(&project, &environmentID))
 	return resourceGitlabProjectEnvironmentRead(ctx, d, meta)
 }
 
@@ -123,7 +125,7 @@ func resourceGitlabProjectEnvironmentRead(ctx context.Context, d *schema.Resourc
 
 	environment, _, err := client.Environments.GetEnvironment(project, environmentID, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] Project %s gitlab environment %d not found, removing from state", project, environmentID)
 			d.SetId("")
 			return nil
@@ -188,7 +190,7 @@ func resourceGitlabProjectEnvironmentDelete(ctx context.Context, d *schema.Resou
 	} else {
 		environment, _, err := client.Environments.GetEnvironment(project, environmentID, gitlab.WithContext(ctx))
 		if err != nil {
-			if is404(err) {
+			if providerclient.Is404(err) {
 				log.Printf("[DEBUG] Project %s gitlab environment %d not found, removing from state", project, environmentID)
 				d.SetId("")
 				return nil
@@ -210,7 +212,7 @@ func resourceGitlabProjectEnvironmentDelete(ctx context.Context, d *schema.Resou
 }
 
 func resourceGitlabProjectEnvironmentParseID(d *schema.ResourceData) (string, int, error) {
-	project, rawEnvironmentID, err := parseTwoPartID(d.Id())
+	project, rawEnvironmentID, err := utils.ParseTwoPartID(d.Id())
 
 	if err != nil {
 		log.Printf("[ERROR] cannot get project and environment ID from input: %v", d.Id())

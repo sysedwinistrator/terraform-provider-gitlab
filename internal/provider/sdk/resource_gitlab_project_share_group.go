@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_share_group", func() *schema.Resource {
@@ -39,17 +41,17 @@ var _ = registerResource("gitlab_project_share_group", func() *schema.Resource {
 				Required:    true,
 			},
 			"group_access": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", renderValueListForDocs(validProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
 				ForceNew:         true,
 				Optional:         true,
 				ExactlyOneOf:     []string{"access_level", "group_access"},
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", renderValueListForDocs(validProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
 				ForceNew:         true,
 				Optional:         true,
 				Deprecated:       "Use `group_access` instead of the `access_level` attribute.",
@@ -75,9 +77,9 @@ func resourceGitlabProjectShareGroupCreate(ctx context.Context, d *schema.Resour
 
 	var groupAccess gitlab.AccessLevelValue
 	if v, ok := d.GetOk("group_access"); ok {
-		groupAccess = gitlab.AccessLevelValue(accessLevelNameToValue[v.(string)])
+		groupAccess = gitlab.AccessLevelValue(providerclient.AccessLevelNameToValue[v.(string)])
 	} else if v, ok := d.GetOk("access_level"); ok {
-		groupAccess = gitlab.AccessLevelValue(accessLevelNameToValue[v.(string)])
+		groupAccess = gitlab.AccessLevelValue(providerclient.AccessLevelNameToValue[v.(string)])
 	} else {
 		return diag.Errorf("Neither `group_access` nor `access_level` (deprecated) is set")
 	}
@@ -93,7 +95,7 @@ func resourceGitlabProjectShareGroupCreate(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 	groupIdString := strconv.Itoa(groupId)
-	d.SetId(buildTwoPartID(&projectId, &groupIdString))
+	d.SetId(utils.BuildTwoPartID(&projectId, &groupIdString))
 	return resourceGitlabProjectShareGroupRead(ctx, d, meta)
 }
 
@@ -109,7 +111,7 @@ func resourceGitlabProjectShareGroupRead(ctx context.Context, d *schema.Resource
 
 	projectInformation, _, err := client.Projects.GetProject(projectId, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] failed to read gitlab project %s: %s", id, err)
 			d.SetId("")
 			return nil
@@ -135,7 +137,7 @@ func resourceGitlabProjectShareGroupRead(ctx context.Context, d *schema.Resource
 }
 
 func projectIdAndGroupIdFromId(id string) (string, int, error) {
-	projectId, groupIdString, err := parseTwoPartID(id)
+	projectId, groupIdString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, fmt.Errorf("Error parsing ID: %s", id)
 	}
@@ -180,10 +182,10 @@ func resourceGitlabProjectShareGroupSetToState(d *schema.ResourceData, group str
 
 	d.Set("project_id", projectId)
 	d.Set("group_id", group.GroupID)
-	d.Set("group_access", accessLevelValueToName[convertedAccessLevel])
+	d.Set("group_access", providerclient.AccessLevelValueToName[convertedAccessLevel])
 
 	groupId := strconv.Itoa(group.GroupID)
-	d.SetId(buildTwoPartID(projectId, &groupId))
+	d.SetId(utils.BuildTwoPartID(projectId, &groupId))
 }
 
 func resourceGitlabProjectShareGroupResourceV0() *schema.Resource {
@@ -202,9 +204,9 @@ func resourceGitlabProjectShareGroupResourceV0() *schema.Resource {
 				Required:    true,
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", renderValueListForDocs(validProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
 				ForceNew:         true,
 				Required:         true,
 			},

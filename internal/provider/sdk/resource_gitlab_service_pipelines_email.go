@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
 
 var _ = registerResource("gitlab_service_pipelines_email", func() *schema.Resource {
@@ -89,7 +90,7 @@ func resourceGitlabServicePipelinesEmailRead(ctx context.Context, d *schema.Reso
 
 	service, _, err := client.Services.GetPipelinesEmailService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] gitlab pipelines emails service not found for project %s", project)
 			d.SetId("")
 			return nil

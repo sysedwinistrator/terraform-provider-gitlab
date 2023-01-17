@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_branch", func() *schema.Resource {
@@ -165,13 +167,13 @@ func resourceGitlabBranchCreate(ctx context.Context, d *schema.ResourceData, met
 		return diag.FromErr(err)
 	}
 	d.Set("ref", ref)
-	d.SetId(buildTwoPartID(&project, &name))
+	d.SetId(utils.BuildTwoPartID(&project, &name))
 	return resourceGitlabBranchRead(ctx, d, meta)
 }
 
 func resourceGitlabBranchRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project, name, err := parseTwoPartID(d.Id())
+	project, name, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -179,7 +181,7 @@ func resourceGitlabBranchRead(ctx context.Context, d *schema.ResourceData, meta 
 	log.Printf("[DEBUG] read gitlab branch %s", name)
 	branch, resp, err := client.Branches.GetBranch(project, name, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] recieved 404 for gitlab branch %s, removing from state", name)
 			d.SetId("")
 			return diag.FromErr(err)
@@ -187,7 +189,7 @@ func resourceGitlabBranchRead(ctx context.Context, d *schema.ResourceData, meta 
 		log.Printf("[DEBUG] failed to read gitlab branch %s response %v", name, resp)
 		return diag.FromErr(err)
 	}
-	d.SetId(buildTwoPartID(&project, &name))
+	d.SetId(utils.BuildTwoPartID(&project, &name))
 	d.Set("name", branch.Name)
 	d.Set("project", project)
 	d.Set("web_url", branch.WebURL)
@@ -206,7 +208,7 @@ func resourceGitlabBranchRead(ctx context.Context, d *schema.ResourceData, meta 
 
 func resourceGitlabBranchDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project, name, err := parseTwoPartID(d.Id())
+	project, name, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

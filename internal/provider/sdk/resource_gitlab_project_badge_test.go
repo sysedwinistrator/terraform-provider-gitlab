@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -79,7 +80,7 @@ func testAccCheckGitlabProjectBadgeDestroy(s *terraform.State) error {
 
 		gotBadge, _, err := testutil.TestGitlabClient.ProjectBadges.GetProjectBadge(projectID, badgeID)
 		if err != nil {
-			if !is404(err) {
+			if !client.Is404(err) {
 				return err
 			}
 			return nil

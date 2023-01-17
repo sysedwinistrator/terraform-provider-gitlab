@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_tag", func() *schema.Resource {
@@ -57,14 +59,14 @@ func resourceGitlabProjectTagCreate(ctx context.Context, d *schema.ResourceData,
 		log.Printf("[DEBUG] failed to create gitlab tag %s/%s response %v", project, name, resp)
 		return diag.FromErr(err)
 	}
-	d.SetId(buildTwoPartID(&project, &name))
+	d.SetId(utils.BuildTwoPartID(&project, &name))
 	d.Set("ref", ref)
 	return resourceGitlabProjectTagRead(ctx, d, meta)
 }
 
 func resourceGitlabProjectTagRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project, name, err := parseTwoPartID(d.Id())
+	project, name, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -72,7 +74,7 @@ func resourceGitlabProjectTagRead(ctx context.Context, d *schema.ResourceData, m
 	log.Printf("[DEBUG] read gitlab tag %s/%s", project, name)
 	tag, resp, err := client.Tags.GetTag(project, name, gitlab.WithContext(ctx))
 	if err != nil {
-		if is404(err) {
+		if providerclient.Is404(err) {
 			log.Printf("[DEBUG] recieved 404 for gitlab tag %s/%s, removing from state", project, name)
 			d.SetId("")
 			return diag.FromErr(err)
@@ -98,7 +100,7 @@ func resourceGitlabProjectTagRead(ctx context.Context, d *schema.ResourceData, m
 
 func resourceGitlabProjectTagDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project, name, err := parseTwoPartID(d.Id())
+	project, name, err := utils.ParseTwoPartID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

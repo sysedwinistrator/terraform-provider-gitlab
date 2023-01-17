@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
 )
@@ -118,7 +119,7 @@ func resourceGitlabProjectMirrorCreate(ctx context.Context, d *schema.ResourceDa
 	d.Set("mirror_id", mirror.ID)
 
 	mirrorID := strconv.Itoa(mirror.ID)
-	d.SetId(buildTwoPartID(&projectID, &mirrorID))
+	d.SetId(utils.BuildTwoPartID(&projectID, &mirrorID))
 	return resourceGitlabProjectMirrorRead(ctx, d, meta)
 }
 
@@ -223,7 +224,7 @@ func resourceGitLabProjectMirrorGetMirror(ctx context.Context, client *gitlab.Cl
 	if isGetProjectMirrorSupported {
 		mirror, _, err = client.ProjectMirrors.GetProjectMirror(projectID, mirrorID, gitlab.WithContext(ctx))
 		if err != nil {
-			if is404(err) {
+			if providerclient.Is404(err) {
 				return nil, nil
 			}
 			return nil, err
