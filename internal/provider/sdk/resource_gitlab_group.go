@@ -166,11 +166,13 @@ var _ = registerResource("gitlab_group", func() *schema.Resource {
 				Description: "Can be set by administrators only. Additional CI/CD minutes for this group.",
 				Type:        schema.TypeInt,
 				Optional:    true,
+				Computed:    true,
 			},
 			"shared_runners_minutes_limit": {
 				Description: "Can be set by administrators only. Maximum number of monthly CI/CD minutes for this group. Can be nil (default; inherit system default), 0 (unlimited), or > 0.",
 				Type:        schema.TypeInt,
 				Optional:    true,
+				Computed:    true,
 			},
 			"ip_restriction_ranges": {
 				Description: "A list of IP addresses or subnet masks to restrict group access. Will be concatenated together into a comma separated string. Only allowed on top level groups.",
@@ -186,9 +188,7 @@ var _ = registerResource("gitlab_group", func() *schema.Resource {
 func resourceGitlabGroupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	options := &gitlab.CreateGroupOptions{
-		Name:                 gitlab.String(d.Get("name").(string)),
-		LFSEnabled:           gitlab.Bool(d.Get("lfs_enabled").(bool)),
-		RequestAccessEnabled: gitlab.Bool(d.Get("request_access_enabled").(bool)),
+		Name: gitlab.String(d.Get("name").(string)),
 	}
 
 	if v, ok := d.GetOk("path"); ok {
@@ -205,6 +205,18 @@ func resourceGitlabGroupCreate(ctx context.Context, d *schema.ResourceData, meta
 
 	if v, ok := d.GetOk("share_with_group_lock"); ok {
 		options.ShareWithGroupLock = gitlab.Bool(v.(bool))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("lfs_enabled"); ok {
+		options.LFSEnabled = gitlab.Bool(v.(bool))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("request_access_enabled"); ok {
+		options.RequestAccessEnabled = gitlab.Bool(v.(bool))
 	}
 
 	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
