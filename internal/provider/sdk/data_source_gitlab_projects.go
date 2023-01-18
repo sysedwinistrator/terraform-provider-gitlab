@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/mitchellh/hashstructure/v2"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -1202,7 +1202,7 @@ func flattenSharedWithGroupsOptions(project *gitlab.Project) []interface{} {
 	for _, option := range project.SharedWithGroups {
 		values := map[string]interface{}{
 			"group_id":           option.GroupID,
-			"group_access_level": client.AccessLevelValueToName[gitlab.AccessLevelValue(option.GroupAccessLevel)],
+			"group_access_level": api.AccessLevelValueToName[gitlab.AccessLevelValue(option.GroupAccessLevel)],
 			"group_name":         option.GroupName,
 		}
 

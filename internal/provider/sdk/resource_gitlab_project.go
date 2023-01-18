@@ -15,7 +15,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var (
@@ -766,7 +766,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 		return err
 	}
 	d.Set("archived", project.Archived)
-	if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+	if supportsSquashOption, err := api.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 		return err
 	} else if supportsSquashOption {
 		d.Set("squash_option", project.SquashOption)
@@ -1146,7 +1146,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			options.CIConfigPath = gitlab.String(v.(string))
 		}
 
-		if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+		if supportsSquashOption, err := api.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 			return diag.FromErr(err)
 		} else if supportsSquashOption {
 			if v, ok := d.GetOk("squash_option"); ok {
@@ -1247,7 +1247,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	if _, ok := d.GetOk("push_rules"); ok {
 		err := editOrAddPushRules(ctx, client, d.Id(), d)
 		if err != nil {
-			if providerclient.Is404(err) {
+			if api.Is404(err) {
 				log.Printf("[DEBUG] Failed to edit push rules for project %q: %v", d.Id(), err)
 				return diag.Errorf("Project push rules are not supported in your version of GitLab")
 			}
@@ -1256,7 +1256,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	// see: https://gitlab.com/gitlab-org/gitlab/-/issues/333426
-	noDefaultBranchAPISupport, err := providerclient.IsGitLabVersionLessThan(ctx, client, "14.10")()
+	noDefaultBranchAPISupport, err := api.IsGitLabVersionLessThan(ctx, client, "14.10")()
 	if err != nil {
 		return diag.Errorf("unable to get information if `default_branch` handling is supported in the GitLab instance: %v", err)
 	}
@@ -1296,7 +1296,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 
 			log.Printf("[DEBUG] check for protection on old default branch %q for project %q", oldDefaultBranch, d.Id())
 			branch, _, err := client.ProtectedBranches.GetProtectedBranch(project.ID, oldDefaultBranch, gitlab.WithContext(ctx))
-			if err != nil && !providerclient.Is404(err) {
+			if err != nil && !api.Is404(err) {
 				return diag.Errorf("Failed to check for protected default branch %q for project %q: %v", oldDefaultBranch, d.Id(), err)
 			}
 			if branch == nil {
@@ -1341,7 +1341,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 				Refresh: func() (interface{}, string, error) {
 					branch, _, err := client.Branches.GetBranch(project.ID, project.DefaultBranch, gitlab.WithContext(ctx))
 					if err != nil {
-						if providerclient.Is404(err) {
+						if api.Is404(err) {
 							// When we hit a 404 here, it means the default branch wasn't created at all as part of the project
 							// this will happen when "default_branch" isn't set, or "initialize_with_readme" is set to false.
 							// We don't need to wait anymore, so return "true" to exist the wait loop.
@@ -1516,7 +1516,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			editProjectOptions.LFSEnabled = gitlab.Bool(v.(bool))
 		}
 
-		if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+		if supportsSquashOption, err := api.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 			return diag.FromErr(err)
 		} else if supportsSquashOption {
 			if v, ok := d.GetOk("squash_option"); ok {
@@ -1709,7 +1709,7 @@ func resourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, meta
 
 	project, _, err := client.Projects.GetProject(d.Id(), nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab project %s has already been deleted, removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -1729,7 +1729,7 @@ func resourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, meta
 	log.Printf("[DEBUG] read gitlab project %q push rules", d.Id())
 
 	pushRules, _, err := client.Projects.GetProjectPushRules(d.Id(), gitlab.WithContext(ctx))
-	if providerclient.Is404(err) {
+	if api.Is404(err) {
 		log.Printf("[DEBUG] Failed to get push rules for project %q: %v", d.Id(), err)
 	} else if err != nil {
 		return diag.Errorf("Failed to get push rules for project %q: %s", d.Id(), err)
@@ -1852,7 +1852,7 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 		options.LFSEnabled = gitlab.Bool(d.Get("lfs_enabled").(bool))
 	}
 
-	if supportsSquashOption, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
+	if supportsSquashOption, err := api.IsGitLabVersionAtLeast(ctx, client, "14.1")(); err != nil {
 		return diag.FromErr(err)
 	} else if supportsSquashOption && d.HasChange("squash_option") {
 		options.SquashOption = stringToSquashOptionValue(d.Get("squash_option").(string))
@@ -2120,7 +2120,7 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 	if d.HasChange("push_rules") {
 		err := editOrAddPushRules(ctx, client, d.Id(), d)
 		if err != nil {
-			if providerclient.Is404(err) {
+			if api.Is404(err) {
 				log.Printf("[DEBUG] Failed to get push rules for project %q: %v", d.Id(), err)
 				return diag.Errorf("Project push rules are not supported in your version of GitLab")
 			}
@@ -2149,7 +2149,7 @@ func resourceGitlabProjectDelete(ctx context.Context, d *schema.ResourceData, me
 			Refresh: func() (interface{}, string, error) {
 				out, _, err := client.Projects.GetProject(d.Id(), nil, gitlab.WithContext(ctx))
 				if err != nil {
-					if providerclient.Is404(err) {
+					if api.Is404(err) {
 						return out, "Deleted", nil
 					}
 					log.Printf("[ERROR] Received error: %#v", err)

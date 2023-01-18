@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
@@ -78,7 +78,7 @@ func testAccCheckGitlabProjectTagDestroy(s *terraform.State) error {
 		project := rs.Primary.Attributes["project"]
 		_, _, err := testutil.TestGitlabClient.Tags.GetTag(project, name)
 		if err != nil {
-			if client.Is404(err) {
+			if api.Is404(err) {
 				return nil
 			}
 			return err

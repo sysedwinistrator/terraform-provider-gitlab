@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -114,7 +114,7 @@ func resourceGitlabUserGPGKeyRead(ctx context.Context, d *schema.ResourceData, m
 		key, _, err = client.Users.GetGPGKey(keyID, gitlab.WithContext(ctx))
 	}
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("Could not find GPG key %d for user %d, removing from state", keyID, userID)
 			d.SetId("")
 			return nil

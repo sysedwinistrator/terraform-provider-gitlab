@@ -12,7 +12,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var managedLicenseAllowedValues = []string{
@@ -117,7 +117,7 @@ func resourceGitlabManagedLicenseRead(ctx context.Context, d *schema.ResourceDat
 	log.Printf("[DEBUG] read gitlab Managed License for project/licenseId %s/%d", project, licenseId)
 	license, _, err := client.ManagedLicenses.GetManagedLicense(project, licenseId, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] Managed License %s:%d no longer exists and is being removed from state", project, licenseId)
 			d.SetId("")
 			return nil
@@ -163,7 +163,7 @@ func resourceGitlabManagedLicenseUpdate(ctx context.Context, d *schema.ResourceD
 // Convert the incoming string into the proper constant value for passing into the API.
 func stringToApprovalStatus(ctx context.Context, client *gitlab.Client, s string) (*gitlab.LicenseApprovalStatusValue, error) {
 	var value gitlab.LicenseApprovalStatusValue
-	notSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "15.0")()
+	notSupported, err := api.IsGitLabVersionAtLeast(ctx, client, "15.0")()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch GitLab version: %+v", err)
 	}

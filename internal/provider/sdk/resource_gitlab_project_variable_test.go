@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -185,7 +185,7 @@ func TestAccGitlabProjectVariable_scoped(t *testing.T) {
 		CheckDestroy: func(state *terraform.State) error {
 			// Destroy behavior is nondeterministic for variables with scopes in GitLab versions prior to 13.4
 			// ref: https://gitlab.com/gitlab-org/gitlab/-/merge_requests/39209
-			if isAtLeast134, err := client.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "13.4")(); err != nil {
+			if isAtLeast134, err := api.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "13.4")(); err != nil {
 				return err
 			} else if isAtLeast134 {
 				return testAccGitlabProjectVariableCheckAllVariablesDestroyed(testProject)(state)
@@ -251,7 +251,7 @@ resource "gitlab_project_variable" "bar" {
 			// Update an attribute on one of the variables.
 			// Updating a variable with a non-unique key only works reliably on GitLab v13.4+.
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.Background(), testutil.TestGitlabClient, "13.4"),
+				SkipFunc: api.IsGitLabVersionLessThan(context.Background(), testutil.TestGitlabClient, "13.4"),
 				Config: fmt.Sprintf(`
 resource "gitlab_project_variable" "foo" {
   project = %[1]d
@@ -275,7 +275,7 @@ resource "gitlab_project_variable" "bar" {
 			// Try to have two variables with the same keys and scopes.
 			// On versions of GitLab < 13.4 this can sometimes result in an inconsistent state instead of an error.
 			{
-				SkipFunc: client.IsGitLabVersionLessThan(context.Background(), testutil.TestGitlabClient, "13.4"),
+				SkipFunc: api.IsGitLabVersionLessThan(context.Background(), testutil.TestGitlabClient, "13.4"),
 				Config: fmt.Sprintf(`
 resource "gitlab_project_variable" "foo" {
   project = %[1]d

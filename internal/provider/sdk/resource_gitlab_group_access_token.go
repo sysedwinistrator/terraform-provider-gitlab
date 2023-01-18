@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -74,7 +74,7 @@ var _ = registerResource("gitlab_group_access_token", func() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				Default:          providerclient.AccessLevelValueToName[gitlab.MaintainerPermissions],
+				Default:          api.AccessLevelValueToName[gitlab.MaintainerPermissions],
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validAccessLevels, false)),
 			},
 			"expires_at": {
@@ -123,7 +123,7 @@ func resourceGitlabGroupAccessTokenCreate(ctx context.Context, d *schema.Resourc
 		Scopes: stringSetToStringSlice(d.Get("scopes").(*schema.Set)),
 	}
 	if v, ok := d.GetOk("access_level"); ok {
-		accessLevel := providerclient.AccessLevelNameToValue[v.(string)]
+		accessLevel := api.AccessLevelNameToValue[v.(string)]
 		options.AccessLevel = &accessLevel
 	}
 
@@ -170,7 +170,7 @@ func resourceGitlabGroupAccessTokenRead(ctx context.Context, d *schema.ResourceD
 	log.Printf("[DEBUG] read gitlab GroupAccessToken %d, group ID %s", groupAccessTokenId, group)
 	groupAccessToken, _, err := client.GroupAccessTokens.GetGroupAccessToken(group, groupAccessTokenId, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] GitLab GroupAccessToken %d, group ID %s not found, removing from state", groupAccessTokenId, group)
 			d.SetId("")
 			return nil
@@ -185,7 +185,7 @@ func resourceGitlabGroupAccessTokenRead(ctx context.Context, d *schema.ResourceD
 	}
 	d.Set("active", groupAccessToken.Active)
 	d.Set("created_at", groupAccessToken.CreatedAt.Format(time.RFC3339))
-	d.Set("access_level", providerclient.AccessLevelValueToName[groupAccessToken.AccessLevel])
+	d.Set("access_level", api.AccessLevelValueToName[groupAccessToken.AccessLevel])
 	d.Set("revoked", groupAccessToken.Revoked)
 	d.Set("user_id", groupAccessToken.UserID)
 

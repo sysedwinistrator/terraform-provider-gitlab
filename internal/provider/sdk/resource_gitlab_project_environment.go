@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -69,7 +69,7 @@ Set the ` + "`stop_before_destroy`" + ` flag to attempt to automatically stop th
 				Computed:    true,
 			},
 			"state": {
-				Description: fmt.Sprintf("State the environment is in. Valid values are %s.", utils.RenderValueListForDocs(providerclient.ValidProjectEnvironmentStates)),
+				Description: fmt.Sprintf("State the environment is in. Valid values are %s.", utils.RenderValueListForDocs(api.ValidProjectEnvironmentStates)),
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -100,7 +100,7 @@ func resourceGitlabProjectEnvironmentCreate(ctx context.Context, d *schema.Resou
 
 	environment, _, err := client.Environments.CreateEnvironment(project, &options, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			return diag.Errorf("feature Environments is not available")
 		}
 		return diag.FromErr(err)
@@ -125,7 +125,7 @@ func resourceGitlabProjectEnvironmentRead(ctx context.Context, d *schema.Resourc
 
 	environment, _, err := client.Environments.GetEnvironment(project, environmentID, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] Project %s gitlab environment %d not found, removing from state", project, environmentID)
 			d.SetId("")
 			return nil
@@ -190,7 +190,7 @@ func resourceGitlabProjectEnvironmentDelete(ctx context.Context, d *schema.Resou
 	} else {
 		environment, _, err := client.Environments.GetEnvironment(project, environmentID, gitlab.WithContext(ctx))
 		if err != nil {
-			if providerclient.Is404(err) {
+			if api.Is404(err) {
 				log.Printf("[DEBUG] Project %s gitlab environment %d not found, removing from state", project, environmentID)
 				d.SetId("")
 				return nil

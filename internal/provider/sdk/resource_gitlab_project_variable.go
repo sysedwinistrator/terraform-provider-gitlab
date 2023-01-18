@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerResource("gitlab_project_variable", func() *schema.Resource {
@@ -94,7 +94,7 @@ func resourceGitlabProjectVariableRead(ctx context.Context, d *schema.ResourceDa
 
 	variable, _, err := client.ProjectVariables.GetVariable(project, key, nil, gitlab.WithContext(ctx), withEnvironmentScopeFilter(ctx, environmentScope))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] read gitlab project variable %q was not found, removing from state", d.Id())
 			d.SetId("")
 			return nil

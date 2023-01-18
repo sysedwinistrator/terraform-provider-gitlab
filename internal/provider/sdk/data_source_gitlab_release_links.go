@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -59,7 +59,7 @@ func dataSourceGitlabReleaseLinksRead(ctx context.Context, d *schema.ResourceDat
 	for options.Page != 0 {
 		paginatedReleaseLinks, resp, err := client.ReleaseLinks.ListReleaseLinks(project, tagName, &options, gitlab.WithContext(ctx))
 		if err != nil {
-			if providerclient.Is404(err) && (options.Page == 1) {
+			if api.Is404(err) && (options.Page == 1) {
 				break
 			} else {
 				return diag.FromErr(err)

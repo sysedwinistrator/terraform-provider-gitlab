@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -41,17 +41,17 @@ var _ = registerResource("gitlab_project_share_group", func() *schema.Resource {
 				Required:    true,
 			},
 			"group_access": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
 				ForceNew:         true,
 				Optional:         true,
 				ExactlyOneOf:     []string{"access_level", "group_access"},
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
 				ForceNew:         true,
 				Optional:         true,
 				Deprecated:       "Use `group_access` instead of the `access_level` attribute.",
@@ -77,9 +77,9 @@ func resourceGitlabProjectShareGroupCreate(ctx context.Context, d *schema.Resour
 
 	var groupAccess gitlab.AccessLevelValue
 	if v, ok := d.GetOk("group_access"); ok {
-		groupAccess = gitlab.AccessLevelValue(providerclient.AccessLevelNameToValue[v.(string)])
+		groupAccess = gitlab.AccessLevelValue(api.AccessLevelNameToValue[v.(string)])
 	} else if v, ok := d.GetOk("access_level"); ok {
-		groupAccess = gitlab.AccessLevelValue(providerclient.AccessLevelNameToValue[v.(string)])
+		groupAccess = gitlab.AccessLevelValue(api.AccessLevelNameToValue[v.(string)])
 	} else {
 		return diag.Errorf("Neither `group_access` nor `access_level` (deprecated) is set")
 	}
@@ -111,7 +111,7 @@ func resourceGitlabProjectShareGroupRead(ctx context.Context, d *schema.Resource
 
 	projectInformation, _, err := client.Projects.GetProject(projectId, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] failed to read gitlab project %s: %s", id, err)
 			d.SetId("")
 			return nil
@@ -182,7 +182,7 @@ func resourceGitlabProjectShareGroupSetToState(d *schema.ResourceData, group str
 
 	d.Set("project_id", projectId)
 	d.Set("group_id", group.GroupID)
-	d.Set("group_access", providerclient.AccessLevelValueToName[convertedAccessLevel])
+	d.Set("group_access", api.AccessLevelValueToName[convertedAccessLevel])
 
 	groupId := strconv.Itoa(group.GroupID)
 	d.SetId(utils.BuildTwoPartID(projectId, &groupId))
@@ -204,9 +204,9 @@ func resourceGitlabProjectShareGroupResourceV0() *schema.Resource {
 				Required:    true,
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
 				ForceNew:         true,
 				Required:         true,
 			},

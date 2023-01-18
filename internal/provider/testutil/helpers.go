@@ -16,12 +16,12 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/xanzy/go-gitlab"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 type SkipFunc = func() (bool, error)
 
-var testGitlabConfig = client.Config{
+var testGitlabConfig = api.Config{
 	Token:         os.Getenv("GITLAB_TOKEN"),
 	BaseURL:       os.Getenv("GITLAB_BASE_URL"),
 	CACertFile:    "",
@@ -99,7 +99,7 @@ func SkipIfCE(t *testing.T) {
 }
 
 func RunIfLessThan(t *testing.T, requiredMaxVersion string) {
-	isLessThan, err := client.IsGitLabVersionLessThan(context.TODO(), TestGitlabClient, requiredMaxVersion)()
+	isLessThan, err := api.IsGitLabVersionLessThan(context.TODO(), TestGitlabClient, requiredMaxVersion)()
 	if err != nil {
 		t.Fatalf("Failed to fetch GitLab version: %+v", err)
 	}
@@ -110,7 +110,7 @@ func RunIfLessThan(t *testing.T, requiredMaxVersion string) {
 }
 
 func RunIfAtLeast(t *testing.T, requiredMinVersion string) {
-	isAtLeast, err := client.IsGitLabVersionAtLeast(context.TODO(), TestGitlabClient, requiredMinVersion)()
+	isAtLeast, err := api.IsGitLabVersionAtLeast(context.TODO(), TestGitlabClient, requiredMinVersion)()
 	if err != nil {
 		t.Fatalf("Failed to fetch GitLab version: %+v", err)
 	}
@@ -121,7 +121,7 @@ func RunIfAtLeast(t *testing.T, requiredMinVersion string) {
 }
 
 func IsRunningAtLeast(t *testing.T, requiredMinVersion string) bool {
-	isAtLeast, err := client.IsGitLabVersionAtLeast(context.TODO(), TestGitlabClient, requiredMinVersion)()
+	isAtLeast, err := api.IsGitLabVersionAtLeast(context.TODO(), TestGitlabClient, requiredMinVersion)()
 	if err != nil {
 		t.Fatalf("Failed to fetch GitLab version: %+v", err)
 	}

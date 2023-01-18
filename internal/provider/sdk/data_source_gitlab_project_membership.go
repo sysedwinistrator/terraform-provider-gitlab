@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerDataSource("gitlab_project_membership", func() *schema.Resource {
@@ -185,7 +185,7 @@ func flattenGitlabProjectMembers(d *schema.ResourceData, members []*gitlab.Proje
 			"state":        member.State,
 			"avatar_url":   member.AvatarURL,
 			"web_url":      member.WebURL,
-			"access_level": client.AccessLevelValueToName[gitlab.AccessLevelValue(member.AccessLevel)],
+			"access_level": api.AccessLevelValueToName[gitlab.AccessLevelValue(member.AccessLevel)],
 		}
 
 		if member.ExpiresAt != nil {

@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
@@ -153,7 +153,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabTopicDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: api.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -163,7 +163,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is not supported by your version of GitLab. At least GitLab 15.0 is required`),
 			},
 			{
-				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: api.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -172,7 +172,7 @@ func TestAccGitlabTopic_titleSupport(t *testing.T) {
 				ExpectError: regexp.MustCompile(`title is a required attribute for GitLab 15.0 and newer. Please specify it in the configuration.`),
 			},
 			{
-				SkipFunc: client.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: api.IsGitLabVersionAtLeast(context.TODO(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_topic" "this" {
 						name = "foo-%d"
@@ -255,7 +255,7 @@ func testAccCheckGitlabTopicDestroy(s *terraform.State) (err error) {
 				return fmt.Errorf("topic %s still exists", rs.Primary.ID)
 			}
 		}
-		if !client.Is404(err) {
+		if !api.Is404(err) {
 			return err
 		}
 		return nil
@@ -290,7 +290,7 @@ func testAccCheckGitlabTopicSoftDestroy(s *terraform.State) (err error) {
 				return nil
 			}
 		}
-		if !client.Is404(err) {
+		if !api.Is404(err) {
 			return err
 		}
 		return nil

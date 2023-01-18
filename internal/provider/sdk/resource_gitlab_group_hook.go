@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -79,7 +79,7 @@ func resourceGitlabGroupHookRead(ctx context.Context, d *schema.ResourceData, me
 	client := meta.(*gitlab.Client)
 	hook, _, err := client.Groups.GetGroupHook(group, hookID, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab group hook not found %s/%d, removing from state", group, hookID)
 			d.SetId("")
 			return nil

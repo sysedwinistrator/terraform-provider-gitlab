@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -31,7 +31,7 @@ func TestAccGitlabTagProtection_basic(t *testing.T) {
 					testAccCheckGitlabTagProtectionExists("gitlab_tag_protection.TagProtect", &pt),
 					testAccCheckGitlabTagProtectionAttributes(&pt, &testAccGitlabTagProtectionExpectedAttributes{
 						Name:              fmt.Sprintf("TagProtect-%d", rInt),
-						CreateAccessLevel: client.AccessLevelValueToName[gitlab.DeveloperPermissions],
+						CreateAccessLevel: api.AccessLevelValueToName[gitlab.DeveloperPermissions],
 					}),
 				),
 			},
@@ -48,7 +48,7 @@ func TestAccGitlabTagProtection_basic(t *testing.T) {
 					testAccCheckGitlabTagProtectionExists("gitlab_tag_protection.TagProtect", &pt),
 					testAccCheckGitlabTagProtectionAttributes(&pt, &testAccGitlabTagProtectionExpectedAttributes{
 						Name:              fmt.Sprintf("TagProtect-%d", rInt),
-						CreateAccessLevel: client.AccessLevelValueToName[gitlab.MaintainerPermissions],
+						CreateAccessLevel: api.AccessLevelValueToName[gitlab.MaintainerPermissions],
 					}),
 				),
 			},
@@ -59,7 +59,7 @@ func TestAccGitlabTagProtection_basic(t *testing.T) {
 					testAccCheckGitlabTagProtectionExists("gitlab_tag_protection.TagProtect", &pt),
 					testAccCheckGitlabTagProtectionAttributes(&pt, &testAccGitlabTagProtectionExpectedAttributes{
 						Name:              fmt.Sprintf("TagProtect-%d", rInt),
-						CreateAccessLevel: client.AccessLevelValueToName[gitlab.DeveloperPermissions],
+						CreateAccessLevel: api.AccessLevelValueToName[gitlab.DeveloperPermissions],
 					}),
 				),
 			},
@@ -90,7 +90,7 @@ func TestAccGitlabTagProtection_wildcard(t *testing.T) {
 					testAccCheckGitlabTagProtectionExists("gitlab_tag_protection.TagProtect", &pt),
 					testAccCheckGitlabTagProtectionAttributes(&pt, &testAccGitlabTagProtectionExpectedAttributes{
 						Name:              fmt.Sprintf("TagProtect-%d%s", rInt, wildcard),
-						CreateAccessLevel: client.AccessLevelValueToName[gitlab.DeveloperPermissions],
+						CreateAccessLevel: api.AccessLevelValueToName[gitlab.DeveloperPermissions],
 					}),
 				),
 			},
@@ -107,7 +107,7 @@ func TestAccGitlabTagProtection_wildcard(t *testing.T) {
 					testAccCheckGitlabTagProtectionExists("gitlab_tag_protection.TagProtect", &pt),
 					testAccCheckGitlabTagProtectionAttributes(&pt, &testAccGitlabTagProtectionExpectedAttributes{
 						Name:              fmt.Sprintf("TagProtect-%d%s", rInt, wildcard),
-						CreateAccessLevel: client.AccessLevelValueToName[gitlab.MaintainerPermissions],
+						CreateAccessLevel: api.AccessLevelValueToName[gitlab.MaintainerPermissions],
 					}),
 				),
 			},
@@ -124,7 +124,7 @@ func TestAccGitlabTagProtection_wildcard(t *testing.T) {
 					testAccCheckGitlabTagProtectionExists("gitlab_tag_protection.TagProtect", &pt),
 					testAccCheckGitlabTagProtectionAttributes(&pt, &testAccGitlabTagProtectionExpectedAttributes{
 						Name:              fmt.Sprintf("TagProtect-%d%s", rInt, wildcard),
-						CreateAccessLevel: client.AccessLevelValueToName[gitlab.DeveloperPermissions],
+						CreateAccessLevel: api.AccessLevelValueToName[gitlab.DeveloperPermissions],
 					}),
 				),
 			},
@@ -174,8 +174,8 @@ func testAccCheckGitlabTagProtectionAttributes(pt *gitlab.ProtectedTag, want *te
 			return fmt.Errorf("got name %q; want %q", pt.Name, want.Name)
 		}
 
-		if pt.CreateAccessLevels[0].AccessLevel != client.AccessLevelNameToValue[want.CreateAccessLevel] {
-			return fmt.Errorf("got Create access levels %q; want %q", pt.CreateAccessLevels[0].AccessLevel, client.AccessLevelNameToValue[want.CreateAccessLevel])
+		if pt.CreateAccessLevels[0].AccessLevel != api.AccessLevelNameToValue[want.CreateAccessLevel] {
+			return fmt.Errorf("got Create access levels %q; want %q", pt.CreateAccessLevels[0].AccessLevel, api.AccessLevelNameToValue[want.CreateAccessLevel])
 		}
 
 		return nil
@@ -199,7 +199,7 @@ func testAccCheckGitlabTagProtectionDestroy(s *terraform.State) error {
 			return fmt.Errorf("project tag protection %s still exists", tag)
 		}
 	}
-	if !client.Is404(err) {
+	if !api.Is404(err) {
 		return err
 	}
 	return nil
