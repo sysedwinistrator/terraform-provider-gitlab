@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -40,9 +40,9 @@ var _ = registerResource("gitlab_tag_protection", func() *schema.Resource {
 				Required:    true,
 			},
 			"create_access_level": {
-				Description:      fmt.Sprintf("Access levels which are allowed to create. Valid values are: %s.", utils.RenderValueListForDocs(providerclient.ValidProtectedBranchTagAccessLevelNames)),
+				Description:      fmt.Sprintf("Access levels which are allowed to create. Valid values are: %s.", utils.RenderValueListForDocs(api.ValidProtectedBranchTagAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProtectedBranchTagAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProtectedBranchTagAccessLevelNames, false)),
 				Required:         true,
 				ForceNew:         true,
 			},
@@ -93,7 +93,7 @@ func resourceGitlabTagProtectionRead(ctx context.Context, d *schema.ResourceData
 
 	pt, _, err := client.ProtectedTags.GetProtectedTag(project, tag, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab tag protection not found %s/%s", project, tag)
 			d.SetId("")
 			return nil

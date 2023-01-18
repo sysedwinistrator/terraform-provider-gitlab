@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
@@ -169,7 +169,7 @@ func testAccCheckGitlabProjectMirrorDestroy(s *terraform.State) error {
 		if err == nil && mirror != nil && mirror.ID == mirrorID {
 			return fmt.Errorf("Project Mirror still exists")
 		}
-		if err != nil && !client.Is404(err) {
+		if err != nil && !api.Is404(err) {
 			return err
 		}
 		return nil

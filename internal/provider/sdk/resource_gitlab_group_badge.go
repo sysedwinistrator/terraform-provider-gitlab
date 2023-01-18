@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -92,7 +92,7 @@ func resourceGitlabGroupBadgeRead(ctx context.Context, d *schema.ResourceData, m
 
 	badge, _, err := client.GroupBadges.GetGroupBadge(groupID, badgeID, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] group badge %d in group %s doesn't exist anymore, removing from state", badgeID, groupID)
 			d.SetId("")
 			return nil

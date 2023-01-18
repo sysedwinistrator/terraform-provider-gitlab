@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -63,7 +63,7 @@ func resourceGitlabGroupSamlLinkCreate(ctx context.Context, d *schema.ResourceDa
 
 	group := d.Get("group").(string)
 	samlGroupName := d.Get("saml_group_name").(string)
-	accessLevel := providerclient.AccessLevelNameToValue[d.Get("access_level").(string)]
+	accessLevel := api.AccessLevelNameToValue[d.Get("access_level").(string)]
 
 	options := &gitlab.AddGroupSAMLLinkOptions{
 		SAMLGroupName: gitlab.String(samlGroupName),
@@ -91,7 +91,7 @@ func resourceGitlabGroupSamlLinkRead(ctx context.Context, d *schema.ResourceData
 	log.Printf("[DEBUG] Read GitLab Group SAML Link for group %q", group)
 	samlLink, _, err := client.Groups.GetGroupSAMLLink(group, samlGroupName, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] GitLab SAML Group Link %s for group ID %s not found, removing from state", samlGroupName, group)
 			d.SetId("")
 			return nil
@@ -100,7 +100,7 @@ func resourceGitlabGroupSamlLinkRead(ctx context.Context, d *schema.ResourceData
 	}
 
 	d.Set("group", group)
-	d.Set("access_level", providerclient.AccessLevelValueToName[samlLink.AccessLevel])
+	d.Set("access_level", api.AccessLevelValueToName[samlLink.AccessLevel])
 	d.Set("saml_group_name", samlLink.Name)
 
 	return nil
@@ -116,7 +116,7 @@ func resourceGitlabGroupSamlLinkDelete(ctx context.Context, d *schema.ResourceDa
 	log.Printf("[DEBUG] Delete GitLab Group SAML Link for group %q with name %q", group, samlGroupName)
 	_, err := client.Groups.DeleteGroupSAMLLink(group, samlGroupName, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[WARNING] %s", err)
 		} else {
 			return diag.FromErr(err)

@@ -12,7 +12,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerResource("gitlab_project_mirror", func() *schema.Resource {
@@ -152,7 +152,7 @@ func resourceGitlabProjectMirrorDelete(ctx context.Context, d *schema.ResourceDa
 	mirrorID := d.Get("mirror_id").(int)
 	projectID := d.Get("project").(string)
 
-	isDeleteSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.10")()
+	isDeleteSupported, err := api.IsGitLabVersionAtLeast(ctx, client, "14.10")()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -214,7 +214,7 @@ func resourceGitlabProjectMirrorSetToState(d *schema.ResourceData, projectMirror
 }
 
 func resourceGitLabProjectMirrorGetMirror(ctx context.Context, client *gitlab.Client, projectID string, mirrorID int) (*gitlab.ProjectMirror, error) {
-	isGetProjectMirrorSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "14.10")()
+	isGetProjectMirrorSupported, err := api.IsGitLabVersionAtLeast(ctx, client, "14.10")()
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func resourceGitLabProjectMirrorGetMirror(ctx context.Context, client *gitlab.Cl
 	if isGetProjectMirrorSupported {
 		mirror, _, err = client.ProjectMirrors.GetProjectMirror(projectID, mirrorID, gitlab.WithContext(ctx))
 		if err != nil {
-			if providerclient.Is404(err) {
+			if api.Is404(err) {
 				return nil, nil
 			}
 			return nil, err

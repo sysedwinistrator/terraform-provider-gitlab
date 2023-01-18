@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -91,7 +91,7 @@ func resourceGitlabProjectIssueBoardRead(ctx context.Context, d *schema.Resource
 	log.Printf("[DEBUG] read Project Issue Board in project %q with id %q", project, issueBoardID)
 	issueBoard, _, err := client.Boards.GetIssueBoard(project, issueBoardID, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] Project Issue Board in project %s with id %d not found, removing from state", project, issueBoardID)
 			d.SetId("")
 			return nil

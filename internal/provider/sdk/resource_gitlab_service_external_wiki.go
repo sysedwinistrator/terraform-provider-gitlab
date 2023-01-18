@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerResource("gitlab_service_external_wiki", func() *schema.Resource {
@@ -96,7 +96,7 @@ func resourceGitlabServiceExternalWikiRead(ctx context.Context, d *schema.Resour
 
 	service, _, err := client.Services.GetExternalWikiService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab external wiki service not found for project %s", project)
 			d.SetId("")
 			return nil

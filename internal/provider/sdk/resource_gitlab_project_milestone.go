@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -93,7 +93,7 @@ func resourceGitlabProjectMilestoneRead(ctx context.Context, d *schema.ResourceD
 	log.Printf("[DEBUG] read gitlab milestone in project %s with ID %d", project, milestoneID)
 	milestone, resp, err := client.Milestones.GetMilestone(project, milestoneID, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[WARN] recieved 404 for gitlab milestone ID %d in project %s, removing from state", milestoneID, project)
 			d.SetId("")
 			return nil

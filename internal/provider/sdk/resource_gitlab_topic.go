@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerResource("gitlab_topic", func() *schema.Resource {
@@ -110,7 +110,7 @@ func resourceGitlabTopicRead(ctx context.Context, d *schema.ResourceData, meta i
 
 	topic, _, err := client.Topics.GetTopic(topicID, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab group %s not found so removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -177,7 +177,7 @@ func resourceGitlabTopicDelete(ctx context.Context, d *schema.ResourceData, meta
 	}
 	softDestroy := d.Get("soft_destroy").(bool)
 
-	deleteNotSupported, err := providerclient.IsGitLabVersionLessThan(ctx, client, "14.9")()
+	deleteNotSupported, err := api.IsGitLabVersionLessThan(ctx, client, "14.9")()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -212,7 +212,7 @@ func resourceGitlabTopicDelete(ctx context.Context, d *schema.ResourceData, meta
 }
 
 func resourceGitlabTopicEnsureTitleSupport(ctx context.Context, client *gitlab.Client, d *schema.ResourceData) error {
-	isTitleSupported, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "15.0")()
+	isTitleSupported, err := api.IsGitLabVersionAtLeast(ctx, client, "15.0")()
 	if err != nil {
 		return err
 	}

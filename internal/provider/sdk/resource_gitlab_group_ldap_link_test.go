@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
@@ -118,7 +118,7 @@ type testAccGitlabGroupLdapLinkExpectedAttributes struct {
 func testAccCheckGitlabGroupLdapLinkAttributes(ldapLink *gitlab.LDAPGroupLink, want *testAccGitlabGroupLdapLinkExpectedAttributes) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		accessLevelId, ok := client.AccessLevelValueToName[ldapLink.GroupAccess]
+		accessLevelId, ok := api.AccessLevelValueToName[ldapLink.GroupAccess]
 		if !ok {
 			return fmt.Errorf("Invalid access level '%s'", accessLevelId)
 		}
@@ -144,7 +144,7 @@ func testAccCheckGitlabGroupLdapLinkDestroy(s *terraform.State) error {
 				}
 			}
 		}
-		if !client.Is404(err) {
+		if !api.Is404(err) {
 			return err
 		}
 		return nil
@@ -161,7 +161,7 @@ func testAccGetGitlabGroupLdapLink(ldapLink *gitlab.LDAPGroupLink, resourceState
 	// Construct our desired LDAP Link from the config values
 	desiredLdapLink := gitlab.LDAPGroupLink{
 		CN:          resourceState.Primary.Attributes["cn"],
-		GroupAccess: client.AccessLevelNameToValue[resourceState.Primary.Attributes["group_access"]],
+		GroupAccess: api.AccessLevelNameToValue[resourceState.Primary.Attributes["group_access"]],
 		Provider:    resourceState.Primary.Attributes["ldap_provider"],
 	}
 

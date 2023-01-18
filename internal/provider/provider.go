@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -149,7 +149,7 @@ func (p *GitLabProvider) Configure(ctx context.Context, req provider.ConfigureRe
 
 	// Provider Configuration containing the values after evaluation of defaults etc.
 	// Initialized with the defaults which get overridden later if config is set.
-	evaluatedConfig := client.Config{
+	evaluatedConfig := api.Config{
 		Token:         os.Getenv("GITLAB_TOKEN"),
 		BaseURL:       os.Getenv("GITLAB_BASE_URL"),
 		CACertFile:    "",

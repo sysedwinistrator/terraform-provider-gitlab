@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -108,12 +108,12 @@ func (r *gitlabProjectProtectedEnvironmentResource) Schema(ctx context.Context, 
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"access_level": schema.StringAttribute{
-							MarkdownDescription: fmt.Sprintf("Levels of access required to deploy to this protected environment. Valid values are %s.", utils.RenderValueListForDocs(providerclient.ValidProtectedEnvironmentDeploymentLevelNames)),
+							MarkdownDescription: fmt.Sprintf("Levels of access required to deploy to this protected environment. Valid values are %s.", utils.RenderValueListForDocs(api.ValidProtectedEnvironmentDeploymentLevelNames)),
 							Optional:            true,
 							PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 							Validators: []validator.String{
 								stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("user_id"), path.MatchRelative().AtParent().AtName("group_id")),
-								stringvalidator.OneOfCaseInsensitive(providerclient.ValidProtectedEnvironmentDeploymentLevelNames...),
+								stringvalidator.OneOfCaseInsensitive(api.ValidProtectedEnvironmentDeploymentLevelNames...),
 							},
 						},
 						"access_level_description": schema.StringAttribute{
@@ -180,7 +180,7 @@ func (r *gitlabProjectProtectedEnvironmentResource) Create(ctx context.Context, 
 		deployAccessLevelOptions := &gitlab.EnvironmentAccessOptions{}
 
 		if !v.AccessLevel.IsNull() && v.AccessLevel.ValueString() != "" {
-			deployAccessLevelOptions.AccessLevel = gitlab.AccessLevel(providerclient.AccessLevelNameToValue[v.AccessLevel.ValueString()])
+			deployAccessLevelOptions.AccessLevel = gitlab.AccessLevel(api.AccessLevelNameToValue[v.AccessLevel.ValueString()])
 		}
 		if !v.UserId.IsNull() && v.UserId.ValueInt64() != 0 {
 			deployAccessLevelOptions.UserID = gitlab.Int(int(v.UserId.ValueInt64()))
@@ -195,7 +195,7 @@ func (r *gitlabProjectProtectedEnvironmentResource) Create(ctx context.Context, 
 	// Protect environment
 	protectedEnvironment, _, err := r.client.ProtectedEnvironments.ProtectRepositoryEnvironments(projectID, options, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			resp.Diagnostics.AddError(
 				"GitLab Feature not available",
 				fmt.Sprintf("The protected environment feature is not available on this project. Make sure it's part of an enterprise plan. Error: %s", err.Error()),
@@ -245,7 +245,7 @@ func (r *gitlabProjectProtectedEnvironmentResource) Read(ctx context.Context, re
 	// Read environment protection
 	protectedEnvironment, _, err := r.client.ProtectedEnvironments.GetProtectedEnvironment(projectID, environmentName, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			tflog.Debug(ctx, "protected environment does not exist, removing from state", map[string]interface{}{
 				"project": projectID, "environment": environmentName,
 			})
@@ -313,7 +313,7 @@ func (r *gitlabProjectProtectedEnvironmentResource) protectedEnvironmentToStateM
 			AccessLevelDescription: types.StringValue(v.AccessLevelDescription),
 		}
 		if v.AccessLevel != 0 {
-			deployAccessLevelData.AccessLevel = types.StringValue(providerclient.AccessLevelValueToName[v.AccessLevel])
+			deployAccessLevelData.AccessLevel = types.StringValue(api.AccessLevelValueToName[v.AccessLevel])
 		}
 		if v.UserID != 0 {
 			deployAccessLevelData.UserId = types.Int64Value(int64(v.UserID))

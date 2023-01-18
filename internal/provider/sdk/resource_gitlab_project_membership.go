@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
@@ -45,9 +45,9 @@ var _ = registerResource("gitlab_project_membership", func() *schema.Resource {
 				Required:    true,
 			},
 			"access_level": {
-				Description:      fmt.Sprintf("The access level for the member. Valid values are: %s", utils.RenderValueListForDocs(providerclient.ValidProjectAccessLevelNames)),
+				Description:      fmt.Sprintf("The access level for the member. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(providerclient.ValidProjectAccessLevelNames, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
 				Required:         true,
 			},
 			"expires_at": {
@@ -66,7 +66,7 @@ func resourceGitlabProjectMembershipCreate(ctx context.Context, d *schema.Resour
 	userId := d.Get("user_id").(int)
 	projectId := d.Get("project_id").(string)
 	expiresAt := d.Get("expires_at").(string)
-	accessLevelId := providerclient.AccessLevelNameToValue[d.Get("access_level").(string)]
+	accessLevelId := api.AccessLevelNameToValue[d.Get("access_level").(string)]
 
 	options := &gitlab.AddProjectMemberOptions{
 		UserID:      &userId,
@@ -96,7 +96,7 @@ func resourceGitlabProjectMembershipRead(ctx context.Context, d *schema.Resource
 
 	projectMember, _, err := client.ProjectMembers.GetProjectMember(projectId, userId, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab project membership for %s not found so removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -126,7 +126,7 @@ func resourceGitlabProjectMembershipUpdate(ctx context.Context, d *schema.Resour
 	userId := d.Get("user_id").(int)
 	projectId := d.Get("project_id").(string)
 	expiresAt := d.Get("expires_at").(string)
-	accessLevelId := providerclient.AccessLevelNameToValue[strings.ToLower(d.Get("access_level").(string))]
+	accessLevelId := api.AccessLevelNameToValue[strings.ToLower(d.Get("access_level").(string))]
 
 	options := gitlab.EditProjectMemberOptions{
 		AccessLevel: &accessLevelId,
@@ -164,7 +164,7 @@ func resourceGitlabProjectMembershipSetToState(d *schema.ResourceData, projectMe
 
 	d.Set("project_id", projectId)
 	d.Set("user_id", projectMember.ID)
-	d.Set("access_level", providerclient.AccessLevelValueToName[projectMember.AccessLevel])
+	d.Set("access_level", api.AccessLevelValueToName[projectMember.AccessLevel])
 	if projectMember.ExpiresAt != nil {
 		d.Set("expires_at", projectMember.ExpiresAt.String())
 	} else {

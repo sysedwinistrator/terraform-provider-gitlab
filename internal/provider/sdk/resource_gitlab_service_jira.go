@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 
-	providerclient "gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerResource("gitlab_service_jira", func() *schema.Resource {
@@ -174,7 +174,7 @@ func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, 
 
 	jiraService, _, err := client.Services.GetJiraService(project, gitlab.WithContext(ctx))
 	if err != nil {
-		if providerclient.Is404(err) {
+		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab jira service not found %s, removing from state", project)
 			d.SetId("")
 			return nil
@@ -188,7 +188,7 @@ func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, 
 	d.Set("username", jiraService.Properties.Username)
 	d.Set("project_key", jiraService.Properties.ProjectKey)
 
-	hasJiraIssueTransitionIDFixed, err := providerclient.IsGitLabVersionAtLeast(ctx, client, "15.2")()
+	hasJiraIssueTransitionIDFixed, err := api.IsGitLabVersionAtLeast(ctx, client, "15.2")()
 	if err != nil {
 		return diag.Errorf("failed to check if `jira_issue_transition_id` is properly supported in GitLab version: %v", err)
 	}

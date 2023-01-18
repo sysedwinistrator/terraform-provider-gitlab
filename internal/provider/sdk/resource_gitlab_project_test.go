@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
 
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -1399,7 +1399,7 @@ func TestAccGitlabProject_DeprecatedBuildCoverageRegex(t *testing.T) {
 		CheckDestroy:             testAccCheckGitlabProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: client.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc: api.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "15.0"),
 				Config: fmt.Sprintf(`
 					resource "gitlab_project" "this" {
 						name = "foo-%d"
@@ -1412,7 +1412,7 @@ func TestAccGitlabProject_DeprecatedBuildCoverageRegex(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:          client.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "15.0"),
+				SkipFunc:          api.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "15.0"),
 				ResourceName:      "gitlab_project.this",
 				ImportState:       true,
 				ImportStateVerify: true,

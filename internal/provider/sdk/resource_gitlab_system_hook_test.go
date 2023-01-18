@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/client"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
@@ -95,7 +95,7 @@ func testAccCheckGitlabSystemHookDestroy(s *terraform.State) error {
 				return fmt.Errorf("System Hook %d still exists after deletion", hookID)
 			}
 		}
-		if !client.Is404(err) {
+		if !api.Is404(err) {
 			return err
 		}
 		return nil
