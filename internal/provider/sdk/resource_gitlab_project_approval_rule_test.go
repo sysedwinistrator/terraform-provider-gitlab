@@ -5,6 +5,7 @@ package sdk
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -79,6 +80,9 @@ func TestAccGitLabProjectApprovalRule_Basic(t *testing.T) {
 				ResourceName:      "gitlab_project_approval_rule.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"disable_importing_default_any_approver_rule_on_create",
+				},
 			},
 		},
 	})
@@ -140,6 +144,141 @@ func TestAccGitLabProjectApprovalRule_AnyApprover(t *testing.T) {
 				ResourceName:      "gitlab_project_approval_rule.bar",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"disable_importing_default_any_approver_rule_on_create",
+				},
+			},
+		},
+	})
+}
+
+// This test will ensure the default behavior of auto-importing rules with a 0 value
+// works appropriately.
+func TestAccGitLabProjectApprovalRule_AnyApproverAutoImport(t *testing.T) {
+	// Set up project, groups, users, and branches to use in the test.
+
+	testutil.SkipIfCE(t)
+
+	project := testutil.CreateProject(t)
+
+	// pre-create the any_approver rule to ensure it exists
+	_, _, err := testutil.TestGitlabClient.Projects.CreateProjectApprovalRule(project.ID, &gitlab.CreateProjectLevelRuleOptions{
+		Name:              gitlab.String("any_approver"),
+		RuleType:          gitlab.String("any_approver"),
+		ApprovalsRequired: gitlab.Int(0),
+	})
+	if err != nil {
+		t.Fatal("Failed to create approval rule prior to testing", err)
+	}
+
+	// Terraform test starts here.
+	var projectApprovalRule gitlab.ProjectApprovalRule
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectApprovalRuleDestroy(project.ID),
+		Steps: []resource.TestStep{
+			// Create rule
+			{
+				Config: testAccGitlabProjectApprovalRuleConfig_AnyApprover(project.ID, 3, "any_approver"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabProjectApprovalRuleExists("gitlab_project_approval_rule.bar", &projectApprovalRule),
+					testAccCheckGitlabProjectApprovalRuleAttributes_AnyApprover(&projectApprovalRule, &testAccGitlabProjectApprovalRuleExpectedAttributes_AnyApprover{
+						Name:              "bar",
+						ApprovalsRequired: 3,
+						RuleType:          "any_approver",
+					}),
+				),
+			},
+			{
+				ResourceName:      "gitlab_project_approval_rule.bar",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"disable_importing_default_any_approver_rule_on_create",
+				},
+			},
+		},
+	})
+}
+
+// This test ensures that we only auto-import rules that have a "0" approval required. So
+// we create a rule with 1 approver required, and expect an error in the test.
+func TestAccGitLabProjectApprovalRule_AnyApproverAutoImportWithOneApprover(t *testing.T) {
+	// Set up project, groups, users, and branches to use in the test.
+
+	testutil.SkipIfCE(t)
+
+	project := testutil.CreateProject(t)
+
+	// pre-create the any_approver rule to ensure it exists
+	_, _, err := testutil.TestGitlabClient.Projects.CreateProjectApprovalRule(project.ID, &gitlab.CreateProjectLevelRuleOptions{
+		Name:              gitlab.String("any_approver"),
+		RuleType:          gitlab.String("any_approver"),
+		ApprovalsRequired: gitlab.Int(1),
+	})
+	if err != nil {
+		t.Fatal("Failed to create approval rule prior to testing", err)
+	}
+
+	// Terraform test starts here.
+	var projectApprovalRule gitlab.ProjectApprovalRule
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectApprovalRuleDestroy(project.ID),
+		Steps: []resource.TestStep{
+			// Create rule
+			{
+				Config: testAccGitlabProjectApprovalRuleConfig_AnyApprover(project.ID, 3, "any_approver"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabProjectApprovalRuleExists("gitlab_project_approval_rule.bar", &projectApprovalRule),
+					testAccCheckGitlabProjectApprovalRuleAttributes_AnyApprover(&projectApprovalRule, &testAccGitlabProjectApprovalRuleExpectedAttributes_AnyApprover{
+						Name:              "bar",
+						ApprovalsRequired: 3,
+						RuleType:          "any_approver",
+					}),
+				),
+				ExpectError: regexp.MustCompile("any-approver for the project already exists"),
+			},
+		},
+	})
+}
+
+// This test ensures that we get an error when auto-import is disabled, and a rule already pre-exists,
+// even if the rule has a value of 0 that would otherwise be auto imported.
+func TestAccGitLabProjectApprovalRule_AnyApproverDisableAutoImport(t *testing.T) {
+	// Set up project, groups, users, and branches to use in the test.
+
+	testutil.SkipIfCE(t)
+
+	project := testutil.CreateProject(t)
+
+	// pre-create the any_approver rule to ensure it exists so our apply fails when disabling import
+	_, _, err := testutil.TestGitlabClient.Projects.CreateProjectApprovalRule(project.ID, &gitlab.CreateProjectLevelRuleOptions{
+		Name:              gitlab.String("any_approver"),
+		RuleType:          gitlab.String("any_approver"),
+		ApprovalsRequired: gitlab.Int(0),
+	})
+	if err != nil {
+		t.Fatal("Failed to create approval rule prior to testing", err)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectApprovalRuleDestroy(project.ID),
+		Steps: []resource.TestStep{
+			// Create rule
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_project_approval_rule" "bar" {
+				  project              = %d
+				  name                 = "bar"
+				  approvals_required   = %d
+				  rule_type            = "%s"
+
+				  disable_importing_default_any_approver_rule_on_create = true
+				}`, project.ID, 3, "any_approver"),
+				ExpectError: regexp.MustCompile("any-approver for the project already exists"),
 			},
 		},
 	})
