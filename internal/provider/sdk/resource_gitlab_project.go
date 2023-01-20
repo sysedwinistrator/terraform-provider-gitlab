@@ -628,12 +628,12 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:      true,
 		ConflictsWith: []string{"initialize_with_readme", "import_url"},
 	},
-	//"mr_default_target_self": {
-	//	Description:  "For forked projects, target merge requests to this project. If false, the target will be the upstream project.",
-	//	Type:         schema.TypeBool,
-	//	Optional:     true,
-	//	RequiredWith: []string{"forked_from_project_id"},
-	//},
+	"mr_default_target_self": {
+		Description:  "For forked projects, target merge requests to this project. If false, the target will be the upstream project.",
+		Type:         schema.TypeBool,
+		Optional:     true,
+		RequiredWith: []string{"forked_from_project_id"},
+	},
 }
 
 var validContainerExpirationPolicyAttributesCadenceValues = []string{
@@ -834,7 +834,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 		d.Set("forked_from_project_id", nil)
 	}
 
-	//d.Set("mr_default_target_self", project.MergeRequestDefaultTargetSelf)
+	d.Set("mr_default_target_self", project.MergeRequestDefaultTargetSelf)
 
 	return nil
 }
@@ -1192,9 +1192,9 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
-		//if v, ok := d.GetOkExists("mr_default_target_self"); ok {
-		//	options.MergeRequestDefaultTargetSelf = gitlab.Bool(v.(bool))
-		//}
+		if v, ok := d.GetOkExists("mr_default_target_self"); ok {
+			options.MergeRequestDefaultTargetSelf = gitlab.Bool(v.(bool))
+		}
 
 		var err error
 		project, _, err = client.Projects.ForkProject(forkedFromProjectID, &options, gitlab.WithContext(ctx))
@@ -2042,6 +2042,10 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 		options.CISeperateCache = gitlab.Bool(d.Get("ci_separated_caches").(bool))
 	}
 
+	if d.HasChange("mr_default_target_self") {
+		options.MergeRequestDefaultTargetSelf = gitlab.Bool(d.Get("mr_default_target_self").(bool))
+	}
+
 	avatar, err := handleAvatarOnUpdate(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -2052,10 +2056,6 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 			Image:    avatar.Image,
 		}
 	}
-
-	//if d.HasChange("mr_default_target_self") {
-	//	options.MergeRequestDefaultTargetSelf = gitlab.Bool(d.Get("mr_default_target_self").(bool))
-	//}
 
 	if *options != (gitlab.EditProjectOptions{}) {
 		log.Printf("[DEBUG] update gitlab project %s", d.Id())

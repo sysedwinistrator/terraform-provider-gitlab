@@ -1495,7 +1495,7 @@ func TestAccGitlabProject_ForkProject(t *testing.T) {
 
 						# fork options
 						forked_from_project_id = %[2]d
-						#mr_default_target_self = true
+						mr_default_target_self = true
 
 						# Set some attributes which are not part of the fork API
 						topics = ["foo", "bar"]
@@ -1539,7 +1539,7 @@ func TestAccGitlabProject_ForkProject(t *testing.T) {
 
 						# fork options
 						forked_from_project_id = %[2]d
-						#mr_default_target_self = true
+						mr_default_target_self = false
 
 						# Set some attributes which are not part of the fork API
 						topics = ["foo", "bar", "readded"]
@@ -1563,6 +1563,7 @@ func TestAccGitlabProject_ForkProject(t *testing.T) {
 
 						# fork options
 						forked_from_project_id = %[2]d
+						mr_default_target_self = true
 
 						# Set some attributes which are not part of the fork API
 						topics = ["foo", "bar", "changed"]
