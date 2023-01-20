@@ -1580,6 +1580,48 @@ func TestAccGitlabProject_ForkProject(t *testing.T) {
 	})
 }
 
+func TestAccGitlabProject_ForkProjectAndConfigurePullMirror(t *testing.T) {
+	testutil.SkipIfCE(t)
+
+	// Create project to fork
+	testProjectToFork := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			// Create a new `gitlab_project` resource by forking an existing project and configuring the pull mirror
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "test" {
+						name                   = "forked-%[1]s"
+						path                   = "forked-%[3]s"
+						description            = "Forked from %[1]s"
+						visibility_level       = "public"
+
+						# fork options
+						forked_from_project_id = %[2]d
+
+						# Setup Pull mirror
+						import_url                          = "%[4]s"
+						mirror                              = true
+						mirror_trigger_builds               = true
+						mirror_overwrites_diverged_branches = true
+						only_mirror_protected_branches      = true
+				   }
+				`, testProjectToFork.Name, testProjectToFork.ID, testProjectToFork.Path, testProjectToFork.HTTPURLToRepo),
+			},
+			// Verify import
+			{
+				ResourceName:            "gitlab_project.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"import_url"},
+			},
+		},
+	})
+}
+
 func TestAccGitlabProject_ContainerExpirationPolicy(t *testing.T) {
 	testProjectName := acctest.RandomWithPrefix("acctest")
 

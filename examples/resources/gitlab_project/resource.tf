@@ -27,3 +27,19 @@ resource "gitlab_project" "peters_repo" {
   description  = "This is a description"
   namespace_id = data.gitlab_user.peter_parker.namespace_id
 }
+
+# Fork a project
+resource "gitlab_project" "fork" {
+  name                   = "my-fork"
+  description            = "This is a fork"
+  forked_from_project_id = gitlab_project.example.id
+}
+
+# Fork a project and setup a pull mirror
+resource "gitlab_project" "fork" {
+  name                   = "my-fork"
+  description            = "This is a fork"
+  forked_from_project_id = gitlab_project.example.id
+  import_url             = gitlab_project.example.http_url_to_repo
+  mirror                 = true
+}

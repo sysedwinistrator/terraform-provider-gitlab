@@ -84,11 +84,11 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"import_url": {
-		Description:   "Git URL to a repository to be imported.",
+		Description:   "Git URL to a repository to be imported. Together with `mirror = true` it will setup a Pull Mirror. This can also be used together with `forked_from_project_id` to setup a Pull Mirror for a fork. The fork takes precedence over the import. This field cannot be imported via `terraform import`.",
 		Type:          schema.TypeString,
 		Optional:      true,
 		ForceNew:      true,
-		ConflictsWith: []string{"initialize_with_readme", "forked_from_project_id"},
+		ConflictsWith: []string{"initialize_with_readme"},
 	},
 	"request_access_enabled": {
 		Description: "Allow users to request member access.",
@@ -626,7 +626,7 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Description:   "The id of the project to fork. During create the project is forked and during an update the fork relation is changed.",
 		Type:          schema.TypeInt,
 		Optional:      true,
-		ConflictsWith: []string{"initialize_with_readme", "import_url"},
+		ConflictsWith: []string{"initialize_with_readme"},
 	},
 	"mr_default_target_self": {
 		Description:  "For forked projects, target merge requests to this project. If false, the target will be the upstream project.",
@@ -1680,6 +1680,21 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 
 		if v, ok := d.GetOk("merge_commit_template"); ok {
 			editProjectOptions.MergeCommitTemplate = gitlab.String(v.(string))
+		}
+
+		if v, ok := d.GetOk("import_url"); ok {
+			editProjectOptions.ImportURL = gitlab.String(v.(string))
+		}
+
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("mirror"); ok {
+			editProjectOptions.Mirror = gitlab.Bool(v.(bool))
+		}
+		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+		if v, ok := d.GetOkExists("mirror_trigger_builds"); ok {
+			editProjectOptions.MirrorTriggerBuilds = gitlab.Bool(v.(bool))
 		}
 
 		avatar, err := handleAvatarOnUpdate(d)
