@@ -1,3 +1,25 @@
+## 15.8.0 (2023-01-22)
+
+This release was tested against GitLab 15.6, 15.7 and 15.8 for both CE and EE.
+
+FEATURES:
+
+* provider: mask `token` in provider logs ([#1394](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1394))
+
+IMPROVEMENTS:
+
+* resource/gitlab_project: Add `ip_restriction_ranges` attribute ([#1392](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1392))
+* datasource/gitlab_group_membership: Add `inherited` attribute to include inherited memberships ([#1402](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1402))
+
+BUG FIXES:
+
+* provider: Fix `early_auth_check` always set to `true` ([#1414](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1414))
+* resource/gitlab_project_share_group: Fix refreshing shared groups of a project ([#1412](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1412))
+* resource/gitlab_project_protected_environment: Fix perpetual diffs of `deploy_access_levels` ([#1421](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1421))
+* resource/gitlab_project_approval_rule: auto-import default `any_approver` rule during create ([#1425](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1425))
+* resource/gitlab_group: Mark `shared_runners_minutes_limit` and `extra_shared_runners_minutes_limit` as `Computed` ([#1423](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1423))
+* datasource/gitlab_projects: Support validation for all valid `order_by` values ([#1429](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1429))
+
 ## 15.7.1 (2022-12-23)
 
 This release was tested against GitLab 15.5, 15.6 and 15.7 for both CE and EE.
