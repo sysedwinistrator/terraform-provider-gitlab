@@ -205,6 +205,19 @@ func flattenProjects(projects []*gitlab.Project) (values []map[string]interface{
 }
 
 var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
+	validOrderBy := []string{
+		"id",
+		"name",
+		"path",
+		"created_at",
+		"updated_at",
+		"last_activity_at",
+		"similarity",
+		"repository_size",
+		"storage_size",
+		"packages_size",
+		"wiki_size",
+	}
 	return &schema.Resource{
 		Description: `The ` + "`gitlab_projects`" + ` data source allows details of multiple projects to be retrieved. Optionally filtered by the set attributes.
 
@@ -247,15 +260,10 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 				Optional:    true,
 			},
 			"order_by": {
-				Description: "Return projects ordered by `id`, `name`, `path`, `created_at`, `updated_at`, or `last_activity_at` fields. Default is `created_at`.",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ValidateFunc: validation.StringInSlice([]string{
-					"id",
-					"name",
-					"username",
-					"created_at",
-					"updated_at"}, true),
+				Description:  fmt.Sprintf("Return projects ordered ordered by: %s. Some values or only available in certain circumstances. See [upstream docs](https://docs.gitlab.com/ee/api/projects.html#list-all-projects) for details.", utils.RenderValueListForDocs(validOrderBy)),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice(validOrderBy, true),
 			},
 			"sort": {
 				Description:  "Return projects sorted in `asc` or `desc` order. Default is `desc`.",
