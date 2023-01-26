@@ -145,7 +145,9 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 				if isRefreshError(err) {
 					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				if !api.Is404(err) {
+					return resource.NonRetryableError(err)
+				}
 			}
 
 			if existingRepositoryFile != nil {

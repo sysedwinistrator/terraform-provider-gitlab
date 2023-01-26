@@ -112,6 +112,45 @@ func TestAccGitlabRepositoryFile_overwriteOnCreate(t *testing.T) {
 	})
 }
 
+func TestAccGitlabRepositoryFile_overwriteOnCreateNewFile(t *testing.T) {
+	var file gitlab.File
+	testProject := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_repository_file" "this" {
+				  project = %d
+				  file_path = "animal-noise.txt"
+				  branch = "main"
+				  content = "d29vZiB3b29mIHdvb2YK"
+				  author_email = "bark@dogbone.com"
+				  author_name = "Bark Woofman"
+				  commit_message = "feature: dog"
+				  overwrite_on_create = true
+				}
+					`, testProject.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabRepositoryFileExists("gitlab_repository_file.this", &file),
+					testAccCheckGitlabRepositoryFileAttributes(&file, &testAccGitlabRepositoryFileAttributes{
+						FilePath: "animal-noise.txt",
+						Content:  "d29vZiB3b29mIHdvb2YK",
+					}),
+				),
+			},
+			{
+				ResourceName:            "gitlab_repository_file.this",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"author_email", "author_name", "commit_message", "overwrite_on_create"},
+			},
+		},
+	})
+}
+
 func TestAccGitlabRepositoryFile_createSameFileDifferentRepository(t *testing.T) {
 	var fooFile gitlab.File
 	var barFile gitlab.File
