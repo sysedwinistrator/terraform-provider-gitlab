@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.10.0
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-log v0.8.0
-	github.com/hashicorp/terraform-plugin-mux v0.8.0
+	github.com/hashicorp/terraform-plugin-mux v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/onsi/gomega v1.26.0
