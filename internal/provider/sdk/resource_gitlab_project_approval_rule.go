@@ -327,7 +327,7 @@ func expandProtectedBranchIDs(ids interface{}) *[]int {
 }
 
 func getAnyApproverRuleId(ctx context.Context, client *gitlab.Client, project string) (int, error) {
-	rules, _, err := client.Projects.GetProjectApprovalRules(project)
+	rules, _, err := client.Projects.GetProjectApprovalRules(project, &gitlab.GetProjectApprovalRulesListsOptions{})
 	if err != nil {
 		if api.Is404(err) {
 			tflog.Debug(ctx, `Project approval rules not found, skipping update for "any_approver" and creating instead.`, map[string]interface{}{
