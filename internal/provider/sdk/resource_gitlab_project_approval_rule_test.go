@@ -374,7 +374,7 @@ func testAccCheckGitlabProjectApprovalRuleExists(n string, projectApprovalRule *
 			return err
 		}
 
-		rules, _, err := testutil.TestGitlabClient.Projects.GetProjectApprovalRules(projectID)
+		rules, _, err := testutil.TestGitlabClient.Projects.GetProjectApprovalRules(projectID, &gitlab.GetProjectApprovalRulesListsOptions{})
 		if err != nil {
 			return err
 		}
@@ -393,7 +393,7 @@ func testAccCheckGitlabProjectApprovalRuleExists(n string, projectApprovalRule *
 func testAccCheckGitlabProjectApprovalRuleDestroy(pid interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		return InterceptGomegaFailure(func() {
-			rules, _, err := testutil.TestGitlabClient.Projects.GetProjectApprovalRules(pid)
+			rules, _, err := testutil.TestGitlabClient.Projects.GetProjectApprovalRules(pid, &gitlab.GetProjectApprovalRulesListsOptions{})
 			Expect(err).To(BeNil())
 			Expect(rules).To(BeEmpty())
 		})

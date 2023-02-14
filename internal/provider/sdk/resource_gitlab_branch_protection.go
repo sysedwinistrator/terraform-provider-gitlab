@@ -265,11 +265,11 @@ func resourceGitlabBranchProtectionUpdate(ctx context.Context, d *schema.Resourc
 
 	log.Printf("[DEBUG] update gitlab branch protection for project %s, branch %s", project, branch)
 
-	options := &gitlab.RequireCodeOwnerApprovalsOptions{
+	options := &gitlab.UpdateProtectedBranchOptions{
 		CodeOwnerApprovalRequired: &codeOwnerApprovalRequired,
 	}
 	featureNotAvailableError := diag.Errorf("feature unavailable: `code_owner_approval_required`, Premium or Ultimate license required.")
-	if _, err := client.ProtectedBranches.RequireCodeOwnerApprovals(project, branch, options, gitlab.WithContext(ctx)); err != nil {
+	if _, _, err := client.ProtectedBranches.UpdateProtectedBranch(project, branch, options, gitlab.WithContext(ctx)); err != nil {
 		// The user might be running a version of GitLab that does not support this feature.
 		// We enhance the generic 404 error with a more informative message.
 		if api.Is404(err) {
