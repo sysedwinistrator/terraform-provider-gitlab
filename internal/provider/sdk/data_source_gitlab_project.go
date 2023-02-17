@@ -254,7 +254,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"repository_storage": {
-				Description: "	Which storage shard the repository is on. (administrator only)",
+				Description: "Which storage shard the repository is on. (administrator only)",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -317,7 +317,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Computed:    true,
 			},
 			"push_rules": {
-				Description: "Push rules for the project.",
+				Description: "Push rules for the project. Push rules are only available on Enterprise plans and if the authenticated has permissions to read them.",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Resource{
@@ -468,7 +468,7 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 
 	pushRules, _, err := client.Projects.GetProjectPushRules(d.Id(), gitlab.WithContext(ctx))
 	var httpError *gitlab.ErrorResponse
-	if errors.As(err, &httpError) && httpError.Response.StatusCode == http.StatusNotFound {
+	if errors.As(err, &httpError) && (httpError.Response.StatusCode == http.StatusNotFound || httpError.Response.StatusCode == http.StatusForbidden) {
 		log.Printf("[DEBUG] Failed to get push rules for project %q: %v", d.Id(), err)
 	} else if err != nil {
 		return diag.Errorf("Failed to get push rules for project %q: %v", d.Id(), err)
