@@ -214,6 +214,18 @@ func CreateUsersWithPrefix(t *testing.T, n int, prefix string) []*gitlab.User {
 	return users
 }
 
+// Create Personal Access Token for a given user.
+func CreatePersonalAccessToken(t *testing.T, user *gitlab.User) *gitlab.PersonalAccessToken {
+	t.Helper()
+
+	token, _, err := TestGitlabClient.Users.CreatePersonalAccessToken(user.ID, &gitlab.CreatePersonalAccessTokenOptions{Name: gitlab.String(acctest.RandomWithPrefix("acctest")), Scopes: &[]string{"api"}})
+	if err != nil {
+		t.Fatalf("could not create Personal Access Token for user %d", user.ID)
+	}
+
+	return token
+}
+
 // CreateGroups is a test helper for creating a specified number of groups.
 func CreateGroups(t *testing.T, n int) []*gitlab.Group {
 	t.Helper()

@@ -40,6 +40,31 @@ func TestAccDataGitlabProject_basic(t *testing.T) {
 	})
 }
 
+func TestAccDataGitlabProject_withoutPushRulesAccess(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+	testUser := testutil.CreateUsers(t, 1)[0]
+	testToken := testutil.CreatePersonalAccessToken(t, testUser)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		Steps: []resource.TestStep{
+			{
+				// lintignore:AT004  // we need the provider configuration here
+				Config: fmt.Sprintf(`
+				provider "gitlab" {
+				  token = "%s"
+				}
+
+				data "gitlab_project" "test" {
+				  path_with_namespace = "%s"
+				}
+				`, testToken.Token, testProject.PathWithNamespace),
+				Check: resource.TestCheckResourceAttr("data.gitlab_project.test", "id", fmt.Sprintf("%d", testProject.ID)),
+			},
+		},
+	})
+}
+
 func testAccDataSourceGitlabProject(resourceName, dataSourceName string, testAttributes []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
