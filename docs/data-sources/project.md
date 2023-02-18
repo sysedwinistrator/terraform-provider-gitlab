@@ -56,6 +56,7 @@ data "gitlab_project" "example" {
 - `external_authorization_classification_label` (String) The classification label for the project.
 - `forking_access_level` (String) Set the forking access level. Valid values are `disabled`, `private`, `enabled`.
 - `http_url_to_repo` (String) URL that can be provided to `git clone` to clone the
+- `import_url` (String) URL the project was imported from.
 - `issues_access_level` (String) Set the issues access level. Valid values are `disabled`, `private`, `enabled`.
 - `issues_enabled` (Boolean) Enable issue tracking for the project.
 - `lfs_enabled` (Boolean) Enable LFS for the project.

@@ -165,7 +165,14 @@ func CreateProjectWithNamespace(t *testing.T, namespaceID int) *gitlab.Project {
 		options.NamespaceID = gitlab.Int(namespaceID)
 	}
 
-	project, _, err := TestGitlabClient.Projects.CreateProject(options)
+	return CreateProjectWithOptions(t, options)
+}
+
+// CreateProjectWithOptions is a test helper for creating a project given some options
+func CreateProjectWithOptions(t *testing.T, opts *gitlab.CreateProjectOptions) *gitlab.Project {
+	t.Helper()
+
+	project, _, err := TestGitlabClient.Projects.CreateProject(opts)
 	if err != nil {
 		t.Fatalf("could not create test project: %v", err)
 	}

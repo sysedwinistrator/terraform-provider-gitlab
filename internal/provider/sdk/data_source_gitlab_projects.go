@@ -155,6 +155,7 @@ func flattenProjects(projects []*gitlab.Project) (values []map[string]interface{
 				"request_access_enabled":                           project.RequestAccessEnabled,
 				"merge_method":                                     project.MergeMethod,
 				"forked_from_project":                              flattenForkedFromProject(project.ForkedFromProject),
+				"import_url":                                       project.ImportURL,
 				"mirror":                                           project.Mirror,
 				"mirror_user_id":                                   project.MirrorUserID,
 				"mirror_trigger_builds":                            project.MirrorTriggerBuilds,
@@ -730,6 +731,11 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 								},
 							},
 						},
+						"import_url": {
+							Description: "URL the project was imported from.",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
 						"mirror": {
 							Description: "Whether the pull mirroring is enabled for the project.",
 							Type:        schema.TypeBool,
@@ -741,7 +747,7 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 							Computed:    true,
 						},
 						"mirror_trigger_builds": {
-							Description: "Whether pull mirrororing triggers builds for the project.",
+							Description: "Whether pull mirroring triggers builds for the project.",
 							Type:        schema.TypeBool,
 							Computed:    true,
 						},
@@ -751,7 +757,7 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 							Computed:    true,
 						},
 						"mirror_overwrites_diverged_branches": {
-							Description: "Wther mirror_overwrites_diverged_branches is enabled for the project.",
+							Description: "Whether mirror_overwrites_diverged_branches is enabled for the project.",
 							Type:        schema.TypeBool,
 							Computed:    true,
 						},
