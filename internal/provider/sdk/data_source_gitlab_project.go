@@ -316,6 +316,11 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"import_url": {
+				Description: "URL the project was imported from.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"push_rules": {
 				Description: "Push rules for the project. Push rules are only available on Enterprise plans and if the authenticated has permissions to read them.",
 				Type:        schema.TypeList,
@@ -463,6 +468,7 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 	d.Set("ci_default_git_depth", found.CIDefaultGitDepth)
 	d.Set("ci_config_path", found.CIConfigPath)
 	d.Set("ci_separated_caches", found.CISeperateCache)
+	d.Set("import_url", found.ImportURL)
 
 	log.Printf("[DEBUG] Reading Gitlab project %q push rules", d.Id())
 

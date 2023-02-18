@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -84,11 +85,23 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:    true,
 	},
 	"import_url": {
-		Description:   "Git URL to a repository to be imported. Together with `mirror = true` it will setup a Pull Mirror. This can also be used together with `forked_from_project_id` to setup a Pull Mirror for a fork. The fork takes precedence over the import. This field cannot be imported via `terraform import`.",
+		Description:   "Git URL to a repository to be imported. Together with `mirror = true` it will setup a Pull Mirror. This can also be used together with `forked_from_project_id` to setup a Pull Mirror for a fork. The fork takes precedence over the import. Make sure to provide the credentials in `import_url_username` and `import_url_password`. GitLab never returns the credentials, thus the provider cannot detect configuration drift in the credentials. They can also not be imported using `terraform import`. See the examples section for how to properly use it.",
 		Type:          schema.TypeString,
 		Optional:      true,
-		ForceNew:      true,
 		ConflictsWith: []string{"initialize_with_readme"},
+	},
+	"import_url_username": {
+		Description:  "The username for the `import_url`. The value of this field is used to construct a valid `import_url` and is only related to the provider. This field cannot be imported using `terraform import`.  See the examples section for how to properly use it.",
+		Type:         schema.TypeString,
+		Optional:     true,
+		RequiredWith: []string{"import_url", "import_url_password"},
+	},
+	"import_url_password": {
+		Description:  "The password for the `import_url`. The value of this field is used to construct a valid `import_url` and is only related to the provider. This field cannot be imported using `terraform import`. See the examples section for how to properly use it.",
+		Type:         schema.TypeString,
+		Optional:     true,
+		Sensitive:    true,
+		RequiredWith: []string{"import_url", "import_url_username"},
 	},
 	"request_access_enabled": {
 		Description: "Allow users to request member access.",
@@ -779,6 +792,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("mirror_trigger_builds", project.MirrorTriggerBuilds)
 	d.Set("mirror_overwrites_diverged_branches", project.MirrorOverwritesDivergedBranches)
 	d.Set("only_mirror_protected_branches", project.OnlyMirrorProtectedBranches)
+	d.Set("import_url", project.ImportURL)
 	d.Set("issues_template", project.IssuesTemplate)
 	d.Set("merge_requests_template", project.MergeRequestsTemplate)
 	d.Set("ci_config_path", project.CIConfigPath)
@@ -898,7 +912,11 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 
 		if v, ok := d.GetOk("import_url"); ok {
-			options.ImportURL = gitlab.String(v.(string))
+			importURL, err := constructImportUrl(v.(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+			if err != nil {
+				return diag.Errorf("Unable to construct import URL for API: %s", err)
+			}
+			options.ImportURL = gitlab.String(importURL)
 		}
 
 		if v, ok := d.GetOk("template_name"); ok {
@@ -1368,14 +1386,22 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if v, ok := d.GetOkExists("mirror_overwrites_diverged_branches"); ok {
 		editProjectOptions.MirrorOverwritesDivergedBranches = gitlab.Bool(v.(bool))
-		editProjectOptions.ImportURL = gitlab.String(d.Get("import_url").(string))
+		importURL, err := constructImportUrl(d.Get("import_url").(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+		if err != nil {
+			return diag.Errorf("Unable to construct import URL for API: %s", err)
+		}
+		editProjectOptions.ImportURL = gitlab.String(importURL)
 	}
 
 	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if v, ok := d.GetOkExists("only_mirror_protected_branches"); ok {
 		editProjectOptions.OnlyMirrorProtectedBranches = gitlab.Bool(v.(bool))
-		editProjectOptions.ImportURL = gitlab.String(d.Get("import_url").(string))
+		importURL, err := constructImportUrl(d.Get("import_url").(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+		if err != nil {
+			return diag.Errorf("Unable to construct import URL for API: %s", err)
+		}
+		editProjectOptions.ImportURL = gitlab.String(importURL)
 	}
 
 	if v, ok := d.GetOk("issues_template"); ok {
@@ -1683,7 +1709,11 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 
 		if v, ok := d.GetOk("import_url"); ok {
-			editProjectOptions.ImportURL = gitlab.String(v.(string))
+			importURL, err := constructImportUrl(v.(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+			if err != nil {
+				return diag.Errorf("Unable to construct import URL for API: %s", err)
+			}
+			editProjectOptions.ImportURL = gitlab.String(importURL)
 		}
 
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
@@ -1889,24 +1919,46 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 		options.PagesAccessLevel = stringToAccessControlValue(d.Get("pages_access_level").(string))
 	}
 
-	if d.HasChange("mirror") {
-		options.ImportURL = gitlab.String(d.Get("import_url").(string))
+	if d.HasChanges("mirror", "import_url", "import_url_username", "import_url_password") {
 		options.Mirror = gitlab.Bool(d.Get("mirror").(bool))
+		importURL, err := constructImportUrl(d.Get("import_url").(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+		if err != nil {
+			return diag.Errorf("Unable to construct import URL for API: %s", err)
+		}
+		options.ImportURL = gitlab.String(importURL)
 	}
 
 	if d.HasChange("mirror_trigger_builds") {
-		options.ImportURL = gitlab.String(d.Get("import_url").(string))
 		options.MirrorTriggerBuilds = gitlab.Bool(d.Get("mirror_trigger_builds").(bool))
+		if options.ImportURL == nil {
+			importURL, err := constructImportUrl(d.Get("import_url").(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+			if err != nil {
+				return diag.Errorf("Unable to construct import URL for API: %s", err)
+			}
+			options.ImportURL = gitlab.String(importURL)
+		}
 	}
 
 	if d.HasChange("only_mirror_protected_branches") {
-		options.ImportURL = gitlab.String(d.Get("import_url").(string))
 		options.OnlyMirrorProtectedBranches = gitlab.Bool(d.Get("only_mirror_protected_branches").(bool))
+		if options.ImportURL == nil {
+			importURL, err := constructImportUrl(d.Get("import_url").(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+			if err != nil {
+				return diag.Errorf("Unable to construct import URL for API: %s", err)
+			}
+			options.ImportURL = gitlab.String(importURL)
+		}
 	}
 
 	if d.HasChange("mirror_overwrites_diverged_branches") {
-		options.ImportURL = gitlab.String(d.Get("import_url").(string))
 		options.MirrorOverwritesDivergedBranches = gitlab.Bool(d.Get("mirror_overwrites_diverged_branches").(bool))
+		if options.ImportURL == nil {
+			importURL, err := constructImportUrl(d.Get("import_url").(string), d.Get("import_url_username").(string), d.Get("import_url_password").(string))
+			if err != nil {
+				return diag.Errorf("Unable to construct import URL for API: %s", err)
+			}
+			options.ImportURL = gitlab.String(importURL)
+		}
 	}
 
 	if d.HasChange("build_coverage_regex") {
@@ -2439,4 +2491,24 @@ func expectDefaultBranchProtection(ctx context.Context, client *gitlab.Client, p
 	// NOTE: for the lack of a better solution (at least for now), we assume that the default branch protection is NOT disabled on instance-level.
 	//       To override this behavior it's best to set `skip_wait_for_default_branch_protection = true` in the resource config.
 	return true, nil
+}
+
+func constructImportUrl(importURL string, username string, password string) (string, error) {
+	if username == "" && password == "" {
+		return importURL, nil
+	}
+
+	parsedURL, err := url.Parse(importURL)
+	if err != nil {
+		return "", fmt.Errorf("The given `import_url` is not a valid URL: %s", err)
+	}
+
+	credentials := url.UserPassword(username, password)
+	if parsedURL.User != nil && parsedURL.User.String() != credentials.String() {
+		return "", fmt.Errorf("The `import_url` already contains credentials which don't match the credentials from `import_url_username` and `import_url_password`")
+	}
+
+	parsedURL.User = credentials
+
+	return parsedURL.String(), nil
 }

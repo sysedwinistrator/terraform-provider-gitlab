@@ -807,6 +807,10 @@ func TestAccGitlabProject_importURLWithPassword(t *testing.T) {
 				resource "gitlab_project" "this" {
 					name        = "import-url-with-password-%d"
 					import_url  = "%s"
+
+          lifecycle {
+            ignore_changes = [import_url]
+          }
 				}	
 				`, rInt, importUrl),
 				Check: resource.ComposeTestCheckFunc(
@@ -824,6 +828,116 @@ func TestAccGitlabProject_importURLWithPassword(t *testing.T) {
 						return nil
 					},
 				),
+			},
+		},
+	})
+}
+
+// lintignore: AT002 // specialized import test
+func TestAccGitlabProject_importURL_publicRepository(t *testing.T) {
+	testImportedProjectName := acctest.RandomWithPrefix("acctest")
+	testProject := testutil.CreateProject(t)
+
+	config := fmt.Sprintf(`
+    resource "gitlab_project" "test" { 
+      name = "%s"
+
+      import_url = "%s"
+    }
+  `, testImportedProjectName, testProject.HTTPURLToRepo)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+			},
+			// Expect empty plan on re-apply
+			{
+				Config:   config,
+				PlanOnly: true,
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// lintignore: AT002 // specialized import test
+func TestAccGitlabProject_importURL_privateRepository(t *testing.T) {
+	testutil.SkipIfCE(t)
+
+	testImportedProjectName := acctest.RandomWithPrefix("acctest")
+	testProject := testutil.CreateProjectWithOptions(t, &gitlab.CreateProjectOptions{
+		Name:                 gitlab.String(testImportedProjectName),
+		Visibility:           gitlab.Visibility(gitlab.PrivateVisibility),
+		InitializeWithReadme: gitlab.Bool(true),
+	})
+
+	createToken := func() string {
+		token, _, err := testutil.TestGitlabClient.ProjectAccessTokens.CreateProjectAccessToken(testProject.ID, &gitlab.CreateProjectAccessTokenOptions{
+			Name:        gitlab.String(acctest.RandomWithPrefix("acctest")),
+			Scopes:      &[]string{"read_api", "read_repository"},
+			AccessLevel: gitlab.AccessLevel(gitlab.MaintainerPermissions),
+		})
+		if err != nil {
+			t.Fatalf("failed to create project access token: %v", err)
+		}
+		return token.Token
+	}
+
+	tokenForCreate := createToken()
+	tokenForUpdate := createToken()
+
+	createConfig := fmt.Sprintf(`
+    resource "gitlab_project" "test" { 
+      name = "imported-%s"
+
+      import_url          = "%s"
+      import_url_username = "__token__"
+      import_url_password = "%s"
+
+      mirror = true
+    }
+  `, testImportedProjectName, testProject.HTTPURLToRepo, tokenForCreate)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: createConfig,
+			},
+			// Expect empty plan on re-apply
+			{
+				Config:   createConfig,
+				PlanOnly: true,
+			},
+			// Update the token and trigger a change
+			{
+				Config: fmt.Sprintf(`
+          resource "gitlab_project" "test" { 
+            name = "imported-%s"
+
+            import_url          = "%s"
+            import_url_username = "__token__"
+            import_url_password = "%s"
+
+            mirror = true
+          }
+        `, testImportedProjectName, testProject.HTTPURLToRepo, tokenForUpdate),
+			},
+			// Verify Import
+			{
+				ResourceName:            "gitlab_project.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"import_url_username", "import_url_password"},
 			},
 		},
 	})
@@ -1613,10 +1727,9 @@ func TestAccGitlabProject_ForkProjectAndConfigurePullMirror(t *testing.T) {
 			},
 			// Verify import
 			{
-				ResourceName:            "gitlab_project.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"import_url"},
+				ResourceName:      "gitlab_project.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -2605,4 +2718,77 @@ func testAccGitLabProjectCreateTemplateProject(t *testing.T, templateFileName st
 	templateProject := testutil.CreateProjectWithNamespace(t, templateGroup.ID)
 	testutil.CreateProjectFile(t, templateProject.ID, "meow", templateFileName, templateProject.DefaultBranch)
 	return templateProject
+}
+
+func Test_constructImportURL(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name              string
+		importURL         string
+		username          string
+		password          string
+		expectedImportURL string
+	}{
+		{
+			name:              "Import URL without credentials",
+			importURL:         "https://example.com/repo.git",
+			username:          "",
+			password:          "",
+			expectedImportURL: "https://example.com/repo.git",
+		},
+		{
+			name:              "Import URL with credentials",
+			importURL:         "https://example.com/repo.git",
+			username:          "user",
+			password:          "pass",
+			expectedImportURL: "https://user:pass@example.com/repo.git",
+		},
+		{
+			name:              "Import URL with credentials and without conflicts",
+			importURL:         "https://user:pass@example.com/repo.git",
+			username:          "user",
+			password:          "pass",
+			expectedImportURL: "https://user:pass@example.com/repo.git",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := constructImportUrl(tc.importURL, tc.username, tc.password)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if actual != tc.expectedImportURL {
+				t.Fatalf("Expected import URL %q, got %q", tc.expectedImportURL, actual)
+			}
+		})
+	}
+}
+
+func TestErrors_constructImportURL(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name      string
+		importURL string
+		username  string
+		password  string
+	}{
+		{
+			name:      "Import URL with credentials and with conflicts",
+			importURL: "https://user:pass@example.com/repo.git",
+			username:  "another-user",
+			password:  "pass",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := constructImportUrl(tc.importURL, tc.username, tc.password)
+			if err == nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }

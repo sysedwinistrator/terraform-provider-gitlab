@@ -43,3 +43,47 @@ resource "gitlab_project" "fork" {
   import_url             = gitlab_project.example.http_url_to_repo
   mirror                 = true
 }
+
+# Create a project by importing it from a public project
+resource "gitlab_project" "import_public" {
+  name       = "import-from-public-project"
+  import_url = "https://gitlab.example.com/repo.git"
+}
+
+# Create a project by importing it from a public project and setup the pull mirror
+resource "gitlab_project" "import_public_with_mirror" {
+  name       = "import-from-public-project"
+  import_url = "https://gitlab.example.com/repo.git"
+  mirror     = true
+}
+
+# Create a project by importing it from a private project
+resource "gitlab_project" "import_private" {
+  name                = "import-from-public-project"
+  import_url          = "https://gitlab.example.com/repo.git"
+  import_url_username = "user"
+  import_url_password = "pass"
+}
+
+# Create a project by importing it from a private project and setup the pull mirror
+resource "gitlab_project" "import_private_with_mirror" {
+  name                = "import-from-public-project"
+  import_url          = "https://gitlab.example.com/repo.git"
+  import_url_username = "user"
+  import_url_password = "pass"
+  mirror              = true
+}
+
+# Create a project by importing it from a private project and provide credentials in `import_url`
+# NOTE: only use this if you really must, use `import_url_username` and `import_url_password` whenever possible
+#       GitLab API will always return the `import_url` without credentials, therefore you must ignore the `import_url` for changes:
+resource "gitlab_project" "import_private" {
+  name       = "import-from-public-project"
+  import_url = "https://user:pass@gitlab.example.com/repo.git"
+
+  lifecycle {
+    ignore_changes = [
+      import_url
+    ]
+  }
+}

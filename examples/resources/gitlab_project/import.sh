@@ -2,3 +2,5 @@
 # `id` can be whatever the [get single project api][get_single_project] takes for
 # its `:id` value, so for example:
 terraform import gitlab_project.example richardc/example
+
+# NOTE: the `import_url_username` and `import_url_password` cannot be imported.
