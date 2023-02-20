@@ -81,7 +81,7 @@ func New(version string) func() *schema.Provider {
 				"early_auth_check": {
 					Type:        schema.TypeBool,
 					Optional:    true,
-					Description: "(Experimental) By default the provider does a dummy request to get the current user in order to verify that the provider configuration is correct and the GitLab API is reachable. Set this to `false` to skip this check. This may be useful if the GitLab instance does not yet exist and is created within the same terraform module. This is an experimental feature and may change in the future. Please make sure to always keep backups of your state.",
+					Description: "(Experimental) By default the provider does a dummy request to get the current user in order to verify that the provider configuration is correct and the GitLab API is reachable. Set this to `false` to skip this check. This may be useful if the GitLab instance does not yet exist and is created within the same terraform module. It may be sourced from the `GITLAB_EARLY_AUTH_CHECK`. This is an experimental feature and may change in the future. Please make sure to always keep backups of your state.",
 				},
 			},
 
@@ -115,7 +115,11 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		// It is the only way to differentiate between unset boolean attributes and attributes set to false
 		//nolint:staticcheck, tfproviderlint
 		if _, ok := d.GetOkExists("early_auth_check"); !ok {
-			config.EarlyAuthFail = true
+			earlyAuthCheck, err := utils.ParseConfigBoolFromEnv("GITLAB_EARLY_AUTH_CHECK", true)
+			if err != nil {
+				return nil, diag.FromErr(err)
+			}
+			config.EarlyAuthFail = earlyAuthCheck
 		}
 
 		// Configure our logger masking

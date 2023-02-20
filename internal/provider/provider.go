@@ -71,7 +71,7 @@ func (p *GitLabProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 				Optional:            true,
 			},
 			"early_auth_check": schema.BoolAttribute{
-				MarkdownDescription: "(Experimental) By default the provider does a dummy request to get the current user in order to verify that the provider configuration is correct and the GitLab API is reachable. Set this to `false` to skip this check. This may be useful if the GitLab instance does not yet exist and is created within the same terraform module. This is an experimental feature and may change in the future. Please make sure to always keep backups of your state.",
+				MarkdownDescription: "(Experimental) By default the provider does a dummy request to get the current user in order to verify that the provider configuration is correct and the GitLab API is reachable. Set this to `false` to skip this check. This may be useful if the GitLab instance does not yet exist and is created within the same terraform module. It may be sourced from the `GITLAB_EARLY_AUTH_CHECK`. This is an experimental feature and may change in the future. Please make sure to always keep backups of your state.",
 				Optional:            true,
 			},
 		},
@@ -140,9 +140,19 @@ func (p *GitLabProvider) Configure(ctx context.Context, req provider.ConfigureRe
 			path.Root("early_auth_check"),
 			"Unknown GitLab Early Auth Check Flag Value",
 			"The provider cannot create the GitLab API client as there is an unknown configuration value for the GitLab Early Auth Check flag. "+
-				"Either apply the source of the value first, set the token attribute value statically in the configuration.",
+				"Either apply the source of the value first, set the token attribute value statically in the configuration, or use the GITLAB_EARLY_AUTH_CHECK environment variable.",
 		)
 	}
+
+	earlyAuthCheck, err := utils.ParseConfigBoolFromEnv("GITLAB_EARLY_AUTH_CHECK", true)
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("early_auth_check"),
+			"Invalid GitLab Early Auth Check Flag Value from Env Variable",
+			err.Error(),
+		)
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -156,7 +166,7 @@ func (p *GitLabProvider) Configure(ctx context.Context, req provider.ConfigureRe
 		Insecure:      false,
 		ClientCert:    "",
 		ClientKey:     "",
-		EarlyAuthFail: true,
+		EarlyAuthFail: earlyAuthCheck,
 	}
 
 	// Evaluate Provider Attribute Default values now that they are all "known"
