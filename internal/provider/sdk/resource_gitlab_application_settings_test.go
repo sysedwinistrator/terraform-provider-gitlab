@@ -31,3 +31,48 @@ func TestAccGitlabApplicationSettings_basic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccGitlabApplicationSettings_testNullGitProtocol(t *testing.T) {
+	// lintignore:AT001
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		Steps: []resource.TestStep{
+			// Verify we can set the git access to non-nil (which will limit it to just SSH)
+			{
+				Config: `
+					resource "gitlab_application_settings" "this" {
+						enabled_git_access_protocol = "ssh"
+					}
+				`,
+				Check: resource.TestCheckResourceAttr("gitlab_application_settings.this", "enabled_git_access_protocol", "ssh"),
+			},
+			// Verify we can set to "nil" and this works properly.
+			{
+				Config: `
+					resource "gitlab_application_settings" "this" {
+						enabled_git_access_protocol = "nil"
+					}
+				`,
+				Check: resource.TestCheckResourceAttr("gitlab_application_settings.this", "enabled_git_access_protocol", ""),
+			},
+			// Verify we can re-set the git access to non-nil
+			{
+				Config: `
+					resource "gitlab_application_settings" "this" {
+						enabled_git_access_protocol = "ssh"
+					}
+				`,
+				Check: resource.TestCheckResourceAttr("gitlab_application_settings.this", "enabled_git_access_protocol", "ssh"),
+			},
+			// Verify can insensitivity of diffSuppress and the logic
+			{
+				Config: `
+					resource "gitlab_application_settings" "this" {
+						enabled_git_access_protocol = "NIL"
+					}
+				`,
+				Check: resource.TestCheckResourceAttr("gitlab_application_settings.this", "enabled_git_access_protocol", ""),
+			},
+		},
+	})
+}
