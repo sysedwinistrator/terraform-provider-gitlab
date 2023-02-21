@@ -1,6 +1,8 @@
 package sdk
 
 import (
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 )
@@ -566,6 +568,13 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
+			DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+				// if "nil" is passed in, it will set the value to "" in the backend.
+				if strings.ToLower(new) == "nil" {
+					new = ""
+				}
+				return old == new
+			},
 		},
 
 		"enforce_namespace_storage_limit": {

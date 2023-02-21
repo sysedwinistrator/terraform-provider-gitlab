@@ -2,8 +2,11 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"strings"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
@@ -42,6 +45,19 @@ func resourceGitlabApplicationSettingsSet(ctx context.Context, d *schema.Resourc
 
 	log.Printf("[DEBUG] update GitLab Application Settings")
 	options := gitlabApplicationSettingsToUpdateOptions(d)
+
+	// Since there is logic included in passing "nil" as value to the `enabled_git_access_protocol` and we
+	// want to support that, we have to override that request value and make a separate call with a new struct
+	if options.EnabledGitAccessProtocol != nil && strings.ToLower(*options.EnabledGitAccessProtocol) == "nil" {
+		err := updateNilGitAccessSetting(ctx, client)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// We need to set the value to explicit `nil` or the UpdateSettings call will error because it has `omitempty` on the struct
+		options.EnabledGitAccessProtocol = nil
+	}
+
 	if (gitlab.UpdateSettingsOptions{}) != *options {
 		_, _, err := client.Settings.UpdateSettings(options, gitlab.WithContext(ctx))
 		if err != nil {
@@ -75,4 +91,33 @@ func resourceGitlabApplicationSettingsRead(ctx context.Context, d *schema.Resour
 func resourceGitlabApplicationSettingsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[DEBUG] destroying the application settings does not yet do anything.")
 	return nil
+}
+
+// Overrides the `omitempty` on the go-gitlab struct and sets the `enabled_git_access_protocol` to nil
+func updateNilGitAccessSetting(ctx context.Context, client *gitlab.Client) error {
+	// Empty struct required for the method call.
+	options := &gitlab.UpdateSettingsOptions{}
+
+	// Call with an overwritten http body.
+	_, _, err := client.Settings.UpdateSettings(options, func(request *retryablehttp.Request) error {
+		optionsStruct := struct {
+			EnabledGitAccessProtocol *string `url:"enabled_git_access_protocol" json:"enabled_git_access_protocol"`
+		}{
+			EnabledGitAccessProtocol: nil,
+		}
+
+		body, err := json.Marshal(optionsStruct)
+		if err != nil {
+			return err
+		}
+
+		err = request.SetBody(body)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
