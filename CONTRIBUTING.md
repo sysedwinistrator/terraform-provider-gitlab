@@ -2,7 +2,7 @@
 
 Thank you for contributing to this provider! :tada: :heart: :trophy:
 
-Generally we accept any change that adds or changes a Terraform resource that is in line with the [GitLab API](https://docs.gitlab.com/ee/api/api_resources.html). 
+Generally we accept any change that adds or changes a Terraform resource that is in line with the [GitLab API](https://docs.gitlab.com/ee/api/api_resources.html).
 It is always best to [open an issue](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/new) before starting on a change.
 
 ## Getting Started
@@ -10,6 +10,14 @@ It is always best to [open an issue](https://gitlab.com/gitlab-org/terraform-pro
 Use HashiCorp's [Plugin Development](https://www.terraform.io/plugin) guide as a reference, especially the [Provider Design Principles](https://www.terraform.io/plugin/hashicorp-provider-design-principles).
 
 See the [Developing The Provider](#developing-the-provider) section below for specifics about this GitLab provider.
+
+The GitLab Terraform Provider is implemented partly with the [Terraform Plugin SDK](https://developer.hashicorp.com/terraform/plugin/sdkv2)
+and partly with the [Terraform Plugin Framework](https://developer.hashicorp.com/terraform/plugin/framework).
+The Terraform Plugin Framework is the new and shiny thing and is what we use to implement
+all new resources and data sources. We consider the SDK in this provider as _legacy_.
+
+The new resources and data sources are located in `internal/provider` and the _legacy_ ones
+in `internal/provider/sdk`.
 
 ## Before Committing
 
@@ -59,19 +67,19 @@ See the [importer state function docs](https://www.terraform.io/plugin/sdkv2/res
 
 We prefer to inline the test Terraform configuration in acceptance tests instead of returning the configuration from a dedicated function.
 
-We make exceptions for large resource configurations and in places where there is a lot of configuration reuse. 
+We make exceptions for large resource configurations and in places where there is a lot of configuration reuse.
 However, because we prefer to give each configuration a new function, there is very little reuse at present.
 
-| Pros                                                          | Cons                                                                                                                |
-|---------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| Easier to review when the configuration is near the related tests | Large configurations can be hard to read | 
+| Pros                                                              | Cons                                     |
+| ----------------------------------------------------------------- | ---------------------------------------- |
+| Easier to review when the configuration is near the related tests | Large configurations can be hard to read |
 
 **Desired:**
 
 ```go
 Steps: []resource.TestStep{
-	{
-		Config: fmt.Sprintf(`
+ {
+  Config: fmt.Sprintf(`
             resource "gitlab_instance_variable" "test" {
               key           = "key_%[1]s"
               value         = "value-%[1]s"
@@ -79,21 +87,21 @@ Steps: []resource.TestStep{
               masked        = false
             }
         `, rString),
-		Check: ... // snip
-	}
+  Check: ... // snip
+ }
 ```
 
 **Undesired:**
 
 ```go
 Steps: []resource.TestStep{
-	{
-		Config: testAccGitlabInstanceVariableConfig(rString),
-		Check: ... // snip
+ {
+  Config: testAccGitlabInstanceVariableConfig(rString),
+  Check: ... // snip
         }
 
 func testAccGitlabInstanceVariableConfig(rString string) string {
-	return fmt.Sprintf(`
+ return fmt.Sprintf(`
 resource "gitlab_instance_variable" "test" {
   key           = "key_%[1]s"
   value         = "value-%[1]s"
@@ -106,11 +114,11 @@ resource "gitlab_instance_variable" "test" {
 
 #### Add only resource or data source being tested to test configuration
 
-We prefer to add only the resource or data source being tested to the acceptance test configuration instead of 
+We prefer to add only the resource or data source being tested to the acceptance test configuration instead of
 adding all required resources to the test configuration.
 
 | Pros                                                        | Cons                                                                                 |
-|-------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Allows us to use CheckDestroy correctly (see #205 (closed)) | Integration of multiple resources not tested (low risk, because of clear interfaces) |
 | Less code to review                                         |                                                                                      |
 | Isolates issues                                             |                                                                                      |
@@ -157,14 +165,14 @@ The benefit of this approach is that the Terraform Acceptance Testing framework 
 
 The framework does the following:
 
-1. Re-runs `terraform plan` after each step and fails if the plan is not empty for the same config [(source)](https://www.terraform.io/plugin/sdkv2/best-practices/testing#built-in-patterns). 
+1. Re-runs `terraform plan` after each step and fails if the plan is not empty for the same config [(source)](https://www.terraform.io/plugin/sdkv2/best-practices/testing#built-in-patterns).
 2. Using `ImportStateVerify`, the framework ensures that the state is the same before and after importing,
-bypassing any DiffSuppressFunc or CustomizeDiff [(source)](https://github.com/hashicorp/terraform-plugin-sdk/blob/2c03a32a9d1be63a12eb18aaf12d2c5270c42346/helper/resource/testing.go#L482). This is equivalent to checking the state and upstream resource manually.
+   bypassing any DiffSuppressFunc or CustomizeDiff [(source)](https://github.com/hashicorp/terraform-plugin-sdk/blob/2c03a32a9d1be63a12eb18aaf12d2c5270c42346/helper/resource/testing.go#L482). This is equivalent to checking the state and upstream resource manually.
 
 | Pros                                                                                                                                                               | Cons                                             |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
 | No need to write a dedicated "CheckExists" function for each resource                                                                                              | Please [open an issue](/issues) if you find one! |
-| No need to write a dedicated "CheckAttributes" function for each resource (a common sore spot for copy-paste bugs and neglecting new attributes)                   |                                                  | 
+| No need to write a dedicated "CheckAttributes" function for each resource (a common sore spot for copy-paste bugs and neglecting new attributes)                   |                                                  |
 | Encourages pragmatic testing using the framework's builtin check functions where necessary, especially for checking computed attributes which we routinely neglect |                                                  |
 | Faster runtime (fewer API calls)                                                                                                                                   |                                                  |
 
@@ -172,29 +180,29 @@ bypassing any DiffSuppressFunc or CustomizeDiff [(source)](https://github.com/ha
 
 ```go
 {
-	Config: `<config>`,
-	// Check computed and default attributes.
-	Check: resource.TestCheckResourceAttrSet("gitlab_foo.test", "bar"),
+ Config: `<config>`,
+ // Check computed and default attributes.
+ Check: resource.TestCheckResourceAttrSet("gitlab_foo.test", "bar"),
 },
 {
-	ResourceName:      "gitlab_foo.test",
-	ImportState:       true,
-	ImportStateVerify: true,
+ ResourceName:      "gitlab_foo.test",
+ ImportState:       true,
+ ImportStateVerify: true,
 },
 ```
 
 **Undesired:**
 
-```go 
+```go
 {
-	Config: `<config>`,
-	Check: resource.ComposeTestCheckFunc(
-		testAccCheckGitlabFooExists("gitlab_foo.foo", &foo),
-		testAccCheckGitlabFooAttributes(&foo, &testAccGitlabFooExpectedAttributes{
-			Foo: "bar",
-			Baz:  123,
-		}),
-	),
+ Config: `<config>`,
+ Check: resource.ComposeTestCheckFunc(
+  testAccCheckGitlabFooExists("gitlab_foo.foo", &foo),
+  testAccCheckGitlabFooAttributes(&foo, &testAccGitlabFooExpectedAttributes{
+   Foo: "bar",
+   Baz:  123,
+  }),
+ ),
 },
 ```
 
@@ -206,19 +214,19 @@ Documentation in [/docs](/docs) is auto-generated by [terraform-plugin-docs](htt
 
 ### Set Up Your Local Environment
 
-You'll first need [Go](http://www.golang.org) installed on your machine (version 1.19+ is *required*).
+You'll first need [Go](http://www.golang.org) installed on your machine (version 1.19+ is _required_).
 
 1. Clone the git repository.
 
    ```sh
-   $ git clone git@github.com:gitlabhq/terraform-provider-gitlab
-   $ cd terraform-provider-gitlab
+   git clone git@github.com:gitlabhq/terraform-provider-gitlab
+   cd terraform-provider-gitlab
    ```
 
 2. Build the provider with `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
    ```sh
-   $ make build
+   make build
    ```
 
 To do some experiments you can use the setup in the `playground` folder.
@@ -263,7 +271,7 @@ terraform {
 
 ### M1/M2 Environments
 
-The apple silicon environments currently have an issue where the local GitLab container will not start to run tests. We recommend that you use GitPod for developing the 
+The apple silicon environments currently have an issue where the local GitLab container will not start to run tests. We recommend that you use GitPod for developing the
 provider until this issue is resolved. If you manage to get a mac environment working properly, please let us know by creating an issue!
 
 ### Use a Remote Environment via GitPod
@@ -306,35 +314,35 @@ Note that the you need an up-to-date version of GNU make and an up-to-date versi
 
 1. Start the Gitlab container. It will take about 5 minutes for the container to become healthy.
 
-  ```sh
-  $ make testacc-up
-  ```
+```sh
+make testacc-up
+```
 
 2. Run the acceptance tests. The full suite takes 10-20 minutes to run.
 
-  ```sh
-  $ make testacc
-  ```
+```sh
+make testacc
+```
 
 3. Stop the Gitlab container.
 
-  ```sh
-  $ make testacc-down
-  ```
+```sh
+make testacc-down
+```
 
 #### Option 2: Run tests against your own Gitlab instance
 
 If you have your own hosted Gitlab instance, you can run the tests against it directly.
 
 ```sh
-$ make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v4
+make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v4
 ```
 
 `GITLAB_TOKEN` must be a valid token for an account with admin privileges.
 
 #### Testing Tips
 
-* **Gitlab Community Edition and Gitlab Enterprise Edition:**
+- **Gitlab Community Edition and Gitlab Enterprise Edition:**
 
   This module supports both Gitlab CE and Gitlab EE. We run tests on Gitlab EE,
   but can't run them on pull requests from forks.
@@ -344,33 +352,33 @@ $ make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v
   for [gitlab_project_level_mr_approvals](internal/provider/resource_gitlab_project_level_mr_approvals_test.go)
   tests.
 
-* **Run EE tests:**
+- **Run EE tests:**
 
   If you have a `Gitlab-license.txt` you can run Gitlab EE, which will enable the full suite of tests:
 
   ```sh
-  $ make testacc-up SERVICE=gitlab-ee
+  make testacc-up SERVICE=gitlab-ee
   ```
 
-* **Run tests against specific GitLab version:**
+- **Run tests against specific GitLab version:**
 
   Specify the GitLab release in the `GITLAB_CE_VERSION` or `GITLAB_EE_VERSION`, e.g.:
 
   ```sh
-  $ make testacc-up GITLAB_CE_VERSION=15.0.0-ce.0
+  make testacc-up GITLAB_CE_VERSION=15.0.0-ce.0
   ```
 
-* **Run a single test:**
+- **Run a single test:**
 
   You can pass a pattern to the `RUN` variable to run a reduced number of tests. For example:
 
   ```sh
-  $ make testacc RUN=TestAccGitlabGroup
+  make testacc RUN=TestAccGitlabGroup
   ```
 
-   ...will run all tests for the `gitlab_group` resource.
+  ...will run all tests for the `gitlab_group` resource.
 
-* **Debug a test in an IDE:**
+- **Debug a test in an IDE:**
 
   First start the Gitlab container with `make testacc-up`.
   Then run the desired Go test as you would normally from your IDE, but configure your run configuration to set these environment variables:
@@ -381,36 +389,35 @@ $ make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v
   TF_ACC=1
   ```
 
-* **Useful HashiCorp documentation:**
+- **Useful HashiCorp documentation:**
 
   Refer to [HashiCorp's testing guide](https://www.terraform.io/docs/extend/testing/index.html)
   and [HashiCorp's testing best practices](https://www.terraform.io/docs/extend/best-practices/testing.html).
 
 ## Release Workflow
 
-After the migration of the GitLab Terraform Provider to GitLab, 
+After the migration of the GitLab Terraform Provider to GitLab,
 [we've decided](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/1331) to
 use the same release cadence as [GitLab](https://about.gitlab.com/releases/).
 
 Which means that:
 
-* Every 22nd of the month a new minor (`X.Y+1`) release is published.
-* Security and Bug Fix releases (`X.Y.Z+1`) will be publish on demand.
-* Once a year on 22nd of May a new major (`X+1`) release is published.
+- Every 22nd of the month a new minor (`X.Y+1`) release is published.
+- Security and Bug Fix releases (`X.Y.Z+1`) will be publish on demand.
+- Once a year on 22nd of May a new major (`X+1`) release is published.
 
-Note, that the compatibility between a provider release and GitLab itself **cannot** be inferred from the 
-release version. That is, a release `15.7` of the provider might be compatible with `15.4`, `15.5`, `15.6` 
+Note, that the compatibility between a provider release and GitLab itself **cannot** be inferred from the
+release version. That is, a release `15.7` of the provider might be compatible with `15.4`, `15.5`, `15.6`
 and even future GitLab releases.
 
 This workflow has been introduced with the GitLab %15.7 Milestone in December 2022.
 
-### Release Scoping 
+### Release Scoping
 
 The actions in the bullet points below allow us to plan the scope of releases and track changes over time.
 
-* Issues and Merge Requests are assigned with a Milestone that they were implemented in. 
-* Every [Release](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/releases) has a Milestone assigned.
-
+- Issues and Merge Requests are assigned with a Milestone that they were implemented in.
+- Every [Release](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/releases) has a Milestone assigned.
 
 ## Release Setup
 
@@ -418,15 +425,15 @@ This chapter describes the setup we have in place to successfully release a Terr
 
 ### Rational
 
-The "normal" process to release and publish a Terraform Provider to the Terraform Registry is documented by HashiCorp [here](https://developer.hashicorp.com/terraform/tutorials/providers/provider-release-publish). 
+The "normal" process to release and publish a Terraform Provider to the Terraform Registry is documented by HashiCorp [here](https://developer.hashicorp.com/terraform/tutorials/providers/provider-release-publish).
 The problem we are facing is that publishing to the Terraform Registry is _only_ possible from GitHub, because the Terraform Registry fetches the release assets from a GitHub release and partly from the source code (the documentation).
 
 The GitLab Terraform Provider is naturally hosted on GitLab.com, thus we are not able to use the "normal" process from HashiCorp, but a little additional workaround.
 
 ### Setup
 
-As outlined in the [Rational](#Retional) only GitHub is supported to publish to the Terraform Registry. 
-Given that limitation, we still use the old GitHub repository at https://gitlab.com/gitlab-org/terraform-provider-gitlab as a proxy to release the provider. 
+As outlined in the [Rational](#Retional) only GitHub is supported to publish to the Terraform Registry.
+Given that limitation, we still use the old GitHub repository at <https://gitlab.com/gitlab-org/terraform-provider-gitlab> as a proxy to release the provider.
 The setup looks like this:
 
 <div class="center">
@@ -437,27 +444,28 @@ sequenceDiagram
     GitHub->>Registry: webhook to notify about new release
     Registry-->>GitHub: fetch release and docs and make available
 ```
+
 </div>
 
 #### GitLab repository
 
-The GitLab repository is a complete Terraform Provider source code repository, including the provider code itself, 
-acceptance tests and a GitLab pipeline configuration to lint, build, test and release the provider. 
-During a provider release not only a release in the GitLab project is created, but it's also pushed via REST API to GitHub. 
+The GitLab repository is a complete Terraform Provider source code repository, including the provider code itself,
+acceptance tests and a GitLab pipeline configuration to lint, build, test and release the provider.
+During a provider release not only a release in the GitLab project is created, but it's also pushed via REST API to GitHub.
 In addition, the documentation is committed and pushed to the GitHub repository.
-The GitLab pipeline is authenticated using the `GITHUB_TOKEN_FOR_SYNC` environment variable. 
-It contains a [fine-grainted personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token) 
+The GitLab pipeline is authenticated using the `GITHUB_TOKEN_FOR_SYNC` environment variable.
+It contains a [fine-grainted personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token)
 which only has `Contents` `read-write` permissions to the GitHub repository.
 
 #### GitHub repository
 
-The GitHub repository only contains a [`README.md`](https://gitlab.com/gitlab-org/terraform-provider-gitlab/blob/main/README.md) 
-file with an information that the actual provider is located on GitLab, a GitHub Action workflow to lock down the repository, 
-and the committed release documentation. As described in the [GitLab repository](#GitLab-repository) section the GitHub repository 
+The GitHub repository only contains a [`README.md`](https://gitlab.com/gitlab-org/terraform-provider-gitlab/blob/main/README.md)
+file with an information that the actual provider is located on GitLab, a GitHub Action workflow to lock down the repository,
+and the committed release documentation. As described in the [GitLab repository](#gitlab-repository) section the GitHub repository
 also contains proxy releases and has a webhook installed to notify the Terraform Registry about new releases.
 
 ##### GitHub repository lock down
 
-The GitHub repository is locked down which means that generally every option to contribute to it is disabled. 
-Unfortunately, Pull Requests cannot be disabled so that we have to use the [`repo-lockdown`](https://github.com/marketplace/actions/repo-lockdown) action. 
+The GitHub repository is locked down which means that generally every option to contribute to it is disabled.
+Unfortunately, Pull Requests cannot be disabled so that we have to use the [`repo-lockdown`](https://github.com/marketplace/actions/repo-lockdown) action.
 It'll auto-close every PR with a comment that we only accept contributions in our GitLab.com repository.
