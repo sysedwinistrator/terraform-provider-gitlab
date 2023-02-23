@@ -81,6 +81,45 @@ func TestAccGitlabPersonalAccessToken_basic(t *testing.T) {
 	})
 }
 
+func TestAccGitlabPersonalAccessToken_admin_mode(t *testing.T) {
+	testutil.RunIfAtLeast(t, "15.9")
+	user := testutil.CreateUsers(t, 1)[0]
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabPersonalAccessTokenDestroy,
+		Steps: []resource.TestStep{
+			// Create access token with admin_mode scope.
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_personal_access_token" "foo" {
+					user_id = %d
+					name    = "foo"
+					scopes  = ["admin_mode"]
+				}
+				`, user.ID),
+				// Check computed and default attributes.
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("gitlab_personal_access_token.foo", "active", "true"),
+					resource.TestCheckResourceAttr("gitlab_personal_access_token.foo", "revoked", "false"),
+					resource.TestCheckResourceAttrSet("gitlab_personal_access_token.foo", "token"),
+					resource.TestCheckResourceAttrSet("gitlab_personal_access_token.foo", "created_at"),
+					resource.TestCheckResourceAttr("gitlab_personal_access_token.foo", "user_id", fmt.Sprintf("%d", user.ID)),
+					resource.TestCheckNoResourceAttr("gitlab_personal_access_token.foo", "expires_at"),
+				),
+			},
+			// Verify upstream resource with an import.
+			{
+				ResourceName:      "gitlab_personal_access_token.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The token is only known during creating. We explicitly mention this limitation in the docs.
+				ImportStateVerifyIgnore: []string{"token"},
+			},
+		},
+	})
+}
+
 func testAccCheckGitlabPersonalAccessTokenDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "gitlab_personal_access_token" {

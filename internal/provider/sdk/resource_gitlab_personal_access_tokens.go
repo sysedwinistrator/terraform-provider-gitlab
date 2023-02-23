@@ -24,6 +24,7 @@ var validPersonalAccessTokenScopes = []string{
 	"read_registry",
 	"write_registry",
 	"sudo",
+	"admin_mode",
 }
 
 var _ = registerResource("gitlab_personal_access_token", func() *schema.Resource {
