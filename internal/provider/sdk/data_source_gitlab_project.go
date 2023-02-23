@@ -126,6 +126,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Description: "Registration token to use during runner setup.",
 				Type:        schema.TypeString,
 				Computed:    true,
+				Sensitive:   true,
 			},
 			"archived": {
 				Description: "Whether the project is in read-only mode (archived).",

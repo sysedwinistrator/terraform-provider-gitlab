@@ -79,7 +79,7 @@ data "gitlab_project" "example" {
 - `requirements_access_level` (String) Set the requirements access level. Valid values are `disabled`, `private`, `enabled`.
 - `resolve_outdated_diff_discussions` (Boolean) Automatically resolve merge request diffs discussions on lines changed with a push.
 - `restrict_user_defined_variables` (Boolean) Allow only users with the Maintainer role to pass user-defined variables when triggering a pipeline.
-- `runners_token` (String) Registration token to use during runner setup.
+- `runners_token` (String, Sensitive) Registration token to use during runner setup.
 - `security_and_compliance_access_level` (String) Set the security and compliance access level. Valid values are `disabled`, `private`, `enabled`.
 - `snippets_access_level` (String) Set the snippets access level. Valid values are `disabled`, `private`, `enabled`.
 - `snippets_enabled` (Boolean) Enable snippets for the project.
