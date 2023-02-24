@@ -204,6 +204,10 @@ func (p *GitLabProvider) Configure(ctx context.Context, req provider.ConfigureRe
 		return
 	}
 
+	// NOTE: there is no helper function for this available yet in the terraform-plugin-framework,
+	//       see https://github.com/hashicorp/terraform-plugin-framework/issues/280
+	gitlabClient.UserAgent = fmt.Sprintf("Terraform/%s (+https://www.terraform.io) Terraform-Plugin-Framework terraform-provider-gitlab/%s", req.TerraformVersion, p.version)
+
 	// Attach the client to the response so that it will be available for the Data Sources and Resources
 	resp.DataSourceData = gitlabClient
 	resp.ResourceData = gitlabClient
