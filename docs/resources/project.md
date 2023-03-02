@@ -218,6 +218,7 @@ This attribute is only used during resource creation, thus changes are suppresse
 - `template_project_id` (Number) When used with use_custom_template, project ID of a custom project template. This is preferable to using template_name since template_name may be ambiguous (enterprise edition). This option is mutually exclusive with `template_name`. See `gitlab_group_project_file_template` to set a project as a template project. If a project has not been set as a template, using it here will result in an error.
 - `topics` (Set of String) The list of topics for the project.
 - `use_custom_template` (Boolean) Use either custom instance or group (with group_with_project_templates_id) project template (enterprise edition).
+		~> When using a custom template, [Group Tokens won't work](https://docs.gitlab.com/15.7/ee/user/project/settings/import_export_troubleshooting.html#import-using-the-rest-api-fails-when-using-a-group-access-token). You must use a real user's Personal Access Token.
 - `visibility_level` (String) Set to `public` to create a public project.
 - `wiki_access_level` (String) Set the wiki access level. Valid values are `disabled`, `private`, `enabled`.
 - `wiki_enabled` (Boolean) Enable wiki for the project.

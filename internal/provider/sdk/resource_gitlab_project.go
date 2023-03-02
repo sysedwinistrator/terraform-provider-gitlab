@@ -353,9 +353,10 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		ForceNew:      true,
 	},
 	"use_custom_template": {
-		Description: "Use either custom instance or group (with group_with_project_templates_id) project template (enterprise edition).",
-		Type:        schema.TypeBool,
-		Optional:    true,
+		Description: `Use either custom instance or group (with group_with_project_templates_id) project template (enterprise edition).
+		~> When using a custom template, [Group Tokens won't work](https://docs.gitlab.com/15.7/ee/user/project/settings/import_export_troubleshooting.html#import-using-the-rest-api-fails-when-using-a-group-access-token). You must use a real user's Personal Access Token.`,
+		Type:     schema.TypeBool,
+		Optional: true,
 	},
 	"group_with_project_templates_id": {
 		Description: "For group-level custom templates, specifies ID of group from which all the custom project templates are sourced. Leave empty for instance-level templates. Requires use_custom_template to be true (enterprise edition).",
