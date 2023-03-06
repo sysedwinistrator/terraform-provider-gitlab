@@ -1,7 +1,7 @@
 image: gitpod/workspace-go
 tasks:
-# Retrieve our go dependencies. Also inject several vscode settings that are specifically helpful to a GitPod environment and not needed when opening the repo locally.
-# The reason the settings are copied to a temp file and then moved is that applying the jq string directly to settings.json results in a blank file.
+  # Retrieve our go dependencies. Also inject several vscode settings that are specifically helpful to a GitPod environment and not needed when opening the repo locally.
+  # The reason the settings are copied to a temp file and then moved is that applying the jq string directly to settings.json results in a blank file.
   - init: |
       go get
   - name: Start acceptance Test Environment
@@ -9,18 +9,18 @@ tasks:
     openMode: split-right
   - name: Install latest terraform
     openMode: tab-after
-    command: | 
+    command: |
       sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
       wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
       echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
       sudo apt update
       sudo apt-get install terraform
-# Port 8080 is used for acceptance testing, and we don't need to open it when the container comes up
+# Port 8085 is used for acceptance testing, and we don't need to open it when the container comes up
 ports:
-  - port: 8080
+  - port: 8085
     onOpen: ignore
 vscode:
-    extensions:
-        - golang.Go
-        - hashicorp.terraform
-        - GitLab.gitlab-workflow
+  extensions:
+    - golang.Go
+    - hashicorp.terraform
+    - GitLab.gitlab-workflow

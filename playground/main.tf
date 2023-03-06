@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "gitlab" {
-  base_url = "http://localhost:8080"
+  base_url = "http://localhost:8085"
   token    = "glpat-ACCTEST1234567890123"
 }
 

@@ -385,7 +385,7 @@ make testacc GITLAB_TOKEN=example123 GITLAB_BASE_URL=https://example.com/api/v4
 
   ```
   GITLAB_TOKEN=glpat-ACCTEST1234567890123
-  GITLAB_BASE_URL=http://127.0.0.1:8080/api/v4
+  GITLAB_BASE_URL=http://127.0.0.1:8085/api/v4
   TF_ACC=1
   ```
 

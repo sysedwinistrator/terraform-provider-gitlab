@@ -169,7 +169,7 @@ go:test:
     DOCKER_TLS_VERIFY: 1
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-    GITLAB_BASE_URL: http://docker:8080/api/v4
+    GITLAB_BASE_URL: http://docker:8085/api/v4
     # Debug logging of the test suite
     TF_LOG_PATH: "$CI_PROJECT_DIR/$GITLAB_EDITION-$GITLAB_VERSION-acctest.jsonl"
     # NOTE: the test command will complain about that `JSON` value with:
