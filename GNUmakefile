@@ -63,7 +63,7 @@ apiunused: tool-apiunused ## Run an analysis tool to output unused parts of the 
 
 SERVICE ?= gitlab-ce
 GITLAB_TOKEN ?= glpat-ACCTEST1234567890123
-GITLAB_BASE_URL ?= http://127.0.0.1:8080/api/v4
+GITLAB_BASE_URL ?= http://127.0.0.1:8085/api/v4
 GITLAB_EARLY_AUTH_CHECK ?= false
 
 testacc-up: | certs ## Launch a GitLab instance.
