@@ -297,6 +297,37 @@ func resourceGitlabGroupCreate(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 
+	// Wait for the Group to return properly before we update it
+	// Groups are created asyncronously, so we want to ensure the create operation
+	// completely finishes before we act on the group, or we can get an error.
+	// see: https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/692
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"Creating"},
+		Target:  []string{"Created"},
+		Refresh: func() (interface{}, string, error) {
+			out, _, err := client.Groups.GetGroup(group.ID, nil, gitlab.WithContext(ctx))
+			if err != nil {
+				if api.Is404(err) {
+					return out, "Creating", nil
+				}
+				log.Printf("[ERROR] Received error: %#v", err)
+				return out, "Error", err
+			}
+			return out, "Created", nil
+		},
+
+		Timeout:    d.Timeout(schema.TimeoutCreate),
+		MinTimeout: 3 * time.Second,
+		Delay:      5 * time.Second,
+	}
+
+	_, err = stateConf.WaitForStateContext(ctx)
+	if err != nil {
+		return diag.Errorf("error waiting for group (%s) to create: %s", d.Id(), err)
+	}
+
+	// Our group has been created, we can now update it.
+
 	d.SetId(fmt.Sprintf("%d", group.ID))
 
 	var updateOptions gitlab.UpdateGroupOptions
