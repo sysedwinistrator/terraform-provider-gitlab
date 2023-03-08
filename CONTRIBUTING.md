@@ -469,3 +469,19 @@ also contains proxy releases and has a webhook installed to notify the Terraform
 The GitHub repository is locked down which means that generally every option to contribute to it is disabled.
 Unfortunately, Pull Requests cannot be disabled so that we have to use the [`repo-lockdown`](https://github.com/marketplace/actions/repo-lockdown) action.
 It'll auto-close every PR with a comment that we only accept contributions in our GitLab.com repository.
+
+## GitLab Ultimate License for testing
+
+The GitLab pipeline tests against an ephemeral GitLab Enterprise omnibus instance 
+which requires an Ultimate license.
+This license must be renewed every three months using an Access Request.
+
+### Renew process
+
+This process can only be followed by GitLab Team Members.
+
+1. Create a new related issue from this AR: https://gitlab.com/gitlab-com/team-member-epics/access-requests/-/issues/18758 (internal).
+1. Choose the `GitLab_Team_Member_License_request` template.
+1. Make sure to check `Ultimate` with a seats of at least `100`.
+1. Follow the template instructions.
+1. Update the license that is sent to you in the `GITLAB_LICENSE` CI/CD variable of this project.
