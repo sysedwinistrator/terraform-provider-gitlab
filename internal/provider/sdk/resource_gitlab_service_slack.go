@@ -32,7 +32,7 @@ var _ = registerResource("gitlab_service_slack", func() *schema.Resource {
 				ForceNew:    true,
 			},
 			"webhook": {
-				Description: "Webhook URL (ex.: https://hooks.slack.com/services/...)",
+				Description: "Webhook URL (Example, https://hooks.slack.com/services/...). This value cannot be imported.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
@@ -274,8 +274,12 @@ func resourceGitlabServiceSlackRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
+	// The webhook is explicitly not set anymore, due to being removed from the API. It will now
+	// use whatever is in the configuration to determine the value.
+	// See https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/1421 for more info.
+	//d.Set("webhook", service.Properties.WebHook)
+
 	d.Set("project", project)
-	d.Set("webhook", service.Properties.WebHook)
 	d.Set("username", service.Properties.Username)
 	d.Set("notify_only_broken_pipelines", bool(service.Properties.NotifyOnlyBrokenPipelines))
 	d.Set("notify_only_default_branch", bool(service.Properties.NotifyOnlyDefaultBranch))
