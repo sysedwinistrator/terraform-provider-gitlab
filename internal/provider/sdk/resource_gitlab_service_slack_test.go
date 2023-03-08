@@ -41,6 +41,7 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"notify_only_broken_pipelines",
 					"notify_only_default_branch",
+					"webhook",
 				},
 			},
 			// Update slack service with more settings
@@ -67,6 +68,7 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"notify_only_broken_pipelines",
 					"notify_only_default_branch",
+					"webhook",
 				},
 			},
 			// Update the slack service
@@ -88,6 +90,7 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"notify_only_broken_pipelines",
 					"notify_only_default_branch",
+					"webhook",
 				},
 			},
 			// Update the slack service to get back to previous settings
@@ -109,6 +112,7 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"notify_only_broken_pipelines",
 					"notify_only_default_branch",
+					"webhook",
 				},
 			},
 			// Update the slack service to get back to minimal settings
@@ -129,6 +133,7 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"notify_only_broken_pipelines",
 					"notify_only_default_branch",
+					"webhook",
 				},
 			},
 		},

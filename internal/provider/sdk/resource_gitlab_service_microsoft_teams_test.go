@@ -85,6 +85,9 @@ func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
 				ResourceName:      teamsResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"webhook",
+				},
 			},
 		},
 	})

@@ -47,7 +47,7 @@ var _ = registerResource("gitlab_service_microsoft_teams", func() *schema.Resour
 				Computed:    true,
 			},
 			"webhook": {
-				Description:  "The Microsoft Teams webhook. For example, https://outlook.office.com/webhook/...",
+				Description:  "The Microsoft Teams webhook (Example, https://outlook.office.com/webhook/...). This value cannot be imported.",
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateURLFunc,
@@ -156,11 +156,15 @@ func resourceGitlabServiceMicrosoftTeamsRead(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
+	// The webhook is explicitly not set anymore, due to being removed from the API. It will now
+	// use whatever is in the configuration to determine the value.
+	// See https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/issues/1421 for more info.
+	//d.Set("webhook", teamsService.Properties.WebHook)
+
 	d.Set("project", project)
 	d.Set("created_at", teamsService.CreatedAt.String())
 	d.Set("updated_at", teamsService.UpdatedAt.String())
 	d.Set("active", teamsService.Active)
-	d.Set("webhook", teamsService.Properties.WebHook)
 	d.Set("notify_only_broken_pipelines", teamsService.Properties.NotifyOnlyBrokenPipelines)
 	d.Set("branches_to_be_notified", teamsService.Properties.BranchesToBeNotified)
 	d.Set("push_events", teamsService.PushEvents)
