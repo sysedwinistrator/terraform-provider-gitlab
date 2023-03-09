@@ -5,6 +5,7 @@ package sdk
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -220,6 +221,45 @@ func TestAccGitlabRepositoryFile_createOnNewBranch(t *testing.T) {
 						Content:  "bWVvdyBtZW93IG1lb3c=",
 					}),
 				),
+			},
+		},
+	})
+}
+
+// This test ensures that the filePath doesn't start with / or ./
+// see https://gitlab.com/gitlab-org/gitlab/-/issues/363112 for more info.
+func TestAccGitlabRepositoryFile_validationFuncOnfilePath(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabRepositoryFileDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_repository_file" "this" {
+					project = %d
+					file_path = "./meow.txt"
+					branch = "main"
+					content = "bWVvdyBtZW93IG1lb3c="
+					author_email = "meow@catnip.com"
+					author_name = "Meow Meowington"
+					commit_message = "feature: add launch codes"
+				  }`, testProject.ID),
+				ExpectError: regexp.MustCompile("`file_path` cannot start with a `/` or `./`. See https://gitlab.com/gitlab-org/gitlab/-/issues/363112 for more information."),
+			},
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_repository_file" "this" {
+					project = %d
+					file_path = "/meow.txt"
+					branch = "main"
+					content = "bWVvdyBtZW93IG1lb3c="
+					author_email = "meow@catnip.com"
+					author_name = "Meow Meowington"
+					commit_message = "feature: add launch codes"
+				  }`, testProject.ID),
+				ExpectError: regexp.MustCompile("`file_path` cannot start with a `/` or `./`. See https://gitlab.com/gitlab-org/gitlab/-/issues/363112 for more information."),
 			},
 		},
 	})
