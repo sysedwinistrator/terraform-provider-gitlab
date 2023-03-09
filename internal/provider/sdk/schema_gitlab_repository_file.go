@@ -1,7 +1,10 @@
 package sdk
 
 import (
+	"regexp"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -14,10 +17,12 @@ func gitlabRepositoryFileGetSchema() map[string]*schema.Schema {
 			ForceNew:    true,
 		},
 		"file_path": {
-			Description: "The full path of the file. It must be relative to the root of the project without a leading slash `/`.",
+			Description: "The full path of the file. It must be relative to the root of the project without a leading slash `/` or `./`.",
 			Type:        schema.TypeString,
-			Required:    true,
-			ForceNew:    true,
+			// The regex here is checking for "/" OR "./", but looks funny due to needed escaping since both "/" and "." are regex special characters.
+			ValidateDiagFunc: validation.ToDiagFunc(validation.StringDoesNotMatch(regexp.MustCompile(`^\/|^\.\/`), "`file_path` cannot start with a `/` or `./`. See https://gitlab.com/gitlab-org/gitlab/-/issues/363112 for more information.")),
+			Required:         true,
+			ForceNew:         true,
 		},
 		"content": {
 			Description: "File content. If the content is not yet base64 encoded, it will be encoded automatically. No other encoding is currently supported, because of a [GitLab API bug](https://gitlab.com/gitlab-org/gitlab/-/issues/342430).",
