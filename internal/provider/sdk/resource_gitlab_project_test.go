@@ -2206,6 +2206,11 @@ resource "gitlab_project" "foo" {
   squash_commit_template = "hello squash"
   merge_commit_template = "hello merge"
   ci_default_git_depth = 42
+  releases_access_level = "enabled"
+  environments_access_level = "enabled"
+  feature_flags_access_level = "enabled"
+  infrastructure_access_level = "enabled"
+  monitor_access_level = "enabled"
 }
 	`, rInt, rInt, defaultBranchStatement)
 }
@@ -2307,6 +2312,11 @@ resource "gitlab_project" "foo" {
   squash_commit_template = "goodby squash"
   merge_commit_template = "goodby merge"
   ci_default_git_depth = 84
+  releases_access_level = "disabled"
+  environments_access_level = "disabled"
+  feature_flags_access_level = "disabled"
+  infrastructure_access_level = "disabled"
+  monitor_access_level = "disabled"
 }
 	`, rInt, rInt)
 }
@@ -2449,6 +2459,11 @@ resource "gitlab_project" "foo" {
   wiki_access_level = "enabled"
   squash_commit_template = "hello squash"
   merge_commit_template = "hello merge"
+  releases_access_level = "enabled"
+  environments_access_level = "enabled"
+  feature_flags_access_level = "enabled"
+  infrastructure_access_level = "enabled"
+  monitor_access_level = "enabled"
 
   # So that acceptance tests can be run in a gitlab organization with no billing.
   visibility_level = "public"
@@ -2631,6 +2646,11 @@ resource "gitlab_project" "foo" {
   squash_commit_template = "hello squash"
   merge_commit_template = "hello merge"
   ci_default_git_depth = 42
+  releases_access_level = "enabled"
+  environments_access_level = "enabled"
+  feature_flags_access_level = "enabled"
+  infrastructure_access_level = "enabled"
+  monitor_access_level = "enabled"
 
   # EE features
   approvals_before_merge = 2

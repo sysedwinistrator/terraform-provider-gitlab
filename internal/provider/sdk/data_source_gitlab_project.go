@@ -386,6 +386,31 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 					},
 				},
 			},
+			"releases_access_level": {
+				Description: fmt.Sprintf("Set the releases access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"environments_access_level": {
+				Description: fmt.Sprintf("Set the environments access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"feature_flags_access_level": {
+				Description: fmt.Sprintf("Set the feature flags access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"infrastructure_access_level": {
+				Description: fmt.Sprintf("Set the infrastructure access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"monitor_access_level": {
+				Description: fmt.Sprintf("Set the monitor access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 		},
 	}
 })
@@ -470,6 +495,11 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 	d.Set("ci_config_path", found.CIConfigPath)
 	d.Set("ci_separated_caches", found.CISeperateCache)
 	d.Set("import_url", found.ImportURL)
+	d.Set("releases_access_level", string(found.ReleasesAccessLevel))
+	d.Set("environments_access_level", string(found.EnvironmentsAccessLevel))
+	d.Set("feature_flags_access_level", string(found.FeatureFlagsAccessLevel))
+	d.Set("infrastructure_access_level", string(found.InfrastructureAccessLevel))
+	d.Set("monitor_access_level", string(found.MonitorAccessLevel))
 
 	log.Printf("[DEBUG] Reading Gitlab project %q push rules", d.Id())
 
