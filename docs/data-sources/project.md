@@ -53,10 +53,13 @@ data "gitlab_project" "example" {
 - `default_branch` (String) The default branch for the project.
 - `description` (String) A description of the project.
 - `emails_disabled` (Boolean) Disable email notifications.
+- `environments_access_level` (String) Set the environments access level. Valid values are `disabled`, `private`, `enabled`.
 - `external_authorization_classification_label` (String) The classification label for the project.
+- `feature_flags_access_level` (String) Set the feature flags access level. Valid values are `disabled`, `private`, `enabled`.
 - `forking_access_level` (String) Set the forking access level. Valid values are `disabled`, `private`, `enabled`.
 - `http_url_to_repo` (String) URL that can be provided to `git clone` to clone the
 - `import_url` (String) URL the project was imported from.
+- `infrastructure_access_level` (String) Set the infrastructure access level. Valid values are `disabled`, `private`, `enabled`.
 - `issues_access_level` (String) Set the issues access level. Valid values are `disabled`, `private`, `enabled`.
 - `issues_enabled` (Boolean) Enable issue tracking for the project.
 - `lfs_enabled` (Boolean) Enable LFS for the project.
@@ -65,6 +68,7 @@ data "gitlab_project" "example" {
 - `merge_requests_access_level` (String) Set the merge requests access level. Valid values are `disabled`, `private`, `enabled`.
 - `merge_requests_enabled` (Boolean) Enable merge requests for the project.
 - `merge_trains_enabled` (Boolean) Enable or disable merge trains.
+- `monitor_access_level` (String) Set the monitor access level. Valid values are `disabled`, `private`, `enabled`.
 - `name` (String) The name of the project.
 - `namespace_id` (Number) The namespace (group or user) of the project. Defaults to your user.
 - `operations_access_level` (String) Set the operations access level. Valid values are `disabled`, `private`, `enabled`.
@@ -72,6 +76,7 @@ data "gitlab_project" "example" {
 - `pipelines_enabled` (Boolean) Enable pipelines for the project.
 - `printing_merge_request_link_enabled` (Boolean) Show link to create/view merge request when pushing from the command line
 - `push_rules` (List of Object) Push rules for the project. Push rules are only available on Enterprise plans and if the authenticated has permissions to read them. (see [below for nested schema](#nestedatt--push_rules))
+- `releases_access_level` (String) Set the releases access level. Valid values are `disabled`, `private`, `enabled`.
 - `remove_source_branch_after_merge` (Boolean) Enable `Delete source branch` option by default for all new merge requests
 - `repository_access_level` (String) Set the repository access level. Valid values are `disabled`, `private`, `enabled`.
 - `repository_storage` (String) Which storage shard the repository is on. (administrator only)

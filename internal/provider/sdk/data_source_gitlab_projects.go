@@ -198,6 +198,11 @@ func flattenProjects(projects []*gitlab.Project) (values []map[string]interface{
 				"squash_commit_template":                           project.SquashCommitTemplate,
 				"merge_commit_template":                            project.MergeCommitTemplate,
 				"ci_default_git_depth":                             project.CIDefaultGitDepth,
+				"releases_access_level":                            string(project.ReleasesAccessLevel),
+				"environments_access_level":                        string(project.EnvironmentsAccessLevel),
+				"feature_flags_access_level":                       string(project.FeatureFlagsAccessLevel),
+				"infrastructure_access_level":                      string(project.InfrastructureAccessLevel),
+				"monitor_access_level":                             string(project.MonitorAccessLevel),
 			}
 			values = append(values, v)
 		}
@@ -979,6 +984,31 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 							Description: "Default number of revisions for shallow cloning.",
 							Type:        schema.TypeInt,
 							Optional:    true,
+							Computed:    true,
+						},
+						"releases_access_level": {
+							Description: fmt.Sprintf("Set the releases access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"environments_access_level": {
+							Description: fmt.Sprintf("Set the environments access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"feature_flags_access_level": {
+							Description: fmt.Sprintf("Set the feature flags access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"infrastructure_access_level": {
+							Description: fmt.Sprintf("Set the infrastructure access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"monitor_access_level": {
+							Description: fmt.Sprintf("Set the monitor access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+							Type:        schema.TypeString,
 							Computed:    true,
 						},
 					},

@@ -648,6 +648,41 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:     true,
 		RequiredWith: []string{"forked_from_project_id"},
 	},
+	"releases_access_level": {
+		Description:      fmt.Sprintf("Set the releases access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+		Type:             schema.TypeString,
+		Optional:         true,
+		Computed:         true,
+		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
+	},
+	"environments_access_level": {
+		Description:      fmt.Sprintf("Set the environments access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+		Type:             schema.TypeString,
+		Optional:         true,
+		Computed:         true,
+		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
+	},
+	"feature_flags_access_level": {
+		Description:      fmt.Sprintf("Set the feature flags access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+		Type:             schema.TypeString,
+		Optional:         true,
+		Computed:         true,
+		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
+	},
+	"infrastructure_access_level": {
+		Description:      fmt.Sprintf("Set the infrastructure access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+		Type:             schema.TypeString,
+		Optional:         true,
+		Computed:         true,
+		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
+	},
+	"monitor_access_level": {
+		Description:      fmt.Sprintf("Set the monitor access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
+		Type:             schema.TypeString,
+		Optional:         true,
+		Computed:         true,
+		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
+	},
 }
 
 var validContainerExpirationPolicyAttributesCadenceValues = []string{
@@ -850,6 +885,12 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	}
 
 	d.Set("mr_default_target_self", project.MergeRequestDefaultTargetSelf)
+
+	d.Set("releases_access_level", string(project.ReleasesAccessLevel))
+	d.Set("environments_access_level", string(project.EnvironmentsAccessLevel))
+	d.Set("feature_flags_access_level", string(project.FeatureFlagsAccessLevel))
+	d.Set("infrastructure_access_level", string(project.InfrastructureAccessLevel))
+	d.Set("monitor_access_level", string(project.MonitorAccessLevel))
 
 	return nil
 }
@@ -1182,6 +1223,26 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 				Filename: avatar.Filename,
 				Image:    avatar.Image,
 			}
+		}
+
+		if v, ok := d.GetOk("releases_access_level"); ok {
+			options.ReleasesAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("environments_access_level"); ok {
+			options.EnvironmentsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("feature_flags_access_level"); ok {
+			options.FeatureFlagsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("infrastructure_access_level"); ok {
+			options.InfrastructureAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("monitor_access_level"); ok {
+			options.MonitorAccessLevel = stringToAccessControlValue(v.(string))
 		}
 
 		log.Printf("[DEBUG] create gitlab project %q", *options.Name)
@@ -1738,6 +1799,26 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 				Image:    avatar.Image,
 			}
 		}
+
+		if v, ok := d.GetOk("releases_access_level"); ok {
+			editProjectOptions.ReleasesAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("environments_access_level"); ok {
+			editProjectOptions.EnvironmentsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("feature_flags_access_level"); ok {
+			editProjectOptions.FeatureFlagsAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("infrastructure_access_level"); ok {
+			editProjectOptions.InfrastructureAccessLevel = stringToAccessControlValue(v.(string))
+		}
+
+		if v, ok := d.GetOk("monitor_access_level"); ok {
+			editProjectOptions.MonitorAccessLevel = stringToAccessControlValue(v.(string))
+		}
 	}
 
 	if (editProjectOptions != gitlab.EditProjectOptions{}) {
@@ -2112,6 +2193,26 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if d.HasChange("mr_default_target_self") {
 		options.MergeRequestDefaultTargetSelf = gitlab.Bool(d.Get("mr_default_target_self").(bool))
+	}
+
+	if d.HasChange("releases_access_level") {
+		options.ReleasesAccessLevel = stringToAccessControlValue(d.Get("releases_access_level").(string))
+	}
+
+	if d.HasChange("environments_access_level") {
+		options.EnvironmentsAccessLevel = stringToAccessControlValue(d.Get("environments_access_level").(string))
+	}
+
+	if d.HasChange("feature_flags_access_level") {
+		options.FeatureFlagsAccessLevel = stringToAccessControlValue(d.Get("feature_flags_access_level").(string))
+	}
+
+	if d.HasChange("infrastructure_access_level") {
+		options.InfrastructureAccessLevel = stringToAccessControlValue(d.Get("infrastructure_access_level").(string))
+	}
+
+	if d.HasChange("monitor_access_level") {
+		options.MonitorAccessLevel = stringToAccessControlValue(d.Get("monitor_access_level").(string))
 	}
 
 	avatar, err := handleAvatarOnUpdate(d)
