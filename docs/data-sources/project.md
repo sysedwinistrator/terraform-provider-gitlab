@@ -16,12 +16,14 @@ The `gitlab_project` data source allows details of a project to be retrieved by 
 ## Example Usage
 
 ```terraform
+# To search for a project by ID, pass in the ID value
 data "gitlab_project" "example" {
   id = 30
 }
 
+# To search for a project based on a path, use `path_with_namespace` instead
 data "gitlab_project" "example" {
-  id = "foo/bar/baz"
+  path_with_namespace = "foo/bar/baz"
 }
 ```
 
@@ -31,7 +33,7 @@ data "gitlab_project" "example" {
 ### Optional
 
 - `ci_default_git_depth` (Number) Default number of revisions for shallow cloning.
-- `id` (String) The integer or path with namespace that uniquely identifies the project within the gitlab install.
+- `id` (String) The integer that uniquely identifies the project within the gitlab install.
 - `path_with_namespace` (String) The path of the repository with namespace.
 - `public_builds` (Boolean) If true, jobs can be viewed by non-project members.
 

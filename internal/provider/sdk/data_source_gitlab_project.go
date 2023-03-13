@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
@@ -23,10 +25,11 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"id": {
-				Description: "The integer or path with namespace that uniquely identifies the project within the gitlab install.",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
+				Description:      "The integer that uniquely identifies the project within the gitlab install.",
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile(`^\d+$`), "`id` must be an integer string and not a path.")),
 				ExactlyOneOf: []string{
 					"id",
 					"path_with_namespace",
