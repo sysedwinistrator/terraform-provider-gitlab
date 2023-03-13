@@ -5,6 +5,7 @@ package sdk
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -60,6 +61,24 @@ func TestAccDataGitlabProject_withoutPushRulesAccess(t *testing.T) {
 				}
 				`, testToken.Token, testProject.PathWithNamespace),
 				Check: resource.TestCheckResourceAttr("data.gitlab_project.test", "id", fmt.Sprintf("%d", testProject.ID)),
+			},
+		},
+	})
+}
+
+func TestAccDataGitlabProject_pathWithNamespaceAsIdExpectError(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				data "gitlab_project" "test" {
+					id = "%s"
+				}
+				`, testProject.PathWithNamespace),
+				ExpectError: regexp.MustCompile("`id` must be an integer string and not a path."),
 			},
 		},
 	})
