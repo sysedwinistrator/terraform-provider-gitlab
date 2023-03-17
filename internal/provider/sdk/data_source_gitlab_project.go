@@ -209,7 +209,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 			"container_expiration_policy": {
 				Description: "Set the image cleanup policy for this project. **Note**: this field is sometimes named `container_expiration_policy_attributes` in the GitLab Upstream API.",
 				Type:        schema.TypeList,
-				Elem:        containerExpirationPolicyAttributesSchema,
+				Elem:        datasourceContainerExpirationPolicyAttributesSchema,
 				Computed:    true,
 			},
 			"container_registry_access_level": {
@@ -417,6 +417,61 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 		},
 	}
 })
+
+var datasourceContainerExpirationPolicyAttributesSchema = &schema.Resource{
+	Schema: map[string]*schema.Schema{
+		"cadence": {
+			Description:      fmt.Sprintf("The cadence of the policy. Valid values are: %s.", utils.RenderValueListForDocs(validContainerExpirationPolicyAttributesCadenceValues)),
+			Type:             schema.TypeString,
+			Optional:         true,
+			Computed:         true,
+			ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validContainerExpirationPolicyAttributesCadenceValues, false)),
+		},
+		"keep_n": {
+			Description:      "The number of images to keep.",
+			Type:             schema.TypeInt,
+			Optional:         true,
+			Computed:         true,
+			ValidateDiagFunc: validation.ToDiagFunc(validation.IntAtLeast(0)),
+		},
+		"older_than": {
+			Description: "The number of days to keep images.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Computed:    true,
+		},
+		"name_regex": {
+			Description: "The regular expression to match image names to delete.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Computed:    true,
+		},
+		"name_regex_delete": {
+			Description: "The regular expression to match image names to delete.",
+			Deprecated:  "`name_regex_delete` has been deprecated. Use `name_regex` instead.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Computed:    true,
+		},
+		"name_regex_keep": {
+			Description: "The regular expression to match image names to keep.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Computed:    true,
+		},
+		"enabled": {
+			Description: "If true, the policy is enabled.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Computed:    true,
+		},
+		"next_run_at": {
+			Description: "The next time the policy will run.",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
+	},
+}
 
 func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)

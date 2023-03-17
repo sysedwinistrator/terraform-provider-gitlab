@@ -890,7 +890,7 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 						"container_expiration_policy": {
 							Description: "Set the image cleanup policy for this project. **Note**: this field is sometimes named `container_expiration_policy_attributes` in the GitLab Upstream API.",
 							Type:        schema.TypeList,
-							Elem:        containerExpirationPolicyAttributesSchema,
+							Elem:        datasourceContainerExpirationPolicyAttributesSchema,
 							Computed:    true,
 						},
 						"container_registry_access_level": {
