@@ -4,7 +4,7 @@
 
 ## Bug Report
 
-<!-- 🚧 Describe your bug report. 
+<!-- 🚧 Describe your bug report.
 
 The more detailed and clear it is, the better we can help.
 
@@ -18,11 +18,19 @@ Try to keep it as minimal and reproducible as possible.
 
  -->
 
- ```hcl
+```hcl
 
- ```
+```
 
- ## Relevant Log Output
+## Relevant Terraform Command
+
+<!-- 🚧 Please provide the exact Terraform command that's causing the issue. -->
+
+```
+terraform ...
+```
+
+## Relevant Log Output
 
  <!-- 🚧 Please provide the relevant log output below.
  
@@ -45,9 +53,10 @@ TF_LOG_PATH=$(pwd)/log.jsonl TF_LOG=JSON terraform ...
 <details>
 <summary>These are the debug logs of the `terraform` command output:</summary>
 
- ```plaintext
+```plaintext
 
- ```
+```
+
  </details>
 
 ## Additional Details
