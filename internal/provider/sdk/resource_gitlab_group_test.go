@@ -30,15 +30,10 @@ func TestAccGitlabGroup_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.foo", &group),
 					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
-						Name:                    fmt.Sprintf("foo-name-%d", rInt),
-						Path:                    fmt.Sprintf("foo-path-%d", rInt),
-						Description:             "Terraform acceptance tests",
-						LFSEnabled:              true,
-						Visibility:              "public",     // default value
-						ProjectCreationLevel:    "maintainer", // default value
-						SubGroupCreationLevel:   "owner",      // default value
-						TwoFactorGracePeriod:    48,           // default value
-						DefaultBranchProtection: 2,            // default value
+						Name:                 fmt.Sprintf("foo-name-%d", rInt),
+						Path:                 fmt.Sprintf("foo-path-%d", rInt),
+						Description:          "Terraform acceptance tests",
+						ProjectCreationLevel: "developer",
 					}),
 				),
 			},
@@ -57,18 +52,14 @@ func TestAccGitlabGroup_basic(t *testing.T) {
 						Name:                    fmt.Sprintf("bar-name-%d", rInt),
 						Path:                    fmt.Sprintf("bar-path-%d", rInt),
 						Description:             "Terraform acceptance tests! Updated description",
-						LFSEnabled:              false,
-						Visibility:              "public", // default value
-						RequestAccessEnabled:    true,
-						ProjectCreationLevel:    "developer",
-						SubGroupCreationLevel:   "maintainer",
-						RequireTwoFactorAuth:    true,
-						TwoFactorGracePeriod:    56,
-						AutoDevopsEnabled:       true,
-						EmailsDisabled:          true,
-						MentionsDisabled:        true,
-						ShareWithGroupLock:      true,
-						DefaultBranchProtection: 1,
+						LFSEnabled:              gitlab.Bool(false),
+						RequestAccessEnabled:    gitlab.Bool(true),
+						RequireTwoFactorAuth:    gitlab.Bool(true),
+						TwoFactorGracePeriod:    gitlab.Int(56),
+						AutoDevopsEnabled:       gitlab.Bool(true),
+						EmailsDisabled:          gitlab.Bool(true),
+						ShareWithGroupLock:      gitlab.Bool(true),
+						DefaultBranchProtection: gitlab.Int(1),
 					}),
 				),
 			},
@@ -87,18 +78,14 @@ func TestAccGitlabGroup_basic(t *testing.T) {
 						Name:                    fmt.Sprintf("bar-name-%d", rInt),
 						Path:                    fmt.Sprintf("bar-path-%d", rInt),
 						Description:             "Terraform acceptance tests! Updated description",
-						LFSEnabled:              false,
-						Visibility:              "public", // default value
-						RequestAccessEnabled:    true,
-						ProjectCreationLevel:    "developer",
-						SubGroupCreationLevel:   "maintainer",
-						RequireTwoFactorAuth:    true,
-						TwoFactorGracePeriod:    56,
-						AutoDevopsEnabled:       true,
-						EmailsDisabled:          true,
-						MentionsDisabled:        true,
-						ShareWithGroupLock:      true,
-						DefaultBranchProtection: 0,
+						LFSEnabled:              gitlab.Bool(false),
+						RequestAccessEnabled:    gitlab.Bool(true),
+						RequireTwoFactorAuth:    gitlab.Bool(true),
+						TwoFactorGracePeriod:    gitlab.Int(56),
+						AutoDevopsEnabled:       gitlab.Bool(true),
+						EmailsDisabled:          gitlab.Bool(true),
+						ShareWithGroupLock:      gitlab.Bool(true),
+						DefaultBranchProtection: gitlab.Int(0),
 					}),
 				),
 			},
@@ -114,15 +101,9 @@ func TestAccGitlabGroup_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.foo", &group),
 					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
-						Name:                    fmt.Sprintf("foo-name-%d", rInt),
-						Path:                    fmt.Sprintf("foo-path-%d", rInt),
-						Description:             "Terraform acceptance tests",
-						LFSEnabled:              true,
-						Visibility:              "public",     // default value
-						ProjectCreationLevel:    "maintainer", // default value
-						SubGroupCreationLevel:   "owner",      // default value
-						TwoFactorGracePeriod:    48,           // default value
-						DefaultBranchProtection: 2,            // default value
+						Name:        fmt.Sprintf("foo-name-%d", rInt),
+						Path:        fmt.Sprintf("foo-path-%d", rInt),
+						Description: "Terraform acceptance tests",
 					}),
 				),
 			},
@@ -158,18 +139,9 @@ func TestAccGitlabGroup_IPRestricted(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.this", &group),
 					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
-						//Test values
 						Name:                fmt.Sprintf("test-ip-restrictions-%d", rInt),
 						Path:                fmt.Sprintf("path-%d", rInt),
 						IPRestrictionRanges: "192.168.0.0/24",
-
-						//defaults:
-						LFSEnabled:              true,
-						Visibility:              "private",
-						ProjectCreationLevel:    "maintainer",
-						SubGroupCreationLevel:   "owner",
-						TwoFactorGracePeriod:    48,
-						DefaultBranchProtection: 2,
 					}),
 				),
 			},
@@ -194,18 +166,9 @@ func TestAccGitlabGroup_IPRestricted(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.this", &group),
 					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
-						//Test values
 						Name:                fmt.Sprintf("test-ip-restrictions-%d", rInt),
 						Path:                fmt.Sprintf("path-%d", rInt),
 						IPRestrictionRanges: "192.168.0.0/24,10.1.0.0/24",
-
-						//defaults:
-						LFSEnabled:              true,
-						Visibility:              "private",
-						ProjectCreationLevel:    "maintainer",
-						SubGroupCreationLevel:   "owner",
-						TwoFactorGracePeriod:    48,
-						DefaultBranchProtection: 2,
 					}),
 				),
 			},
@@ -230,18 +193,9 @@ func TestAccGitlabGroup_IPRestricted(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupExists("gitlab_group.this", &group),
 					testAccCheckGitlabGroupAttributes(&group, &testAccGitlabGroupExpectedAttributes{
-						//Test values
 						Name:                fmt.Sprintf("test-ip-restrictions-%d", rInt),
 						Path:                fmt.Sprintf("path-%d", rInt),
 						IPRestrictionRanges: "",
-
-						//defaults:
-						LFSEnabled:              true,
-						Visibility:              "private",
-						ProjectCreationLevel:    "maintainer",
-						SubGroupCreationLevel:   "owner",
-						TwoFactorGracePeriod:    48,
-						DefaultBranchProtection: 2,
 					}),
 				),
 			},
@@ -283,16 +237,10 @@ func TestAccGitlabGroup_nested(t *testing.T) {
 					testAccCheckGitlabGroupExists("gitlab_group.foo2", &group2),
 					testAccCheckGitlabGroupExists("gitlab_group.nested_foo", &nestedGroup),
 					testAccCheckGitlabGroupAttributes(&nestedGroup, &testAccGitlabGroupExpectedAttributes{
-						Name:                    fmt.Sprintf("nfoo-name-%d", rInt),
-						Path:                    fmt.Sprintf("nfoo-path-%d", rInt),
-						Description:             "Terraform acceptance tests",
-						LFSEnabled:              true,
-						Visibility:              "public",     // default value
-						ProjectCreationLevel:    "maintainer", // default value
-						SubGroupCreationLevel:   "owner",      // default value
-						TwoFactorGracePeriod:    48,           // default value
-						DefaultBranchProtection: 2,            // default value
-						Parent:                  &group,
+						Name:        fmt.Sprintf("nfoo-name-%d", rInt),
+						Path:        fmt.Sprintf("nfoo-path-%d", rInt),
+						Description: "Terraform acceptance tests",
+						Parent:      &group,
 					}),
 					testGidNotChanged,
 				),
@@ -304,16 +252,10 @@ func TestAccGitlabGroup_nested(t *testing.T) {
 					testAccCheckGitlabGroupExists("gitlab_group.foo2", &group2),
 					testAccCheckGitlabGroupExists("gitlab_group.nested_foo", &nestedGroup),
 					testAccCheckGitlabGroupAttributes(&nestedGroup, &testAccGitlabGroupExpectedAttributes{
-						Name:                    fmt.Sprintf("nfoo-name-%d", rInt),
-						Path:                    fmt.Sprintf("nfoo-path-%d", rInt),
-						Description:             "Terraform acceptance tests - new parent",
-						LFSEnabled:              true,
-						Visibility:              "public",     // default value
-						ProjectCreationLevel:    "maintainer", // default value
-						SubGroupCreationLevel:   "owner",      // default value
-						TwoFactorGracePeriod:    48,           // default value
-						DefaultBranchProtection: 2,            // default value
-						Parent:                  &group2,
+						Name:        fmt.Sprintf("nfoo-name-%d", rInt),
+						Path:        fmt.Sprintf("nfoo-path-%d", rInt),
+						Description: "Terraform acceptance tests - new parent",
+						Parent:      &group2,
 					}),
 					testGidNotChanged,
 				),
@@ -325,15 +267,10 @@ func TestAccGitlabGroup_nested(t *testing.T) {
 					testAccCheckGitlabGroupExists("gitlab_group.foo2", &group2),
 					testAccCheckGitlabGroupExists("gitlab_group.nested_foo", &nestedGroup),
 					testAccCheckGitlabGroupAttributes(&nestedGroup, &testAccGitlabGroupExpectedAttributes{
-						Name:                    fmt.Sprintf("nfoo-name-%d", rInt),
-						Path:                    fmt.Sprintf("nfoo-path-%d", rInt),
-						Description:             "Terraform acceptance tests - updated",
-						LFSEnabled:              true,
-						Visibility:              "public",     // default value
-						ProjectCreationLevel:    "maintainer", // default value
-						SubGroupCreationLevel:   "owner",      // default value
-						TwoFactorGracePeriod:    48,           // default value
-						DefaultBranchProtection: 2,            // default value
+						Name:        fmt.Sprintf("nfoo-name-%d", rInt),
+						Path:        fmt.Sprintf("nfoo-path-%d", rInt),
+						Description: "Terraform acceptance tests - updated",
+						Parent:      &group2,
 					}),
 					testGidNotChanged,
 				),
@@ -345,16 +282,10 @@ func TestAccGitlabGroup_nested(t *testing.T) {
 					testAccCheckGitlabGroupExists("gitlab_group.foo2", &group2),
 					testAccCheckGitlabGroupExists("gitlab_group.nested_foo", &nestedGroup),
 					testAccCheckGitlabGroupAttributes(&nestedGroup, &testAccGitlabGroupExpectedAttributes{
-						Name:                    fmt.Sprintf("nfoo-name-%d", rInt),
-						Path:                    fmt.Sprintf("nfoo-path-%d", rInt),
-						Description:             "Terraform acceptance tests",
-						LFSEnabled:              true,
-						Visibility:              "public",     // default value
-						ProjectCreationLevel:    "maintainer", // default value
-						SubGroupCreationLevel:   "owner",      // default value
-						TwoFactorGracePeriod:    48,           // default value
-						DefaultBranchProtection: 2,            // default value
-						Parent:                  &group,
+						Name:        fmt.Sprintf("nfoo-name-%d", rInt),
+						Path:        fmt.Sprintf("nfoo-path-%d", rInt),
+						Description: "Terraform acceptance tests",
+						Parent:      &group,
 					}),
 					testGidNotChanged,
 				),
@@ -528,18 +459,18 @@ type testAccGitlabGroupExpectedAttributes struct {
 	Path                    string
 	Description             string
 	Parent                  *gitlab.Group
-	LFSEnabled              bool
-	RequestAccessEnabled    bool
+	LFSEnabled              *bool
+	RequestAccessEnabled    *bool
 	Visibility              gitlab.VisibilityValue
-	ShareWithGroupLock      bool
-	AutoDevopsEnabled       bool
-	EmailsDisabled          bool
-	MentionsDisabled        bool
+	ShareWithGroupLock      *bool
+	AutoDevopsEnabled       *bool
+	EmailsDisabled          *bool
+	MentionsDisabled        *bool
 	ProjectCreationLevel    gitlab.ProjectCreationLevelValue
 	SubGroupCreationLevel   gitlab.SubGroupCreationLevelValue
-	RequireTwoFactorAuth    bool
-	TwoFactorGracePeriod    int
-	DefaultBranchProtection int
+	RequireTwoFactorAuth    *bool
+	TwoFactorGracePeriod    *int
+	DefaultBranchProtection *int
 	IPRestrictionRanges     string
 }
 
@@ -557,52 +488,52 @@ func testAccCheckGitlabGroupAttributes(group *gitlab.Group, want *testAccGitlabG
 			return fmt.Errorf("got description %q; want %q", group.Description, want.Description)
 		}
 
-		if group.LFSEnabled != want.LFSEnabled {
-			return fmt.Errorf("got lfs_enabled %t; want %t", group.LFSEnabled, want.LFSEnabled)
+		if want.LFSEnabled != nil && group.LFSEnabled != *want.LFSEnabled {
+			return fmt.Errorf("got lfs_enabled %t; want %t", group.LFSEnabled, *want.LFSEnabled)
 		}
 
-		if group.Visibility != want.Visibility {
+		if want.Visibility != "" && group.Visibility != want.Visibility {
 			return fmt.Errorf("got request_visibility_level: %q; want %q", group.Visibility, want.Visibility)
 		}
 
-		if group.AutoDevopsEnabled != want.AutoDevopsEnabled {
-			return fmt.Errorf("got request_auto_devops_enabled: %t; want %t", group.AutoDevopsEnabled, want.AutoDevopsEnabled)
+		if want.AutoDevopsEnabled != nil && group.AutoDevopsEnabled != *want.AutoDevopsEnabled {
+			return fmt.Errorf("got request_auto_devops_enabled: %t; want %t", group.AutoDevopsEnabled, *want.AutoDevopsEnabled)
 		}
 
-		if group.EmailsDisabled != want.EmailsDisabled {
-			return fmt.Errorf("got request_emails_disabled: %t; want %t", group.EmailsDisabled, want.EmailsDisabled)
+		if want.EmailsDisabled != nil && group.EmailsDisabled != *want.EmailsDisabled {
+			return fmt.Errorf("got request_emails_disabled: %t; want %t", group.EmailsDisabled, *want.EmailsDisabled)
 		}
 
-		if group.MentionsDisabled != want.MentionsDisabled {
-			return fmt.Errorf("got request_mentions_disabled: %t; want %t", group.MentionsDisabled, want.MentionsDisabled)
+		if want.MentionsDisabled != nil && group.MentionsDisabled != *want.MentionsDisabled {
+			return fmt.Errorf("got request_mentions_disabled: %t; want %t", group.MentionsDisabled, *want.MentionsDisabled)
 		}
 
-		if group.RequestAccessEnabled != want.RequestAccessEnabled {
-			return fmt.Errorf("got request_access_enabled %t; want %t", group.RequestAccessEnabled, want.RequestAccessEnabled)
+		if want.RequestAccessEnabled != nil && group.RequestAccessEnabled != *want.RequestAccessEnabled {
+			return fmt.Errorf("got request_access_enabled %t; want %t", group.RequestAccessEnabled, *want.RequestAccessEnabled)
 		}
 
-		if group.ProjectCreationLevel != want.ProjectCreationLevel {
+		if want.ProjectCreationLevel != "" && group.ProjectCreationLevel != want.ProjectCreationLevel {
 			return fmt.Errorf("got project_creation_level %s; want %s", group.ProjectCreationLevel, want.ProjectCreationLevel)
 		}
 
-		if group.SubGroupCreationLevel != want.SubGroupCreationLevel {
+		if want.SubGroupCreationLevel != "" && group.SubGroupCreationLevel != want.SubGroupCreationLevel {
 			return fmt.Errorf("got subgroup_creation_level %s; want %s", group.SubGroupCreationLevel, want.SubGroupCreationLevel)
 		}
 
-		if group.RequireTwoFactorAuth != want.RequireTwoFactorAuth {
-			return fmt.Errorf("got require_two_factor_authentication %t; want %t", group.RequireTwoFactorAuth, want.RequireTwoFactorAuth)
+		if want.RequireTwoFactorAuth != nil && group.RequireTwoFactorAuth != *want.RequireTwoFactorAuth {
+			return fmt.Errorf("got require_two_factor_authentication %t; want %t", group.RequireTwoFactorAuth, *want.RequireTwoFactorAuth)
 		}
 
-		if group.TwoFactorGracePeriod != want.TwoFactorGracePeriod {
-			return fmt.Errorf("got two_factor_grace_period %d; want %d", group.TwoFactorGracePeriod, want.TwoFactorGracePeriod)
+		if want.TwoFactorGracePeriod != nil && group.TwoFactorGracePeriod != *want.TwoFactorGracePeriod {
+			return fmt.Errorf("got two_factor_grace_period %d; want %d", group.TwoFactorGracePeriod, *want.TwoFactorGracePeriod)
 		}
 
-		if group.ShareWithGroupLock != want.ShareWithGroupLock {
-			return fmt.Errorf("got share_with_group_lock %t; want %t", group.ShareWithGroupLock, want.ShareWithGroupLock)
+		if want.ShareWithGroupLock != nil && group.ShareWithGroupLock != *want.ShareWithGroupLock {
+			return fmt.Errorf("got share_with_group_lock %t; want %t", group.ShareWithGroupLock, *want.ShareWithGroupLock)
 		}
 
-		if group.DefaultBranchProtection != want.DefaultBranchProtection {
-			return fmt.Errorf("got default_branch_protection %d; want %d", group.DefaultBranchProtection, want.DefaultBranchProtection)
+		if want.DefaultBranchProtection != nil && group.DefaultBranchProtection != *want.DefaultBranchProtection {
+			return fmt.Errorf("got default_branch_protection %d; want %d", group.DefaultBranchProtection, *want.DefaultBranchProtection)
 		}
 
 		if group.IPRestrictionRanges != want.IPRestrictionRanges {
