@@ -4,8 +4,9 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -76,7 +77,6 @@ func TestAccGitlabProjectHook_basic(t *testing.T) {
 			// Verify import
 			{
 				ResourceName:            "gitlab_project_hook.foo",
-				ImportStateIdFunc:       getProjectHookImportID("gitlab_project_hook.foo"),
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"token"},
@@ -92,21 +92,41 @@ func testAccCheckGitlabProjectHookExists(n string, hook *gitlab.ProjectHook) res
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		hookID, err := strconv.Atoi(rs.Primary.ID)
+		project, hookID, err := resourceGitlabProjectHookParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
-		repoName := rs.Primary.Attributes["project"]
-		if repoName == "" {
-			return fmt.Errorf("No project ID is set")
-		}
 
-		gotHook, _, err := testutil.TestGitlabClient.Projects.GetProjectHook(repoName, hookID)
+		gotHook, _, err := testutil.TestGitlabClient.Projects.GetProjectHook(project, hookID)
 		if err != nil {
 			return err
 		}
 		*hook = *gotHook
 		return nil
+	}
+}
+
+func TestResourceGitlabProjectHook_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	givenV0State := map[string]interface{}{
+		"project": "foo/bar",
+		"hook_id": "42",
+		"id":      "42",
+	}
+	expectedV1State := map[string]interface{}{
+		"project": "foo/bar",
+		"hook_id": "42",
+		"id":      "foo/bar:42",
+	}
+
+	actualV1State, err := resourceGitlabProjectHookStateUpgradeV0(context.Background(), givenV0State, nil)
+	if err != nil {
+		t.Fatalf("Error migrating state: %s", err)
+	}
+
+	if !reflect.DeepEqual(expectedV1State, actualV1State) {
+		t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expectedV1State, actualV1State)
 	}
 }
 
@@ -200,8 +220,7 @@ func testAccCheckGitlabProjectHookDestroy(s *terraform.State) error {
 			continue
 		}
 
-		project := rs.Primary.Attributes["project"]
-		hookID, err := strconv.Atoi(rs.Primary.ID)
+		project, hookID, err := resourceGitlabProjectHookParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -216,25 +235,6 @@ func testAccCheckGitlabProjectHookDestroy(s *terraform.State) error {
 		return nil
 	}
 	return nil
-}
-
-func getProjectHookImportID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", n)
-		}
-
-		hookID := rs.Primary.ID
-		if hookID == "" {
-			return "", fmt.Errorf("No hook ID is set")
-		}
-		projectID := rs.Primary.Attributes["project"]
-		if projectID == "" {
-			return "", fmt.Errorf("No project ID is set")
-		}
-		return fmt.Sprintf("%s:%s", projectID, hookID), nil
-	}
 }
 
 func testAccGitlabProjectHookConfig(rInt int) string {
