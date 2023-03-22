@@ -10,7 +10,7 @@ FEATURES:
 IMPROVEMENTS:
 
 - resource/gitlab_personal_access_token: Support `admin_mode` as value in the `scopes` attribute ([#1456](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1456))
-- resource/gitlab_group: Remove explicit attribute defaults ([#1479](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1479))
+- resource/gitlab_group: Remove explicit attribute defaults. This solves an issue where newly imported resources may have plan changes for default attributes. In some cases, the new API-based default values are more permissive than the old provider-based defaults. See The linked MR for details. ([#1479](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1479))
 - resource/gitlab_repository_file: Add validator to avoid leading `/` and `./` in path ([#1472](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1472))
 - resource/gitlab_project: Deprecate the `name_regex_delete` in favor of the `name_regex` attribute ([#1466](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1466))
 - resource/gitlab_project: Support `environments_access_level` attribute ([#1469](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1469))
