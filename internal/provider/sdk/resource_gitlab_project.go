@@ -1348,68 +1348,6 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 	}
 
-	// see: https://gitlab.com/gitlab-org/gitlab/-/issues/333426
-	noDefaultBranchAPISupport, err := api.IsGitLabVersionLessThan(ctx, client, "14.10")()
-	if err != nil {
-		return diag.Errorf("unable to get information if `default_branch` handling is supported in the GitLab instance: %v", err)
-	}
-
-	if noDefaultBranchAPISupport {
-		// default_branch cannot always be set during creation.
-		// If the branch does not exist, the update will fail, so we also create it here.
-		// This logic may be removed when the above issue is resolved.
-		if v, ok := d.GetOk("default_branch"); ok && project.DefaultBranch != "" && project.DefaultBranch != v.(string) {
-			oldDefaultBranch := project.DefaultBranch
-			newDefaultBranch := v.(string)
-
-			log.Printf("[DEBUG] create branch %q for project %q", newDefaultBranch, d.Id())
-			_, _, err := client.Branches.CreateBranch(project.ID, &gitlab.CreateBranchOptions{
-				Branch: gitlab.String(newDefaultBranch),
-				Ref:    gitlab.String(oldDefaultBranch),
-			}, gitlab.WithContext(ctx))
-			if err != nil {
-				return diag.Errorf("Failed to create branch %q for project %q: %s", newDefaultBranch, d.Id(), err)
-			}
-
-			log.Printf("[DEBUG] set new default branch to %q for project %q", newDefaultBranch, d.Id())
-			_, _, err = client.Projects.EditProject(project.ID, &gitlab.EditProjectOptions{
-				DefaultBranch: gitlab.String(newDefaultBranch),
-			}, gitlab.WithContext(ctx))
-			if err != nil {
-				return diag.Errorf("Failed to set default branch to %q for project %q: %s", newDefaultBranch, d.Id(), err)
-			}
-
-			log.Printf("[DEBUG] protect new default branch %q for project %q", newDefaultBranch, d.Id())
-			_, _, err = client.ProtectedBranches.ProtectRepositoryBranches(project.ID, &gitlab.ProtectRepositoryBranchesOptions{
-				Name: gitlab.String(newDefaultBranch),
-			}, gitlab.WithContext(ctx))
-			if err != nil {
-				return diag.Errorf("Failed to protect default branch %q for project %q: %s", newDefaultBranch, d.Id(), err)
-			}
-
-			log.Printf("[DEBUG] check for protection on old default branch %q for project %q", oldDefaultBranch, d.Id())
-			branch, _, err := client.ProtectedBranches.GetProtectedBranch(project.ID, oldDefaultBranch, gitlab.WithContext(ctx))
-			if err != nil && !api.Is404(err) {
-				return diag.Errorf("Failed to check for protected default branch %q for project %q: %v", oldDefaultBranch, d.Id(), err)
-			}
-			if branch == nil {
-				log.Printf("[DEBUG] Default protected branch %q for project %q does not exist", oldDefaultBranch, d.Id())
-			} else {
-				log.Printf("[DEBUG] unprotect old default branch %q for project %q", oldDefaultBranch, d.Id())
-				_, err = client.ProtectedBranches.UnprotectRepositoryBranches(project.ID, oldDefaultBranch, gitlab.WithContext(ctx))
-				if err != nil {
-					return diag.Errorf("Failed to unprotect undesired default branch %q for project %q: %v", oldDefaultBranch, d.Id(), err)
-				}
-			}
-
-			log.Printf("[DEBUG] delete old default branch %q for project %q", oldDefaultBranch, d.Id())
-			_, err = client.Branches.DeleteBranch(project.ID, oldDefaultBranch, gitlab.WithContext(ctx))
-			if err != nil {
-				return diag.Errorf("Failed to clean up undesired default branch %q for project %q: %s", oldDefaultBranch, d.Id(), err)
-			}
-		}
-	}
-
 	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if v, ok := d.GetOkExists("skip_wait_for_default_branch_protection"); ok {
