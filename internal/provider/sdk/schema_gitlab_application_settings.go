@@ -139,6 +139,13 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 			Computed:    true,
 		},
 
+		"can_create_group": {
+			Description: "Indicates whether users can create top-level groups. Introduced in GitLab 15.5.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Computed:    true,
+		},
+
 		"check_namespace_plan": {
 			Description: "Enabling this makes only licensed EE features available to projects if the project namespace’s plan includes the feature or if the project is public.",
 			Type:        schema.TypeBool,
@@ -238,7 +245,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"default_group_visibility": {
-			Description: "What visibility level new groups receive. Can take private, internal and public as a parameter. Default is private.",
+			Description: "What visibility level new groups receive. Can take private, internal and public as a parameter.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
@@ -252,49 +259,49 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"default_project_visibility": {
-			Description: "What visibility level new projects receive. Can take private, internal and public as a parameter. Default is private.",
+			Description: "What visibility level new projects receive. Can take private, internal and public as a parameter.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"default_projects_limit": {
-			Description: "Project limit per user. Default is 100000.",
+			Description: "Project limit per user.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"default_snippet_visibility": {
-			Description: "What visibility level new snippets receive. Can take private, internal and public as a parameter. Default is private.",
+			Description: "What visibility level new snippets receive. Can take private, internal and public as a parameter.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"delayed_project_deletion": {
-			Description: "Enable delayed project deletion by default in new groups. Default is false. From GitLab 15.1, can only be enabled when delayed_group_deletion is true.",
+			Description: "Enable delayed project deletion by default in new groups. From GitLab 15.1, can only be enabled when delayed_group_deletion is true.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"delayed_group_deletion": {
-			Description: "Enable delayed group deletion. Default is true. Introduced in GitLab 15.0. From GitLab 15.1, disables and locks the group-level setting for delayed protect deletion when set to false.",
+			Description: "Enable delayed group deletion. Introduced in GitLab 15.0. From GitLab 15.1, disables and locks the group-level setting for delayed protect deletion when set to false.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"delete_inactive_projects": {
-			Description: "Enable inactive project deletion feature. Default is false. Introduced in GitLab 14.10. Became operational in GitLab 15.0 (with feature flag inactive_projects_deletion, disabled by default).",
+			Description: "Enable inactive project deletion feature. Introduced in GitLab 14.10. Became operational in GitLab 15.0 (with feature flag inactive_projects_deletion).",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"deletion_adjourned_period": {
-			Description: "The number of days to wait before deleting a project or group that is marked for deletion. Value must be between 1 and 90. Defaults to 7. From GitLab 15.1, a hook on deletion_adjourned_period sets the period to 1 on every update, and sets both delayed_project_deletion and delayed_group_deletion to false if the period is 0.",
+			Description: "The number of days to wait before deleting a project or group that is marked for deletion. Value must be between 1 and 90. From GitLab 15.1, a hook on deletion_adjourned_period sets the period to 1 on every update, and sets both delayed_project_deletion and delayed_group_deletion to false if the period is 0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -359,7 +366,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"domain_allowlist": {
-			Description: "Force people to use only corporate emails for sign-up. Default is null, meaning there is no restriction.",
+			Description: "Force people to use only corporate emails for sign-up. Null means there is no restriction.",
 			Type:        schema.TypeList,
 			Elem:        &schema.Schema{Type: schema.TypeString},
 			Optional:    true,
@@ -367,35 +374,35 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"dsa_key_restriction": {
-			Description: "The minimum allowed bit length of an uploaded DSA key. Default is 0 (no restriction). -1 disables DSA keys.",
+			Description: "The minimum allowed bit length of an uploaded DSA key. 0 means no restriction. -1 disables DSA keys.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"ecdsa_key_restriction": {
-			Description: "The minimum allowed curve size (in bits) of an uploaded ECDSA key. Default is 0 (no restriction). -1 disables ECDSA keys.",
+			Description: "The minimum allowed curve size (in bits) of an uploaded ECDSA key. 0 means no restriction. -1 disables ECDSA keys.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"ecdsa_sk_key_restriction": {
-			Description: "The minimum allowed curve size (in bits) of an uploaded ECDSA_SK key. Default is 0 (no restriction). -1 disables ECDSA_SK keys.",
+			Description: "The minimum allowed curve size (in bits) of an uploaded ECDSA_SK key. 0 means no restriction. -1 disables ECDSA_SK keys.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"ed25519_key_restriction": {
-			Description: "The minimum allowed curve size (in bits) of an uploaded ED25519 key. Default is 0 (no restriction). -1 disables ED25519 keys.",
+			Description: "The minimum allowed curve size (in bits) of an uploaded ED25519 key. 0 means no restriction. -1 disables ED25519 keys.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"ed25519_sk_key_restriction": {
-			Description: "The minimum allowed curve size (in bits) of an uploaded ED25519_SK key. Default is 0 (no restriction). -1 disables ED25519_SK keys.",
+			Description: "The minimum allowed curve size (in bits) of an uploaded ED25519_SK key. 0 means no restriction. -1 disables ED25519_SK keys.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -671,7 +678,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"first_day_of_week": {
-			Description: "Start day of the week for calendar views and date pickers. Valid values are 0 (default) for Sunday, 1 for Monday, and 6 for Saturday.",
+			Description: "Start day of the week for calendar views and date pickers. Valid values are 0 for Sunday, 1 for Monday, and 6 for Saturday.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -840,49 +847,49 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"in_product_marketing_emails_enabled": {
-			Description: "Enable in-product marketing emails. Enabled by default.",
+			Description: "Enable in-product marketing emails.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"inactive_projects_delete_after_months": {
-			Description: "If delete_inactive_projects is true, the time (in months) to wait before deleting inactive projects. Default is 2. Introduced in GitLab 14.10. Became operational in GitLab 15.0.",
+			Description: "If delete_inactive_projects is true, the time (in months) to wait before deleting inactive projects. Introduced in GitLab 14.10. Became operational in GitLab 15.0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"inactive_projects_min_size_mb": {
-			Description: "If delete_inactive_projects is true, the minimum repository size for projects to be checked for inactivity. Default is 0. Introduced in GitLab 14.10. Became operational in GitLab 15.0.",
+			Description: "If delete_inactive_projects is true, the minimum repository size for projects to be checked for inactivity. Introduced in GitLab 14.10. Became operational in GitLab 15.0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"inactive_projects_send_warning_email_after_months": {
-			Description: "If delete_inactive_projects is true, sets the time (in months) to wait before emailing maintainers that the project is scheduled be deleted because it is inactive. Default is 1. Introduced in GitLab 14.10. Became operational in GitLab 15.0.",
+			Description: "If delete_inactive_projects is true, sets the time (in months) to wait before emailing maintainers that the project is scheduled be deleted because it is inactive. Introduced in GitLab 14.10. Became operational in GitLab 15.0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"invisible_captcha_enabled": {
-			Description: "Enable Invisible CAPTCHA spam detection during sign-up. Disabled by default.",
+			Description: "Enable Invisible CAPTCHA spam detection during sign-up.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"issues_create_limit": {
-			Description: "Max number of issue creation requests per minute per user. Disabled by default.",
+			Description: "Max number of issue creation requests per minute per user.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"keep_latest_artifact": {
-			Description: "Prevent the deletion of the artifacts from the most recent successful jobs, regardless of the expiry time. Enabled by default.",
+			Description: "Prevent the deletion of the artifacts from the most recent successful jobs, regardless of the expiry time.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -939,14 +946,14 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"max_export_size": {
-			Description: "Maximum export size in MB. 0 for unlimited. Default = 0 (unlimited).",
+			Description: "Maximum export size in MB. 0 for unlimited.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"max_import_size": {
-			Description: "Maximum import size in MB. 0 for unlimited. Default = 0 (unlimited) Modified from 50MB to 0 in GitLab 13.8.",
+			Description: "Maximum import size in MB. 0 for unlimited.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -981,21 +988,21 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"max_number_of_repository_downloads": {
-			Description: "Maximum number of unique repositories a user can download in the specified time period before they are banned. Default: 0, Maximum: 10,000 repositories. Introduced in GitLab 15.1.",
+			Description: "Maximum number of unique repositories a user can download in the specified time period before they are banned. Maximum: 10,000 repositories. Introduced in GitLab 15.1.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"max_number_of_repository_downloads_within_time_period": {
-			Description: "Reporting time period (in seconds). Default: 0, Maximum: 864000 seconds (10 days). Introduced in GitLab 15.1.",
+			Description: "Reporting time period (in seconds). Maximum: 864000 seconds (10 days). Introduced in GitLab 15.1.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"git_rate_limit_users_allowlist": {
-			Description: "List of usernames excluded from Git anti-abuse rate limits. Default: [], Maximum: 100 usernames. Introduced in GitLab 15.2.",
+			Description: "List of usernames excluded from Git anti-abuse rate limits. Maximum: 100 usernames. Introduced in GitLab 15.2.",
 			Type:        schema.TypeList,
 			Elem:        &schema.Schema{Type: schema.TypeString},
 			Optional:    true,
@@ -1060,14 +1067,14 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"password_authentication_enabled_for_git": {
-			Description: "Enable authentication for Git over HTTP(S) via a GitLab account password. Default is true.",
+			Description: "Enable authentication for Git over HTTP(S) via a GitLab account password.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"password_authentication_enabled_for_web": {
-			Description: "Enable authentication for the web interface via a GitLab account password. Default is true.",
+			Description: "Enable authentication for the web interface via a GitLab account password.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -1116,14 +1123,14 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"pipeline_limit_per_project_user_sha": {
-			Description: "Maximum number of pipeline creation requests per minute per user and commit. Disabled by default.",
+			Description: "Maximum number of pipeline creation requests per minute per user and commit.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"plantuml_enabled": {
-			Description: "(If enabled, requires: plantuml_url) Enable PlantUML integration. Default is false.",
+			Description: "(If enabled, requires: plantuml_url) Enable PlantUML integration.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -1186,21 +1193,21 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"raw_blob_request_limit": {
-			Description: "Max number of requests per minute for each raw path. Default: 300. To disable throttling set to 0.",
+			Description: "Max number of requests per minute for each raw path. To disable throttling set to 0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"search_rate_limit": {
-			Description: "Max number of requests per minute for performing a search while authenticated. Default: 30. To disable throttling set to 0.",
+			Description: "Max number of requests per minute for performing a search while authenticated. To disable throttling set to 0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"search_rate_limit_unauthenticated": {
-			Description: "Max number of requests per minute for performing a search while unauthenticated. Default: 10. To disable throttling set to 0.",
+			Description: "Max number of requests per minute for performing a search while unauthenticated. To disable throttling set to 0.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -1281,7 +1288,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"restricted_visibility_levels": {
-			Description: "Selected levels cannot be used by non-Administrator users for groups, projects or snippets. Can take private, internal and public as a parameter. Default is null which means there is no restriction.",
+			Description: "Selected levels cannot be used by non-Administrator users for groups, projects or snippets. Can take private, internal and public as a parameter. Null means there is no restriction.",
 			Type:        schema.TypeList,
 			Elem:        &schema.Schema{Type: schema.TypeString},
 			Optional:    true,
@@ -1289,7 +1296,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"rsa_key_restriction": {
-			Description: "The minimum allowed bit length of an uploaded RSA key. Default is 0 (no restriction). -1 disables RSA keys.",
+			Description: "The minimum allowed bit length of an uploaded RSA key. 0 means no restriction. -1 disables RSA keys.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -1331,21 +1338,21 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"sidekiq_job_limiter_mode": {
-			Description: "track or compress. Sets the behavior for Sidekiq job size limits. Default: ‘compress’.",
+			Description: "track or compress. Sets the behavior for Sidekiq job size limits.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"sidekiq_job_limiter_compression_threshold_bytes": {
-			Description: "The threshold in bytes at which Sidekiq jobs are compressed before being stored in Redis. Default: 100 000 bytes (100KB).",
+			Description: "The threshold in bytes at which Sidekiq jobs are compressed before being stored in Redis.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"sidekiq_job_limiter_limit_bytes": {
-			Description: "The threshold in bytes at which Sidekiq jobs are rejected. Default: 0 bytes (doesn’t reject any job).",
+			Description: "The threshold in bytes at which Sidekiq jobs are rejected. 0 means do not reject any job.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -1359,7 +1366,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"signup_enabled": {
-			Description: "Enable registration. Default is true.",
+			Description: "Enable registration.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -1403,7 +1410,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"snippet_size_limit": {
-			Description: "Max snippet content size in bytes. Default: 52428800 Bytes (50MB).",
+			Description: "Max snippet content size in bytes.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -1438,14 +1445,14 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"sourcegraph_enabled": {
-			Description: "Enables Sourcegraph integration. Default is false. If enabled, requires sourcegraph_url.",
+			Description: "Enables Sourcegraph integration. If enabled, requires sourcegraph_url.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
 		},
 
 		"sourcegraph_public_only": {
-			Description: "Blocks Sourcegraph from being loaded on private and internal projects. Default is true.",
+			Description: "Blocks Sourcegraph from being loaded on private and internal projects.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -1459,7 +1466,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"spam_check_endpoint_enabled": {
-			Description: "Enables spam checking using external Spam Check API endpoint. Default is false.",
+			Description: "Enables spam checking using external Spam Check API endpoint.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -1628,7 +1635,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"time_tracking_limit_to_hours": {
-			Description: "Limit display of time tracking units to hours. Default is false.",
+			Description: "Limit display of time tracking units to hours.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -1726,7 +1733,7 @@ func gitlabApplicationSettingsSchema() map[string]*schema.Schema {
 		},
 
 		"wiki_page_max_content_bytes": {
-			Description: "Maximum wiki page content size in bytes. Default: 52428800 Bytes (50 MB). The minimum value is 1024 bytes.",
+			Description: "Maximum wiki page content size in bytes. The minimum value is 1024 bytes.",
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Computed:    true,
@@ -1754,6 +1761,7 @@ func gitlabApplicationSettingsToStateMap(settings *gitlab.Settings) map[string]i
 	stateMap["auto_devops_domain"] = settings.AutoDevOpsDomain
 	stateMap["auto_devops_enabled"] = settings.AutoDevOpsEnabled
 	stateMap["automatic_purchased_storage_allocation"] = settings.AutomaticPurchasedStorageAllocation
+	stateMap["can_create_group"] = settings.CanCreateGroup
 	stateMap["check_namespace_plan"] = settings.CheckNamespacePlan
 	stateMap["commit_email_hostname"] = settings.CommitEmailHostname
 	stateMap["container_expiration_policies_enable_historic_entries"] = settings.ContainerExpirationPoliciesEnableHistoricEntries
@@ -2053,6 +2061,10 @@ func gitlabApplicationSettingsToUpdateOptions(d *schema.ResourceData) *gitlab.Up
 
 	if d.HasChange("automatic_purchased_storage_allocation") {
 		options.AutomaticPurchasedStorageAllocation = gitlab.Bool(d.Get("automatic_purchased_storage_allocation").(bool))
+	}
+
+	if d.HasChange("can_create_group") {
+		options.CanCreateGroup = gitlab.Bool(d.Get("can_create_group").(bool))
 	}
 
 	if d.HasChange("check_namespace_plan") {
