@@ -32,6 +32,31 @@ func TestAccGitlabApplicationSettings_basic(t *testing.T) {
 	})
 }
 
+func TestAccGitlabApplicationSettings_testCanCreateGroup(t *testing.T) {
+	// lintignore:AT001
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "gitlab_application_settings" "this" {
+						can_create_group = true
+					}
+				`,
+				Check: resource.TestCheckResourceAttr("gitlab_application_settings.this", "can_create_group", "true"),
+			},
+			{
+				Config: `
+					resource "gitlab_application_settings" "this" {
+						can_create_group = false
+					}
+				`,
+				Check: resource.TestCheckResourceAttr("gitlab_application_settings.this", "can_create_group", "false"),
+			},
+		},
+	})
+}
+
 func TestAccGitlabApplicationSettings_testNullGitProtocol(t *testing.T) {
 	// lintignore:AT001
 	resource.Test(t, resource.TestCase{
