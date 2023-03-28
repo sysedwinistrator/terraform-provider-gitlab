@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
@@ -1304,7 +1304,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	if project.ImportStatus != "none" {
 		log.Printf("[DEBUG] waiting for project %q import to finish", project.Name)
 
-		stateConf := &resource.StateChangeConf{
+		stateConf := &retry.StateChangeConf{
 			Pending: []string{"scheduled", "started"},
 			Target:  []string{"finished"},
 			Timeout: 10 * time.Minute,
@@ -1365,7 +1365,7 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			// Branch protection for a newly created branch is an async action, so use WaitForState to ensure it's protected
 			// before we continue. Note this check should only be required when there is a custom default branch set
 			// See issue 800: https://gitlab.com/gitlab-org/terraform-provider-gitlab/issues/800
-			stateConf := &resource.StateChangeConf{
+			stateConf := &retry.StateChangeConf{
 				Pending: []string{"false"},
 				Target:  []string{"true"},
 				Timeout: 2 * time.Minute, //The async action usually completes very quickly, within seconds. Don't wait too long.
@@ -2263,7 +2263,7 @@ func resourceGitlabProjectDelete(ctx context.Context, d *schema.ResourceData, me
 
 		// Wait for the project to be deleted.
 		// Deleting a project in gitlab is async.
-		stateConf := &resource.StateChangeConf{
+		stateConf := &retry.StateChangeConf{
 			Pending: []string{"Deleting"},
 			Target:  []string{"Deleted"},
 			Refresh: func() (interface{}, string, error) {

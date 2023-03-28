@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
@@ -138,15 +138,15 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 		}
 		var existingRepositoryFile *gitlab.File
 		// Try to get the file to check if it exists
-		err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			var err error
 			existingRepositoryFile, _, err = client.RepositoryFiles.GetFile(project, filePath, readOptions, gitlab.WithContext(ctx))
 			if err != nil {
 				if isRefreshError(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if !api.Is404(err) {
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 			}
 
@@ -172,9 +172,9 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 				_, _, err := client.RepositoryFiles.UpdateFile(project, filePath, updateOptions, gitlab.WithContext(ctx))
 				if err != nil {
 					if isRefreshError(err) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 
 			}
@@ -191,13 +191,13 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		repositoryFile, _, err := client.RepositoryFiles.CreateFile(project, filePath, options, gitlab.WithContext(ctx))
 		if err != nil {
 			if isRefreshError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		d.SetId(resourceGitLabRepositoryFileBuildId(project, repositoryFile.Branch, repositoryFile.FilePath))
@@ -295,20 +295,20 @@ func resourceGitlabRepositoryFileUpdate(ctx context.Context, d *schema.ResourceD
 		updateOptions.ExecuteFilemode = gitlab.Bool(executeFilemode.(bool))
 	}
 
-	err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		// NOTE: we also re-read the file to obtain an eventually changed `LastCommitID` for which we needed the refresh
 		existingRepositoryFile, _, err := client.RepositoryFiles.GetFile(project, filePath, readOptions, gitlab.WithContext(ctx))
 		if err != nil {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		updateOptions.LastCommitID = gitlab.String(existingRepositoryFile.LastCommitID)
 		_, _, err = client.RepositoryFiles.UpdateFile(project, filePath, updateOptions, gitlab.WithContext(ctx))
 		if err != nil {
 			if isRefreshError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -345,21 +345,21 @@ func resourceGitlabRepositoryFileDelete(ctx context.Context, d *schema.ResourceD
 		CommitMessage: gitlab.String(fmt.Sprintf("[DELETE]: %s", d.Get("commit_message").(string))),
 	}
 
-	err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		// NOTE: we also re-read the file to obtain an eventually changed `LastCommitID` for which we needed the refresh
 
 		existingRepositoryFile, _, err := client.RepositoryFiles.GetFile(project, filePath, readOptions, gitlab.WithContext(ctx))
 		if err != nil {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		deleteOptions.LastCommitID = gitlab.String(existingRepositoryFile.LastCommitID)
 		resp, err := client.RepositoryFiles.DeleteFile(project, filePath, deleteOptions, gitlab.WithContext(ctx))
 		if err != nil {
 			if isRefreshError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("%s failed to delete repository file: (%s) %v", d.Id(), resp.Status, err))
+			return retry.NonRetryableError(fmt.Errorf("%s failed to delete repository file: (%s) %v", d.Id(), resp.Status, err))
 		}
 		return nil
 	})
