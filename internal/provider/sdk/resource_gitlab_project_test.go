@@ -1059,6 +1059,35 @@ func TestAccGitlabProject_CreateProjectInUserNamespace(t *testing.T) {
 	})
 }
 
+// tests to ensure that when skip_wait is set properly, it's injected into the state properly.
+// This will also ensure that the `if` check evaluates properly, since it's presence in the
+// state means the value is retrieved properly.
+func TestAccGitlabProject_skipWaitSetProperly(t *testing.T) {
+	var received gitlab.Project
+	rInt := acctest.RandInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project" "this" {
+						name             = "testname-%d"
+						visibility_level = "private"
+						default_branch   = "main"
+
+						skip_wait_for_default_branch_protection          = true
+					}`, rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabProjectExists("gitlab_project.this", &received),
+					resource.TestCheckResourceAttr("gitlab_project.this", "skip_wait_for_default_branch_protection", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccGitlabProject_InstanceBranchProtectionDisabled(t *testing.T) {
 	rInt := acctest.RandInt()
 
