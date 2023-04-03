@@ -781,8 +781,8 @@ This attribute is only used during resource creation, thus changes are suppresse
 `,
 				Type:     schema.TypeBool,
 				Optional: true,
-				DiffSuppressFunc: func(string, string, string, *schema.ResourceData) bool {
-					return true
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != ""
 				},
 			},
 		}),
