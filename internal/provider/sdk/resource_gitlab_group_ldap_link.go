@@ -124,39 +124,29 @@ func resourceGitlabGroupLdapLinkRead(ctx context.Context, d *schema.ResourceData
 	log.Printf("[DEBUG] Read GitLab group LdapLinks %s", groupId)
 	ldapLinks, _, err := client.Groups.ListGroupLDAPLinks(groupId, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		// The read/GET API wasn't implemented in GitLab until version 12.8 (March 2020, well after the add and delete APIs).
-		// If we 404, assume GitLab is at an older version and take things on faith.
-		switch err.(type) { // nolint // TODO: Resolve this golangci-lint issue: S1034: assigning the result of this type assertion to a variable (switch err := err.(type)) could eliminate type assertions in switch cases (gosimple)
-		case *gitlab.ErrorResponse:
-			if err.(*gitlab.ErrorResponse).Response.StatusCode == 404 { // nolint // TODO: Resolve this golangci-lint issue: S1034(related information): could eliminate this type assertion (gosimple)
-				log.Printf("[WARNING] This GitLab instance doesn't have the GET API for group_ldap_sync.  Please upgrade to 12.8 or later for best results.")
-			} else {
-				return diag.FromErr(err)
-			}
-		default:
+		// NOTE: the LDAP list API returns a 404 if there are no LDAP links present.
+		if !api.Is404(err) {
 			return diag.FromErr(err)
 		}
 	}
 
-	// If we got here and don't have links, assume GitLab is below version 12.8 and skip the check
-	if ldapLinks != nil {
-		// Check if the LDAP link exists in the returned list of links
-		found := false
-		for _, ldapLink := range ldapLinks {
-			if utils.BuildTwoPartID(&ldapLink.Provider, &ldapLink.CN) == d.Id() {
-				d.Set("group_id", groupId)
-				d.Set("cn", ldapLink.CN)
-				d.Set("group_access", api.AccessLevelValueToName[ldapLink.GroupAccess])
-				d.Set("ldap_provider", ldapLink.Provider)
-				found = true
-				break
-			}
+	found := false
+	// Check if the LDAP link exists in the returned list of links
+	for _, ldapLink := range ldapLinks {
+		if utils.BuildTwoPartID(&ldapLink.Provider, &ldapLink.CN) == d.Id() {
+			d.Set("group_id", groupId)
+			d.Set("cn", ldapLink.CN)
+			d.Set("group_access", api.AccessLevelValueToName[ldapLink.GroupAccess])
+			d.Set("ldap_provider", ldapLink.Provider)
+			found = true
+			break
 		}
+	}
 
-		if !found {
-			d.SetId("")
-			return diag.Errorf("LdapLink %s does not exist.", d.Id())
-		}
+	if !found {
+		d.SetId("")
+		log.Printf("LdapLink %s does not exist, removing from state.", d.Id())
+		return nil
 	}
 
 	return nil
