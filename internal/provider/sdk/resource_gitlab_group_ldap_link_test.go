@@ -68,6 +68,61 @@ func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
 	})
 }
 
+func TestAccGitlabGroupLdapLink_recreatedWhenRemoved(t *testing.T) {
+	testutil.SkipIfCE(t)
+
+	testGroup := testutil.CreateGroups(t, 1)[0]
+	ldapName := acctest.RandomWithPrefix("ldap")
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupLdapLinkDestroy,
+		Steps: []resource.TestStep{
+			// Create an LDAP group link
+			{
+				Config: fmt.Sprintf(`
+          resource "gitlab_group_ldap_link" "test" {
+            group_id      = "%[1]d"
+            cn            = "%[2]s"
+            group_access  = "developer"
+            ldap_provider = "%[2]s"
+          }
+          `, testGroup.ID, ldapName),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_group_ldap_link.test",
+				ImportStateIdFunc: getGitlabGroupLdapLinkImportID("gitlab_group_ldap_link.test"),
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Remove the LDAP link directly and re-apply the config to re-create the LDAP link
+			{
+				PreConfig: func() {
+					if _, err := testutil.TestGitlabClient.Groups.DeleteGroupLDAPLink(testGroup.ID, ldapName); err != nil {
+						t.Fatalf("Failed to delete LDAP link %q in group %d", ldapName, testGroup.ID)
+					}
+				},
+				Config: fmt.Sprintf(`
+          resource "gitlab_group_ldap_link" "test" {
+            group_id      = "%[1]d"
+            cn            = "%[2]s"
+            group_access  = "developer"
+            ldap_provider = "%[2]s"
+          }
+          `, testGroup.ID, ldapName),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_group_ldap_link.test",
+				ImportStateIdFunc: getGitlabGroupLdapLinkImportID("gitlab_group_ldap_link.test"),
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func getGitlabGroupLdapLinkImportID(resourceName string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		rs, ok := s.RootModule().Resources[resourceName]
