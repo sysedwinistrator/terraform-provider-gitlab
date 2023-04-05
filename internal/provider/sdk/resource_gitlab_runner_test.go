@@ -157,6 +157,70 @@ func TestAccGitlabRunner_comprehensive(t *testing.T) {
 	})
 }
 
+func TestAccGitlabRunner_sorting_tags(t *testing.T) {
+	group := testutil.CreateGroups(t, 1)[0]
+	//The runner token is not populated on the return from the group create, so re-retrieve it to get the token.
+	group, _, err := testutil.TestGitlabClient.Groups.GetGroup(group.ID, &gitlab.GetGroupOptions{})
+	if err != nil {
+		t.Fatalf("Failed to retrieve group %d: %s", group.ID, err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckRunnerDestroy,
+
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_runner" "this" {
+					registration_token = "%s"
+					description = "Lorem Ipsum"
+
+					tag_list = ["a", "b", "c"]
+				}
+				`, group.RunnersToken),
+			},
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_runner" "this" {
+					registration_token = "%s"
+					description = "Lorem Ipsum"
+
+					tag_list = ["c", "b", "a"]
+				}
+				`, group.RunnersToken),
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
+			},
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_runner" "this" {
+					registration_token = "%s"
+					description = "Lorem Ipsum"
+
+					tag_list = ["b", "c", "a"]
+				}
+				`, group.RunnersToken),
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
+			},
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_runner" "this" {
+					registration_token = "%s"
+					description = "Lorem Ipsum"
+
+					tag_list = ["a", "c", "b"]
+				}
+				`, group.RunnersToken),
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
+			},
+		},
+	})
+}
+
 func testAccCheckRunnerDestroy(state *terraform.State) error {
 	for _, rs := range state.RootModule().Resources {
 		if rs.Type != "gitlab_runner" {

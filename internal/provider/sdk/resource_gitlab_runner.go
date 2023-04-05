@@ -16,8 +16,8 @@ import (
 var _ = registerResource("gitlab_runner", func() *schema.Resource {
 	return &schema.Resource{
 		Description: `The ` + "`gitlab_runner`" + ` resource allows to manage the lifecycle of a runner.
-		
-A runner can either be registered at an instance level or group level. 
+
+A runner can either be registered at an instance level or group level.
 The runner will be registered at a group level if the token used is from a group, or at an instance level if the token used is for the instance.
 
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/runners.html#register-a-new-runner)`,
@@ -63,7 +63,8 @@ The runner will be registered at a group level if the token used is from a group
 			},
 			"tag_list": {
 				Description: `List of runner’s tags.`,
-				Type:        schema.TypeList,
+				Type:        schema.TypeSet,
+				Set:         schema.HashString,
 				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
@@ -131,7 +132,7 @@ func resourceGitLabRunnerCreate(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	if v, ok := d.GetOk("tag_list"); ok {
-		options.TagList = stringListToStringSlice(v.([]interface{}))
+		options.TagList = stringSetToStringSlice(v.(*schema.Set))
 	}
 
 	if v, ok := d.GetOk("access_level"); ok {
@@ -214,7 +215,7 @@ func resourceGitLabRunnerUpdate(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	if v, ok := d.GetOk("tag_list"); ok {
-		options.TagList = stringListToStringSlice(v.([]interface{}))
+		options.TagList = stringSetToStringSlice(v.(*schema.Set))
 	}
 
 	if v, ok := d.GetOk("access_level"); ok {
