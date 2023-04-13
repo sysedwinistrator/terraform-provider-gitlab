@@ -103,3 +103,20 @@ To create an OIDC application, a scope of "openid".
 	}
 }
 ```
+
+Similar to the schema struct above, there are a couple things to take note of in the above `Schema` func.
+
+1. The `Schema` func itself is part of the `resource.Resource` interface. Make sure it has the proper inputs!
+2. Each `Schema` must have a `MarkdownDescription`. This will appear in the terraform documentation on the provider's site.
+3. Each `Schema` must have a `Attributes` map, which contains a minimum of one `schema.Attribute` in its map. This map
+is where plan-time validation happens. Within each `schema.Attribute`, several key properties are required:
+  - `MarkdownDescription` if the documentation that will appear on the terraform documentation site for that attribute.
+  - `Required` denotes whether the attribute is required for the resource. Resources missing required attribute will fail at plan-time.
+  - `Computed` denotes whether the resource will compute values for that attribute that may differ from the plan. If `Computed` is 
+  set to `true`, then storing a value that's different from the terraform config won't result in a diff being identified unless the 
+  value is explicitly set in the config. 
+  - `Validators` accepts validator functions that can be used to validate inputs at plan time.
+  - `PlanModifiers` accepts modifier functions that can change how the resource identifies plan changes.
+
+For more information on various properties of the schema attributes, feel free to read the 
+[Terraform Plugin Framework Schema Documentation](https://developer.hashicorp.com/terraform/plugin/framework/handling-data/schemas).
