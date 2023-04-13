@@ -48,9 +48,58 @@ The schema for the resource handles multiple responsibilities during `terraform 
 
 As a result, the schema is the natural starting point for creating a resource. The best place to start
 for creating a resource is to copy all the required and optional attributes from the GitLab API into the
-schema struct. To define the schema for the resource, first, create
+schema struct. To define the schema for the resource, first, create a struct representing the attributes
+that a user can use to configure the resource:
 
 ```golang
+type gitlabApplicationResourceModel struct {
+	Name         types.String `tfsdk:"name"`
+	RedirectURL  types.String `tfsdk:"redirect_url"`
+	Scopes       types.Set    `tfsdk:"scopes"`
+	Confidential types.Bool   `tfsdk:"confidential"`
 
+	Id            types.String `tfsdk:"id"`
+	Secret        types.String `tfsdk:"secret"`
+	ApplicationId types.String `tfsdk:"application_id"`
+}
+```
+ 
+There are a couple of things to notice about this struct:
 
+1. The types for each attribute use the `types` package. This is because `types.String` can have a nil value,
+whereas a primative `string` cannot.
+2. The `tfsdk` tag value maps to the string value in our schema.
+3. Each new struct like this must have a unique name. The terraform provider uses the naming convention of
+`gitlab<resourceName><resource type, either Resource or Data>Model`. That means an application data source 
+would be named `gitlabApplicationDataModel`.
+
+Once the struct is created representing the schema, the next step is to create the schema block itself. The
+schema block is very large, so the full block will not be copied here. The full schema function can be 
+read [in the repository, linked here](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/blob/main/internal/provider/resource_gitlab_application.go#L63)
+
+```golang
+func (r *gitlabApplicationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: fmt.Sprintf(`The ` + "`gitlab_application`" + ` resource allows to manage the lifecycle of applications in gitlab.
+
+~> In order to use a user for a user to create an application, they must have admin priviledges at the instance level.
+To create an OIDC application, a scope of "openid".
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/applications.html)`),
+
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "The ID of this Terraform resource. In the format of `<application_id>`.",
+				Computed:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Name of the application.",
+				Required:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+			},
+			// additional schema resources past this point.
+		}
+	}
+}
 ```
