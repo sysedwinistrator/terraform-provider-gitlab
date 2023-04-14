@@ -174,16 +174,12 @@ func resourceGitlabProjectIssueUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 	if d.HasChange("due_date") {
 		dueDate := d.Get("due_date").(string)
-		if dueDate != "" {
-			parsedDueDate, err := parseISO8601Date(dueDate)
-			if err != nil {
-				return diag.Errorf("failed to parse due_date: %s. %v", dueDate, err)
-			}
-			options.DueDate = parsedDueDate
-		} else {
-			// see https://github.com/xanzy/go-gitlab/issues/1384
-			return diag.Errorf("remove a due date is currently not supported. See https://github.com/xanzy/go-gitlab/issues/1384")
+
+		parsedDueDate, err := parseISO8601Date(dueDate)
+		if err != nil {
+			return diag.Errorf("failed to parse due_date: %s. %v", dueDate, err)
 		}
+		options.DueDate = parsedDueDate
 	}
 	if d.HasChange("issue_type") {
 		options.IssueType = gitlab.String(d.Get("issue_type").(string))
