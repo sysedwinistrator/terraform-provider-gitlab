@@ -79,9 +79,7 @@ func gitlabProjectIssueGetSchema() map[string]*schema.Schema {
 			Optional:    true,
 		},
 		"due_date": {
-			Description: `The due date. Date time string in the format YYYY-MM-DD, for example 2016-03-11.
-**Note:** removing a due date is currently not supported, see https://github.com/xanzy/go-gitlab/issues/1384 for details.
-				`,
+			Description:      `The due date. Date time string in the format YYYY-MM-DD, for example 2016-03-11.`,
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateDiagFunc: isISO6801Date,

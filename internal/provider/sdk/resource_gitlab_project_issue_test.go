@@ -252,9 +252,6 @@ resource "gitlab_project_issue" "this" {
 	project = "%s"
 	title   = "Terraform test issue"
 
-	// we have to add this because of: https://github.com/xanzy/go-gitlab/issues/1384
-	// optional
-	due_date = "2020-01-01"
 }`, project.PathWithNamespace)
 }
 
@@ -263,8 +260,6 @@ func testAccGitlabProjectIssueConfigWithState(project *gitlab.Project, state str
 resource "gitlab_project_issue" "this" {
 	project  = "%s"
 	title    = "Terraform test issue"
-	// we have to add this because of: https://github.com/xanzy/go-gitlab/issues/1384
-	due_date = "2020-01-01"
 
 	state    = "%s"
 }`, project.PathWithNamespace, state)
@@ -287,10 +282,6 @@ resource "gitlab_project_issue" "this" {
 	project = "%s"
 	title   = "Terraform test issue"
 
-	// we have to add this because of: https://github.com/xanzy/go-gitlab/issues/1384
-	// optional
-	due_date = "2020-01-01"
-
 	assignee_ids = [%d]
 	confidential = true
 	description  = "Terraform test issue description"
@@ -308,10 +299,6 @@ resource "gitlab_project_issue" "this" {
 	// required
 	project = "%s"
 	title   = "Terraform test issue"
-
-	// we have to add this because of: https://github.com/xanzy/go-gitlab/issues/1384
-	// optional
-	due_date = "2020-01-01"
 
 	assignee_ids = [%d]
 	confidential = true
