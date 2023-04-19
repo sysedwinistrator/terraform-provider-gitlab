@@ -11,13 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
+
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_group_membership", func() *schema.Resource {
 	return &schema.Resource{
-		Description: `The ` + "`gitlab_group_membership`" + ` resource allows to manage the lifecycle of a users group membersip.
+		Description: `The ` + "`gitlab_group_membership`" + ` resource allows to manage the lifecycle of a users group membership.
 
 -> If a group should grant membership to another group use the ` + "`gitlab_group_share_group`" + ` resource instead.
 
