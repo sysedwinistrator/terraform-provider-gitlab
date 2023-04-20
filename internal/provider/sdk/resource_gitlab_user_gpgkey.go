@@ -32,7 +32,7 @@ var _ = registerResource("gitlab_user_gpgkey", func() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"user_id": {
-				Description: "The ID of the user to add the GPG key to. If this field is omitted, this resource manages a GPG key for the current user. Otherwise, this resource manages a GPG key for the speicifed user, and an admin token is required.",
+				Description: "The ID of the user to add the GPG key to. If this field is omitted, this resource manages a GPG key for the current user. Otherwise, this resource manages a GPG key for the specified user, and an admin token is required.",
 				Type:        schema.TypeInt,
 				ForceNew:    true,
 				Optional:    true,
