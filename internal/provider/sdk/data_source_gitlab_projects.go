@@ -156,6 +156,7 @@ func flattenProjects(projects []*gitlab.Project) (values []map[string]interface{
 				"merge_method":                                     project.MergeMethod,
 				"forked_from_project":                              flattenForkedFromProject(project.ForkedFromProject),
 				"import_url":                                       project.ImportURL,
+				"keep_latest_artifact":                             project.KeepLatestArtifact,
 				"mirror":                                           project.Mirror,
 				"mirror_user_id":                                   project.MirrorUserID,
 				"mirror_trigger_builds":                            project.MirrorTriggerBuilds,
@@ -739,6 +740,11 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 						"import_url": {
 							Description: "URL the project was imported from.",
 							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"keep_latest_artifact": {
+							Description: "Disable or enable the ability to keep the latest artifact for this project.",
+							Type:        schema.TypeBool,
 							Computed:    true,
 						},
 						"mirror": {

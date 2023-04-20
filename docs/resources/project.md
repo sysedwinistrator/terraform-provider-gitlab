@@ -174,6 +174,7 @@ resource "gitlab_project" "import_private" {
 - `issues_access_level` (String) Set the issues access level. Valid values are `disabled`, `private`, `enabled`.
 - `issues_enabled` (Boolean) Enable issue tracking for the project.
 - `issues_template` (String) Sets the template for new issues in the project.
+- `keep_latest_artifact` (Boolean) Disable or enable the ability to keep the latest artifact for this project.
 - `lfs_enabled` (Boolean) Enable LFS for the project.
 - `merge_commit_template` (String) Template used to create merge commit message in merge requests. (Introduced in GitLab 14.5.)
 - `merge_method` (String) Set the merge method. Valid values are `merge`, `rebase_merge`, `ff`.

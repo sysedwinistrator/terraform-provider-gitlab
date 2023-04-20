@@ -320,6 +320,11 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"keep_latest_artifact": {
+				Description: "Disable or enable the ability to keep the latest artifact for this project.",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"import_url": {
 				Description: "URL the project was imported from.",
 				Type:        schema.TypeString,
@@ -552,6 +557,7 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 	d.Set("ci_default_git_depth", found.CIDefaultGitDepth)
 	d.Set("ci_config_path", found.CIConfigPath)
 	d.Set("ci_separated_caches", found.CISeperateCache)
+	d.Set("keep_latest_artifact", found.KeepLatestArtifact)
 	d.Set("import_url", found.ImportURL)
 	d.Set("releases_access_level", string(found.ReleasesAccessLevel))
 	d.Set("environments_access_level", string(found.EnvironmentsAccessLevel))

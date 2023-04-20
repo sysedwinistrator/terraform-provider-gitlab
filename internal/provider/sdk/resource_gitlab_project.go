@@ -437,6 +437,12 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Computed:    true,
 	},
+	"keep_latest_artifact": {
+		Description: "Disable or enable the ability to keep the latest artifact for this project.",
+		Type:        schema.TypeBool,
+		Optional:    true,
+		Computed:    true,
+	},
 	"merge_pipelines_enabled": {
 		Description: "Enable or disable merge pipelines.",
 		Type:        schema.TypeBool,
@@ -847,6 +853,7 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("ci_config_path", project.CIConfigPath)
 	d.Set("ci_forward_deployment_enabled", project.CIForwardDeploymentEnabled)
 	d.Set("ci_separated_caches", project.CISeperateCache)
+	d.Set("keep_latest_artifact", project.KeepLatestArtifact)
 	d.Set("merge_pipelines_enabled", project.MergePipelinesEnabled)
 	d.Set("merge_trains_enabled", project.MergeTrainsEnabled)
 	d.Set("resolve_outdated_diff_discussions", project.ResolveOutdatedDiffDiscussions)
@@ -1451,6 +1458,12 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if v, ok := d.GetOkExists("ci_separated_caches"); ok {
 		editProjectOptions.CISeperateCache = gitlab.Bool(v.(bool))
+	}
+
+	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
+	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
+	if v, ok := d.GetOkExists("keep_latest_artifact"); ok {
+		editProjectOptions.KeepLatestArtifact = gitlab.Bool(v.(bool))
 	}
 
 	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
@@ -2140,6 +2153,10 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if d.HasChange("ci_separated_caches") {
 		options.CISeperateCache = gitlab.Bool(d.Get("ci_separated_caches").(bool))
+	}
+
+	if d.HasChange("keep_latest_artifact") {
+		options.KeepLatestArtifact = gitlab.Bool(d.Get("keep_latest_artifact").(bool))
 	}
 
 	if d.HasChange("mr_default_target_self") {
