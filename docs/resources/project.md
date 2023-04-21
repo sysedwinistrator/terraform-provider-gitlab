@@ -268,7 +268,7 @@ Optional:
 - `commit_message_negative_regex` (String) No commit message is allowed to match this regex, for example `ssh\:\/\/`.
 - `commit_message_regex` (String) All commit messages must match this regex, e.g. `Fixed \d+\..*`.
 - `deny_delete_tag` (Boolean) Deny deleting a tag.
-- `file_name_regex` (String) All commited filenames must not match this regex, e.g. `(jar|exe)$`.
+- `file_name_regex` (String) All committed filenames must not match this regex, e.g. `(jar|exe)$`.
 - `max_file_size` (Number) Maximum file size (MB).
 - `member_check` (Boolean) Restrict commits by author (email) to existing GitLab users.
 - `prevent_secrets` (Boolean) GitLab will reject any files that are likely to contain secrets.
