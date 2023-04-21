@@ -7,6 +7,13 @@ since that is how all new resources are added to the GitLab terraform provider, 
 [CONTRIBUTING.md](/CONTRIBUTING.md). This guide will assume that a development environment has already
 been set up by following the `Developing The Provider` section of the CONTRIBUTING.md documentation.
 
+<!-- Use "yzhang.markdown-all-in-one" plugin to keep this up to date in vscode -->
+- [Creating a New Resource Using the Terraform Plugin Framework](#creating-a-new-resource-using-the-terraform-plugin-framework)
+	- [Step 1: Understand the API from GitLab](#step-1-understand-the-api-from-gitlab)
+	- [Step 2: Create the Resource struct](#step-2-create-the-resource-struct)
+	- [Step 3: Create the Schema for the Resource](#step-3-create-the-schema-for-the-resource)
+
+
 ## Step 1: Understand the API from GitLab
 
 When creating a new resource, the GitLab terraform provider follows the
@@ -73,9 +80,25 @@ whereas a primative `string` cannot.
 `gitlab<resourceName><resource type, either Resource or Data>Model`. That means an application data source 
 would be named `gitlabApplicationDataModel`.
 
-Once the struct is created representing the schema, the next step is to create the schema block itself. The
-schema block is very large, so the full block will not be copied here. The full schema function can be 
-read [in the repository, linked here](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/blob/main/internal/provider/resource_gitlab_application.go#L63)
+After the schema struct is created, the next step is to create a second struct representing the resource itself. This
+struct will then implement all the functions that are required for performing terraform CRUD (Create, Read,
+Update, Delete) operations.
+
+```golang
+type gitlabApplicationResource struct {
+	client *gitlab.Client
+}
+```
+
+This struct is very simple, and just accepts a client reference. This client will be used to make REST calls to
+the GitLab instance configured in the provider.
+
+With the schema struct and the resource struct created, it's time to start implementing the resource functions.
+
+The first function to create is the `Schema` function, which defines a `schema.Schema` struct representing the schema
+and all the validations required for the resource. The schema block is very large, so the full block will not be copied here. 
+The full schema function can be read 
+[in the repository, linked here](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/blob/main/internal/provider/resource_gitlab_application.go#L63)
 
 ```golang
 func (r *gitlabApplicationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -120,3 +143,29 @@ is where plan-time validation happens. Within each `schema.Attribute`, several k
 
 For more information on various properties of the schema attributes, feel free to read the 
 [Terraform Plugin Framework Schema Documentation](https://developer.hashicorp.com/terraform/plugin/framework/handling-data/schemas).
+
+After the schema function has been written, the `Config` function needs to be written. Don't worry, this one is much easier!
+
+```golang
+// Configure adds the provider configured client to the resource.
+func (r *gitlabApplicationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*gitlab.Client)
+}
+```
+
+This function will be nearly identical on every resource. The logic simply sets the client in the resource struct to be the value 
+configured in the provider. This ensures that when making calls from the `r.Client` that they're authenticated and configured properly.
+
+Finally, it's time to create the CRUD functions for the resource. The CRUD functions (Create, Read, Update, and Delete) are responsible
+for using the `r.Client` to make the changes to the GitLab instance. Terraform will automatically call the correct function based on 
+the terraform plan that's generated before the apply:
+
+- If a resource is labelled as `create`, the `Create` function will be called. 
+- - If a resource is labelled as `update`, the `Update` function will be called.
+- If a resource is labelled as `destroy`, the `Delete` function will be called. 
+- The `Read` function is called any time terraform `refresh` is called, either by a `plan`, an `apply`, or an explicit `refresh`.
