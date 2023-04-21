@@ -357,7 +357,7 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 							Computed:    true,
 						},
 						"file_name_regex": {
-							Description: "All commited filenames must not match this regex, e.g. `(jar|exe)$`.",
+							Description: "All committed filenames must not match this regex, e.g. `(jar|exe)$`.",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
