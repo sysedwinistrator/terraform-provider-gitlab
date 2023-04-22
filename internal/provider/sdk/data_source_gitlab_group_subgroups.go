@@ -100,9 +100,14 @@ func dataSourceGitlabGroupSubgroupsRead(ctx context.Context, d *schema.ResourceD
 
 	groupIDData, groupIDOk := d.GetOk("group_id")
 
+	listGroupsOptions := &gitlab.ListSubGroupsOptions{}
+	if data, ok := d.GetOk("skip_groups"); ok {
+		skipGroups := intListToIntSlice(data.([]interface{}))
+		listGroupsOptions.SkipGroups = skipGroups
+	}
 	if groupIDOk {
 		// Get group subgroups by id
-		subgroups, _, err = client.Groups.ListSubGroups(groupIDData.(int), nil, gitlab.WithContext(ctx))
+		subgroups, _, err = client.Groups.ListSubGroups(groupIDData.(int), listGroupsOptions, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
 		}
