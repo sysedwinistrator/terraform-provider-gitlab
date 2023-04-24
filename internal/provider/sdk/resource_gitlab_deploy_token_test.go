@@ -4,8 +4,9 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -15,6 +16,89 @@ import (
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabDeployToken_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "project deploy token",
+			givenV0State: map[string]interface{}{
+				"project": "999",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "999",
+				"id":      "project:999:42",
+			},
+		},
+		{
+			name: "project deploy token",
+			givenV0State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "project:foo/bar:42",
+			},
+		},
+		{
+			name: "project deploy token with empty group in state",
+			givenV0State: map[string]interface{}{
+				"project": "foo/bar",
+				"group":   "",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "foo/bar",
+				"group":   "",
+				"id":      "project:foo/bar:42",
+			},
+		},
+		{
+			name: "group deploy token",
+			givenV0State: map[string]interface{}{
+				"group": "foo/bar",
+				"id":    "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"group": "foo/bar",
+				"id":    "group:foo/bar:42",
+			},
+		},
+		{
+			name: "group deploy token with empty project in state",
+			givenV0State: map[string]interface{}{
+				"group":   "foo/bar",
+				"project": "",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"group":   "foo/bar",
+				"project": "",
+				"id":      "group:foo/bar:42",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabDeployTokenStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+	}
+}
 
 func TestAccGitlabDeployToken_basic(t *testing.T) {
 	var projectDeployToken gitlab.DeployToken
@@ -39,14 +123,12 @@ func TestAccGitlabDeployToken_basic(t *testing.T) {
 			// Verify import
 			{
 				ResourceName:            "gitlab_deploy_token.project_token",
-				ImportStateIdFunc:       getDeployTokenImportID("gitlab_deploy_token.project_token"),
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"token"},
 			},
 			{
 				ResourceName:            "gitlab_deploy_token.group_token",
-				ImportStateIdFunc:       getDeployTokenImportID("gitlab_deploy_token.group_token"),
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"token"},
@@ -83,60 +165,28 @@ func testAccCheckGitlabDeployTokenExists(n string, deployToken *gitlab.DeployTok
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		deployTokenID, err := strconv.Atoi(rs.Primary.ID)
+		deployTokenType, typeId, deployTokenId, err := resourceGitlabDeployTokenParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		projectName := rs.Primary.Attributes["project"]
-		groupName := rs.Primary.Attributes["group"]
-
-		var gotDeployTokens []*gitlab.DeployToken
-
-		if projectName != "" {
-			gotDeployTokens, _, err = testutil.TestGitlabClient.DeployTokens.ListProjectDeployTokens(projectName, nil)
-		} else if groupName != "" {
-			gotDeployTokens, _, err = testutil.TestGitlabClient.DeployTokens.ListGroupDeployTokens(groupName, nil)
-		} else {
+		switch deployTokenType {
+		case "project":
+			deployToken, _, err = testutil.TestGitlabClient.DeployTokens.GetProjectDeployToken(typeId, deployTokenId)
+		case "group":
+			deployToken, _, err = testutil.TestGitlabClient.DeployTokens.GetGroupDeployToken(typeId, deployTokenId)
+		default:
 			return fmt.Errorf("No project or group ID is set")
 		}
 
 		if err != nil {
-			return err
-		}
-
-		for _, token := range gotDeployTokens {
-			if token.ID == deployTokenID {
-				*deployToken = *token
-				return nil
+			if api.Is404(err) {
+				return fmt.Errorf("Deploy Token doesn't exist")
 			}
-		}
+			return err
 
-		return fmt.Errorf("Deploy Token doesn't exist")
-	}
-}
-
-func getDeployTokenImportID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", n)
 		}
-
-		deployTokenID := rs.Primary.ID
-		if deployTokenID == "" {
-			return "", fmt.Errorf("No deploy token ID is set")
-		}
-		projectID := rs.Primary.Attributes["project"]
-		if projectID != "" {
-			return fmt.Sprintf("project:%s:%s", projectID, deployTokenID), nil
-		}
-		groupID := rs.Primary.Attributes["group"]
-		if groupID != "" {
-			return fmt.Sprintf("group:%s:%s", groupID, deployTokenID), nil
-		}
-
-		return "", fmt.Errorf("No project or group ID is set")
+		return nil
 	}
 }
 
@@ -146,30 +196,22 @@ func testAccCheckGitlabDeployTokenDestroy(s *terraform.State) error {
 			continue
 		}
 
-		deployTokenID, err := strconv.Atoi(rs.Primary.ID)
+		deployTokenType, typeId, deployTokenId, err := resourceGitlabDeployTokenParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		project := rs.Primary.Attributes["project"]
-		group := rs.Primary.Attributes["group"]
-
-		var gotDeployTokens []*gitlab.DeployToken
-
-		if project != "" {
-			gotDeployTokens, _, err = testutil.TestGitlabClient.DeployTokens.ListProjectDeployTokens(project, nil)
-		} else if group != "" {
-			gotDeployTokens, _, err = testutil.TestGitlabClient.DeployTokens.ListGroupDeployTokens(group, nil)
-		} else {
-			return fmt.Errorf("somehow neither project nor group were set")
+		switch deployTokenType {
+		case "project":
+			_, _, err = testutil.TestGitlabClient.DeployTokens.GetProjectDeployToken(typeId, deployTokenId)
+		case "group":
+			_, _, err = testutil.TestGitlabClient.DeployTokens.GetGroupDeployToken(typeId, deployTokenId)
+		default:
+			return fmt.Errorf("No project or group ID is set")
 		}
 
 		if err == nil {
-			for _, token := range gotDeployTokens {
-				if token.ID == deployTokenID {
-					return fmt.Errorf("Deploy token still exists")
-				}
-			}
+			return fmt.Errorf("Deploy token still exists")
 		}
 
 		if !api.Is404(err) {
