@@ -1,3 +1,19 @@
+## 16.0.0 (UNRELEASED)
+
+This release was tested against GitLab 15.9, 15.10 and 15.11 for both CE and EE.
+
+BREAKING CHANGES:
+
+- resource/gitlab_instance_variable: Changed `value` attribute to non-sensitive ([!1521](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1521))
+- resource/gitlab_group_variable: Changed `value` attribute to non-sensitive ([!1521](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1521))
+- resource/gitlab_project_variable: Changed `value` attribute to non-sensitive ([!1521](https://gitlab.com/gitlab-org/terraform-provider-gitlab/-/merge_requests/1521))
+
+FEATURES:
+
+IMPROVEMENTS:
+
+BUG FIXES:
+
 ## 15.11.0 (2023-04-22)
 
 This release was tested against GitLab 15.9, 15.10 and 15.11 for both CE and EE.
