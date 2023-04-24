@@ -4,8 +4,9 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -15,6 +16,53 @@ import (
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabDeployKey_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Project With ID",
+			givenV0State: map[string]interface{}{
+				"project": "99",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "99",
+				"id":      "99:42",
+			},
+		},
+		{
+			name: "Project With Namespace",
+			givenV0State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "foo/bar:42",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabProjectDeployKeyStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
+	}
+}
 
 func TestAccGitlabDeployKey_basic(t *testing.T) {
 	testProject := testutil.CreateProject(t)
@@ -31,7 +79,6 @@ func TestAccGitlabDeployKey_basic(t *testing.T) {
 			// Verify import
 			{
 				ResourceName:      "gitlab_deploy_key.foo",
-				ImportStateIdFunc: getDeployKeyImportID("gitlab_deploy_key.foo"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -42,7 +89,6 @@ func TestAccGitlabDeployKey_basic(t *testing.T) {
 			// Verify import
 			{
 				ResourceName:      "gitlab_deploy_key.foo",
-				ImportStateIdFunc: getDeployKeyImportID("gitlab_deploy_key.foo"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -53,7 +99,6 @@ func TestAccGitlabDeployKey_basic(t *testing.T) {
 			// Verify import
 			{
 				ResourceName:      "gitlab_deploy_key.foo",
-				ImportStateIdFunc: getDeployKeyImportID("gitlab_deploy_key.foo"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -76,7 +121,6 @@ func TestAccGitlabDeployKey_suppressTrailingSpace(t *testing.T) {
 			// Verify import
 			{
 				ResourceName:      "gitlab_deploy_key.foo",
-				ImportStateIdFunc: getDeployKeyImportID("gitlab_deploy_key.foo"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -86,12 +130,10 @@ func TestAccGitlabDeployKey_suppressTrailingSpace(t *testing.T) {
 
 func testAccCheckGitlabDeployKeyDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
-		deployKeyID, err := strconv.Atoi(rs.Primary.ID)
+		project, deployKeyID, err := resourceGitlabProjectDeployKeyParseId(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("unable to convert GitLab deploy key string into an int: %w", err)
+			return fmt.Errorf("unable to parse deploy key resource id: %w", err)
 		}
-
-		project := rs.Primary.Attributes["project"]
 
 		gotDeployKey, _, err := testutil.TestGitlabClient.DeployKeys.GetDeployKey(project, deployKeyID)
 		if err == nil {
@@ -105,27 +147,6 @@ func testAccCheckGitlabDeployKeyDestroy(s *terraform.State) error {
 		return nil
 	}
 	return nil
-}
-
-func getDeployKeyImportID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", n)
-		}
-
-		deployKeyID := rs.Primary.ID
-		if deployKeyID == "" {
-			return "", fmt.Errorf("No deploy key ID is set")
-		}
-
-		projectID := rs.Primary.Attributes["project"]
-		if projectID == "" {
-			return "", fmt.Errorf("No project ID is set")
-		}
-
-		return fmt.Sprintf("%s:%s", projectID, deployKeyID), nil
-	}
 }
 
 func testAccGitlabDeployKeyConfig(rInt int, suffix string, projectId int) string {
