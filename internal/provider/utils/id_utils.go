@@ -9,7 +9,7 @@ import (
 func ParseTwoPartID(id string) (string, string, error) {
 	parts := strings.SplitN(id, ":", 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("Unexpected ID format (%q). Expected project:key", id)
+		return "", "", fmt.Errorf("Unexpected ID format (%q). Expected <part1>:<part2>", id)
 	}
 
 	return parts[0], parts[1], nil
