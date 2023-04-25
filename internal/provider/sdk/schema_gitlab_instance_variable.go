@@ -22,7 +22,6 @@ func gitlabInstanceVariableGetSchema() map[string]*schema.Schema {
 			Description: "The value of the variable.",
 			Type:        schema.TypeString,
 			Required:    true,
-			Sensitive:   true,
 		},
 		"variable_type": {
 			Description:      fmt.Sprintf("The type of a variable. Valid values are: %s. Default is `env_var`.", utils.RenderValueListForDocs(gitlabVariableTypeValues)),
