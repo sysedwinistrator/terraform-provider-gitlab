@@ -182,16 +182,7 @@ func TestAccGitlabProjectVariable_scoped(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy: func(state *terraform.State) error {
-			// Destroy behavior is nondeterministic for variables with scopes in GitLab versions prior to 13.4
-			// ref: https://gitlab.com/gitlab-org/gitlab/-/merge_requests/39209
-			if isAtLeast134, err := api.IsGitLabVersionAtLeast(context.Background(), testutil.TestGitlabClient, "13.4")(); err != nil {
-				return err
-			} else if isAtLeast134 {
-				return testAccGitlabProjectVariableCheckAllVariablesDestroyed(testProject)(state)
-			}
-			return nil
-		},
+		CheckDestroy:             testAccGitlabProjectVariableCheckAllVariablesDestroyed(testProject),
 		Steps: []resource.TestStep{
 			// Create a project variable from a project id
 			{

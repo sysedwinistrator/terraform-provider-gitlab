@@ -74,21 +74,10 @@ func resourceGitlabProjectVariableRead(ctx context.Context, d *schema.ResourceDa
 		environmentScope string
 	)
 
-	// An older version of this resource used the ID format "project:key".
-	// For backwards compatibility we still support the old format.
-	parts := strings.SplitN(d.Id(), ":", 4)
-	switch len(parts) {
-	case 2:
-		project = parts[0]
-		key = parts[1]
-		environmentScope = d.Get("environment_scope").(string)
-	case 3:
-		project = parts[0]
-		key = parts[1]
-		environmentScope = parts[2]
-	default:
-		return diag.Errorf(`Failed to parse project variable ID %q: expected format project:key or project:key:environment_scope`, d.Id())
-	}
+	parts := strings.SplitN(d.Id(), ":", 3)
+	project = parts[0]
+	key = parts[1]
+	environmentScope = parts[2]
 
 	log.Printf("[DEBUG] read gitlab project variable %q", d.Id())
 
