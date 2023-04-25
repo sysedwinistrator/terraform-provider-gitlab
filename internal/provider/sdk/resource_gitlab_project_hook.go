@@ -2,15 +2,15 @@ package sdk
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
-	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_project_hook", func() *schema.Resource {
@@ -24,11 +24,56 @@ var _ = registerResource("gitlab_project_hook", func() *schema.Resource {
 		UpdateContext: resourceGitlabProjectHookUpdate,
 		DeleteContext: resourceGitlabProjectHookDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceGitlabProjectHookStateImporter,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
-		Schema: gitlabProjectHookSchema(),
+		Schema:        gitlabProjectHookSchema(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabProjectHookResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabProjectHookStateUpgradeV0,
+				Version: 0,
+			},
+		},
 	}
 })
+
+// resourceGitlabProjectHookResourceV0 returns the V0 schema definition.
+// From V0-V1 the `id` attribute value format changed from `<hook-id>` to `<project-id>:<hook-id>`,
+// which means that the actual schema definition was not impacted and we can just return the
+// V1 schema as V0 schema.
+func resourceGitlabProjectHookResourceV0() *schema.Resource {
+	return &schema.Resource{Schema: gitlabProjectHookSchema()}
+}
+
+// resourceGitlabProjectHookStateUpgradeV0 performs the state migration from V0 to V1.
+func resourceGitlabProjectHookStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	project := rawState["project"].(string)
+	oldId := rawState["id"].(string)
+	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `id` attribute format", map[string]interface{}{"project": project, "v0-id": oldId})
+	rawState["id"] = utils.BuildTwoPartID(&project, &oldId)
+	tflog.Debug(ctx, "migrated `id` attribute for V0 to V1", map[string]interface{}{"v0-id": oldId, "v1-id": rawState["id"]})
+	return rawState, nil
+}
+
+func resourceGitlabProjectHookBuildId(project string, hookId int) string {
+	h := strconv.Itoa(hookId)
+	return utils.BuildTwoPartID(&project, &h)
+}
+
+func resourceGitlabProjectHookParseId(id string) (string, int, error) {
+	project, rawHookId, err := utils.ParseTwoPartID(id)
+	if err != nil {
+		return "", 0, err
+	}
+
+	hookId, err := strconv.Atoi(rawHookId)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return project, hookId, nil
+}
 
 func resourceGitlabProjectHookCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
@@ -62,7 +107,7 @@ func resourceGitlabProjectHookCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%d", hook.ID))
+	d.SetId(resourceGitlabProjectHookBuildId(project, hook.ID))
 	d.Set("token", options.Token)
 
 	return resourceGitlabProjectHookRead(ctx, d, meta)
@@ -70,8 +115,7 @@ func resourceGitlabProjectHookCreate(ctx context.Context, d *schema.ResourceData
 
 func resourceGitlabProjectHookRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
-	hookId, err := strconv.Atoi(d.Id())
+	project, hookId, err := resourceGitlabProjectHookParseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -96,8 +140,7 @@ func resourceGitlabProjectHookRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceGitlabProjectHookUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
-	hookId, err := strconv.Atoi(d.Id())
+	project, hookId, err := resourceGitlabProjectHookParseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -135,8 +178,10 @@ func resourceGitlabProjectHookUpdate(ctx context.Context, d *schema.ResourceData
 
 func resourceGitlabProjectHookDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
-	hookId, err := strconv.Atoi(d.Id())
+	project, hookId, err := resourceGitlabProjectHookParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -148,18 +193,4 @@ func resourceGitlabProjectHookDelete(ctx context.Context, d *schema.ResourceData
 	}
 
 	return nil
-}
-
-func resourceGitlabProjectHookStateImporter(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	s := strings.Split(d.Id(), ":")
-	if len(s) != 2 {
-		d.SetId("")
-		return nil, fmt.Errorf("Invalid Project Hook import format; expected '{project_id}:{hook_id}'")
-	}
-	project, id := s[0], s[1]
-
-	d.SetId(id)
-	d.Set("project", project)
-
-	return []*schema.ResourceData{d}, nil
 }
