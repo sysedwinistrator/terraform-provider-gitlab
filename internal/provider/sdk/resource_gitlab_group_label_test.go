@@ -4,7 +4,9 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -15,6 +17,53 @@ import (
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabGroupLabel_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Group With ID",
+			givenV0State: map[string]interface{}{
+				"group": "99",
+				"id":    "some-label",
+			},
+			expectedV1State: map[string]interface{}{
+				"group": "99",
+				"id":    "99:some-label",
+			},
+		},
+		{
+			name: "Group With Namespace",
+			givenV0State: map[string]interface{}{
+				"group": "foo/bar",
+				"id":    "some-label",
+			},
+			expectedV1State: map[string]interface{}{
+				"group": "foo/bar",
+				"id":    "foo/bar:some-label",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabGroupLabelStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
+	}
+}
 
 func TestAccGitlabGroupLabel_basic(t *testing.T) {
 	var label gitlab.GroupLabel
@@ -59,32 +108,11 @@ func TestAccGitlabGroupLabel_basic(t *testing.T) {
 			},
 			{
 				ResourceName:      "gitlab_group_label.fixme",
-				ImportStateIdFunc: getGroupLabelImportID("gitlab_group_label.fixme"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 		},
 	})
-}
-
-func getGroupLabelImportID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", n)
-		}
-
-		labelID := rs.Primary.ID
-		if labelID == "" {
-			return "", fmt.Errorf("No deploy key ID is set")
-		}
-		groupID := rs.Primary.Attributes["group"]
-		if groupID == "" {
-			return "", fmt.Errorf("No group ID is set")
-		}
-
-		return fmt.Sprintf("%s:%s", groupID, labelID), nil
-	}
 }
 
 func testAccCheckGitlabGroupLabelExists(n string, label *gitlab.GroupLabel) resource.TestCheckFunc {
@@ -94,23 +122,14 @@ func testAccCheckGitlabGroupLabelExists(n string, label *gitlab.GroupLabel) reso
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		labelName := rs.Primary.ID
-		groupName := rs.Primary.Attributes["group"]
-		if groupName == "" {
-			return fmt.Errorf("No group ID is set")
+		groupName, labelName, err := resourceGitlabGroupLabelParseId(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Failed to parse group label id %q: %w", rs.Primary.ID, err)
 		}
 
-		labels, _, err := testutil.TestGitlabClient.GroupLabels.ListGroupLabels(groupName, &gitlab.ListGroupLabelsOptions{ListOptions: gitlab.ListOptions{PerPage: 1000}})
-		if err != nil {
-			return err
-		}
-		for _, gotLabel := range labels {
-			if gotLabel.Name == labelName {
-				*label = *gotLabel
-				return nil
-			}
-		}
-		return fmt.Errorf("Label does not exist")
+		l, _, err := testutil.TestGitlabClient.GroupLabels.GetGroupLabel(groupName, labelName)
+		*label = *l
+		return err
 	}
 }
 
@@ -140,22 +159,23 @@ func testAccCheckGitlabGroupLabelAttributes(label *gitlab.GroupLabel, want *test
 
 func testAccCheckGitlabGroupLabelDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "gitlab_group" {
+		if rs.Type != "gitlab_group_label" {
 			continue
 		}
 
-		group, _, err := testutil.TestGitlabClient.Groups.GetGroup(rs.Primary.ID, nil)
-		if err == nil {
-			if group != nil && fmt.Sprintf("%d", group.ID) == rs.Primary.ID {
-				if group.MarkedForDeletionOn == nil {
-					return fmt.Errorf("Group still exists")
-				}
-			}
+		groupName, labelName, err := resourceGitlabGroupLabelParseId(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Failed to parse group label id %q: %w", rs.Primary.ID, err)
 		}
-		if !api.Is404(err) {
+
+		_, _, err = testutil.TestGitlabClient.GroupLabels.GetGroupLabel(groupName, labelName)
+		if err != nil {
+			if api.Is404(err) {
+				return nil
+			}
 			return err
 		}
-		return nil
+		return fmt.Errorf("Group Label %q stil exists", rs.Primary.ID)
 	}
 	return nil
 }
