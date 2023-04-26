@@ -131,10 +131,10 @@ adding all required resources to the test configuration.
 **Desired:**
 
 ```hcl
-resource "gitlab_managed_license" "test" {
-  project         = %d
-  name            = "MIT"
-  approval_status = "%s"
+resource "gitlab_pipeline_schedule" "test" {
+  project     = %d
+  ref         = "%s"
+  cron        = "0 1 * * *"
 }
 ```
 
@@ -155,10 +155,10 @@ resource "gitlab_project" "test" {
   description = "Terraform acceptance tests"
 }
 
-resource "gitlab_managed_license" "test" {
-  project         = "${gitlab_project.test.id}"
-  name            = "MIT"
-  approval_status = "%s"
+resource "gitlab_pipeline_schedule" "test" {
+  project     = "${gitlab_project.test.id}"
+  ref         = "%s"
+  cron        = "0 1 * * *"
 }
 ```
 
