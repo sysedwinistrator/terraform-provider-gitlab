@@ -109,12 +109,9 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 	log.Printf("[DEBUG] gitlab_repository_file: got lock to create %s/%s", project, filePath)
 
 	client := meta.(*gitlab.Client)
-	// NOTE: for backwards-compatibility reasons, we also support an already given base64 encoding,
-	//       otherwise we encode the `content` to base64.
 	content := d.Get("content").(string)
 	if _, err := base64.StdEncoding.DecodeString(content); err != nil {
-		log.Printf("[DEBUG] gitlab_repository_file: given content '%s' is not a valid base64 encoded string, encoding it ...", content)
-		content = base64.StdEncoding.EncodeToString([]byte(content))
+		return diag.Errorf(`Invalid base64 string in "content". Ensure the content is base64 encoded, or use the "base64encode" terraform function to encode it.`)
 	}
 
 	options := &gitlab.CreateFileOptions{
@@ -272,12 +269,9 @@ func resourceGitlabRepositoryFileUpdate(ctx context.Context, d *schema.ResourceD
 		Ref: gitlab.String(branch),
 	}
 
-	// NOTE: for backwards-compatibility reasons, we also support an already given base64 encoding,
-	//       otherwise we encode the `content` to base64.
 	content := d.Get("content").(string)
 	if _, err := base64.StdEncoding.DecodeString(content); err != nil {
-		log.Printf("[DEBUG] gitlab_repository_file: given content '%s' is not a valid base64 encoded string, encoding it ...", content)
-		content = base64.StdEncoding.EncodeToString([]byte(content))
+		return diag.Errorf(`Invalid base64 string in "content". Ensure the content is base64 encoded, or use the "base64encode" terraform function to encode it.`)
 	}
 
 	updateOptions := &gitlab.UpdateFileOptions{
