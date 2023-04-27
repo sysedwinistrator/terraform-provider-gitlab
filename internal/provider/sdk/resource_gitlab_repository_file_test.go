@@ -285,88 +285,27 @@ func TestAccGitlabRepositoryFile_base64EncodingWithTextContent(t *testing.T) {
 						commit_message = "feature: add launch codes"
 					}
 				`, testProject.ID),
+				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`Invalid base64 string in "content"`)),
+			},
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_repository_file" "this" {
+						project = %d
+						file_path = "meow.txt"
+						branch = "main"
+						content = base64encode("Hello World, meow")
+						author_email = "meow@catnip.com"
+						author_name = "Meow Meowington"
+						commit_message = "feature: add launch codes"
+					}
+				`, testProject.ID),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabRepositoryFileExists("gitlab_repository_file.this", &file),
 					testAccCheckGitlabRepositoryFileAttributes(&file, &testAccGitlabRepositoryFileAttributes{
 						FilePath: "meow.txt",
 						Content:  "SGVsbG8gV29ybGQsIG1lb3c=",
 					}),
-					resource.TestCheckResourceAttr("gitlab_repository_file.this", "content", "Hello World, meow"),
 				),
-			},
-			// Update content
-			{
-				Config: fmt.Sprintf(`
-					resource "gitlab_repository_file" "this" {
-						project = %d
-						file_path = "meow.txt"
-						branch = "main"
-						content = "Hello World, meow UPDATED"
-						author_email = "meow@catnip.com"
-						author_name = "Meow Meowington"
-						commit_message = "feature: add launch codes"
-					}
-				`, testProject.ID),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabRepositoryFileExists("gitlab_repository_file.this", &file),
-					testAccCheckGitlabRepositoryFileAttributes(&file, &testAccGitlabRepositoryFileAttributes{
-						FilePath: "meow.txt",
-						Content:  "SGVsbG8gV29ybGQsIG1lb3cgVVBEQVRFRA==",
-					}),
-					resource.TestCheckResourceAttr("gitlab_repository_file.this", "content", "Hello World, meow UPDATED"),
-				),
-			},
-			// Update to already base64 encoded content, but same content
-			{
-				Config: fmt.Sprintf(`
-					resource "gitlab_repository_file" "this" {
-						project = %d
-						file_path = "meow.txt"
-						branch = "main"
-						content = "SGVsbG8gV29ybGQsIG1lb3cgVVBEQVRFRA=="
-						author_email = "meow@catnip.com"
-						author_name = "Meow Meowington"
-						commit_message = "feature: add launch codes"
-					}
-				`, testProject.ID),
-				Check: resource.TestCheckResourceAttr("gitlab_repository_file.this", "content", "SGVsbG8gV29ybGQsIG1lb3cgVVBEQVRFRA=="),
-			},
-			// Update content and already base64 encode it
-			{
-				Config: fmt.Sprintf(`
-					resource "gitlab_repository_file" "this" {
-						project = %d
-						file_path = "meow.txt"
-						branch = "main"
-						content = "bWVvdyBtZW93IG1lb3c="
-						author_email = "meow@catnip.com"
-						author_name = "Meow Meowington"
-						commit_message = "feature: add launch codes"
-					}
-				`, testProject.ID),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabRepositoryFileExists("gitlab_repository_file.this", &file),
-					testAccCheckGitlabRepositoryFileAttributes(&file, &testAccGitlabRepositoryFileAttributes{
-						FilePath: "meow.txt",
-						Content:  "bWVvdyBtZW93IG1lb3c=",
-					}),
-					resource.TestCheckResourceAttr("gitlab_repository_file.this", "content", "bWVvdyBtZW93IG1lb3c="),
-				),
-			},
-			// Update to not-yet base64 encoded content, but same content
-			{
-				Config: fmt.Sprintf(`
-					resource "gitlab_repository_file" "this" {
-						project = %d
-						file_path = "meow.txt"
-						branch = "main"
-						content = "meow meow meow"
-						author_email = "meow@catnip.com"
-						author_name = "Meow Meowington"
-						commit_message = "feature: add launch codes"
-					}
-				`, testProject.ID),
-				Check: resource.TestCheckResourceAttr("gitlab_repository_file.this", "content", "meow meow meow"),
 			},
 		},
 	})
