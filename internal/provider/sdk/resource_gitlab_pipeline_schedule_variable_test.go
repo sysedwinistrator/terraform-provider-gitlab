@@ -4,18 +4,73 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabPipelineScheduleVariable_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Project With ID",
+			givenV0State: map[string]interface{}{
+				"project":              "99",
+				"pipeline_schedule_id": "42",
+				"key":                  "some-key",
+				"id":                   "42:some-key",
+			},
+			expectedV1State: map[string]interface{}{
+				"project":              "99",
+				"pipeline_schedule_id": "42",
+				"key":                  "some-key",
+				"id":                   "99:42:some-key",
+			},
+		},
+		{
+			name: "Project With Namespace",
+			givenV0State: map[string]interface{}{
+				"project":              "foo/bar",
+				"pipeline_schedule_id": "42",
+				"key":                  "some-key",
+				"id":                   "42:some-key",
+			},
+			expectedV1State: map[string]interface{}{
+				"project":              "foo/bar",
+				"pipeline_schedule_id": "42",
+				"key":                  "some-key",
+				"id":                   "foo/bar:42:some-key",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabProjectLabelStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
+	}
+}
 
 func TestAccGitlabPipelineScheduleVariable_basic(t *testing.T) {
 	var variable gitlab.PipelineVariable
@@ -39,7 +94,6 @@ func TestAccGitlabPipelineScheduleVariable_basic(t *testing.T) {
 			{
 				ResourceName:      "gitlab_pipeline_schedule_variable.schedule_var",
 				ImportState:       true,
-				ImportStateIdFunc: getPipelineScheduleVariableID("gitlab_pipeline_schedule_variable.schedule_var"),
 				ImportStateVerify: true,
 			},
 			{
@@ -56,7 +110,6 @@ func TestAccGitlabPipelineScheduleVariable_basic(t *testing.T) {
 			{
 				ResourceName:      "gitlab_pipeline_schedule_variable.schedule_var",
 				ImportState:       true,
-				ImportStateIdFunc: getPipelineScheduleVariableID("gitlab_pipeline_schedule_variable.schedule_var"),
 				ImportStateVerify: true,
 			},
 			{
@@ -73,31 +126,10 @@ func TestAccGitlabPipelineScheduleVariable_basic(t *testing.T) {
 			{
 				ResourceName:      "gitlab_pipeline_schedule_variable.schedule_var",
 				ImportState:       true,
-				ImportStateIdFunc: getPipelineScheduleVariableID("gitlab_pipeline_schedule_variable.schedule_var"),
 				ImportStateVerify: true,
 			},
 		},
 	})
-}
-
-func getPipelineScheduleVariableID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("not found: %s", n)
-		}
-
-		pipelineScheduleVariableID := rs.Primary.ID
-		if pipelineScheduleVariableID == "" {
-			return "", fmt.Errorf("no pipeline schedule variable ID is set")
-		}
-		projectID := rs.Primary.Attributes["project"]
-		if projectID == "" {
-			return "", fmt.Errorf("no project ID is set")
-		}
-
-		return fmt.Sprintf("%s:%s", projectID, pipelineScheduleVariableID), nil
-	}
 }
 
 func testAccCheckGitlabPipelineScheduleVariableExists(n string, variable *gitlab.PipelineVariable) resource.TestCheckFunc {
@@ -107,10 +139,9 @@ func testAccCheckGitlabPipelineScheduleVariableExists(n string, variable *gitlab
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		project := rs.Primary.Attributes["project"]
-		scheduleID, err := strconv.Atoi(rs.Primary.Attributes["pipeline_schedule_id"])
+		project, scheduleID, variableKey, err := resourceGitlabPipelineScheduleVariableParseId(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("failed to convert PipelineSchedule.ID to int")
+			return err
 		}
 
 		pipelineSchedule, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(project, scheduleID)
@@ -119,7 +150,7 @@ func testAccCheckGitlabPipelineScheduleVariableExists(n string, variable *gitlab
 		}
 
 		for _, pipelineVariable := range pipelineSchedule.Variables {
-			if pipelineVariable.Key == rs.Primary.Attributes["key"] {
+			if pipelineVariable.Key == variableKey {
 				*variable = *pipelineVariable
 				return nil
 			}
@@ -203,16 +234,15 @@ func testAccCheckGitlabPipelineScheduleVariableDestroy(s *terraform.State) error
 			continue
 		}
 
-		psidString := rs.Primary.Attributes["pipeline_schedule_id"]
-		psid, err := strconv.Atoi(psidString)
+		project, scheduleID, variableKey, err := resourceGitlabPipelineScheduleVariableParseId(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("could not convert pipeline schedule id to integer: %s", err)
+			return err
 		}
 
-		gotPS, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(rs.Primary.Attributes["project"], psid)
+		gotPS, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(project, scheduleID)
 		if err == nil {
 			for _, v := range gotPS.Variables {
-				if utils.BuildTwoPartID(&psidString, &v.Key) == rs.Primary.ID {
+				if v.Key == variableKey {
 					return fmt.Errorf("pipeline schedule variable still exists")
 				}
 			}
