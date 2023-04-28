@@ -4,8 +4,11 @@
 package sdk
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -18,7 +21,7 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
-func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
+func TestAccGitlabGroupLdapLink_basicCN(t *testing.T) {
 	rInt := acctest.RandInt()
 	resourceName := "gitlab_group_ldap_link.foo"
 
@@ -49,9 +52,11 @@ func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
 			{
 				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      resourceName,
-				ImportStateIdFunc: getGitlabGroupLdapLinkImportID(resourceName),
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"force",
+				},
 			},
 
 			// Update the group LDAP link to change the access level (uses testAccGitlabGroupLdapLinkUpdateConfig for Config)
@@ -63,6 +68,80 @@ func TestAccGitlabGroupLdapLink_basic(t *testing.T) {
 					testAccCheckGitlabGroupLdapLinkAttributes(&ldapLink, &testAccGitlabGroupLdapLinkExpectedAttributes{
 						accessLevel: "maintainer",
 					})),
+			},
+		},
+	})
+}
+
+func TestAccGitlabGroupLdapLink_basicFilter(t *testing.T) {
+	resourceName := "gitlab_group_ldap_link.foo"
+
+	group := testutil.CreateGroups(t, 1)[0]
+
+	// PreCheck runs after Config so load test data here
+	var ldapLink gitlab.LDAPGroupLink
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupLdapLinkDestroy,
+		Steps: []resource.TestStep{
+
+			// Create a group LDAP link using a valid filter
+			{
+				SkipFunc: testutil.IsRunningInCE,
+				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
+					group_id 		= "%d"
+					filter          = "(&(objectClass=person)(objectClass=user))"
+					group_access 	= "developer"
+					ldap_provider   = "default"
+				
+				}`, group.ID),
+				Check: testAccCheckGitlabGroupLdapLinkExists(resourceName, &ldapLink),
+			},
+			{
+				SkipFunc:          testutil.IsRunningInCE,
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"force",
+				},
+			},
+		},
+	})
+}
+
+func TestAccGitlabGroupLdapLink_conflictingArguments(t *testing.T) {
+	group := testutil.CreateGroups(t, 1)[0]
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabGroupLdapLinkDestroy,
+		Steps: []resource.TestStep{
+
+			// Create a group LDAP link using conflicting arguments
+			// ensure both conflict errors are printed appropriately.
+			{
+				SkipFunc: testutil.IsRunningInCE,
+				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
+					group_id 		= "%d"
+					cn              = "default"
+					filter          = "(&(objectClass=person)(objectClass=user))"
+					group_access 	= "developer"
+					ldap_provider   = "default"
+				}`, group.ID),
+				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`"cn": conflicts with filter`)),
+			},
+			{
+				SkipFunc: testutil.IsRunningInCE,
+				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
+					group_id 		= "%d"
+					cn              = "default"
+					filter          = "(&(objectClass=person)(objectClass=user))"
+					group_access 	= "developer"
+					ldap_provider   = "default"
+				}`, group.ID),
+				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`"filter": conflicts with cn`)),
 			},
 		},
 	})
@@ -92,9 +171,11 @@ func TestAccGitlabGroupLdapLink_recreatedWhenRemoved(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_group_ldap_link.test",
-				ImportStateIdFunc: getGitlabGroupLdapLinkImportID("gitlab_group_ldap_link.test"),
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"force",
+				},
 			},
 			// Remove the LDAP link directly and re-apply the config to re-create the LDAP link
 			{
@@ -115,35 +196,72 @@ func TestAccGitlabGroupLdapLink_recreatedWhenRemoved(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_group_ldap_link.test",
-				ImportStateIdFunc: getGitlabGroupLdapLinkImportID("gitlab_group_ldap_link.test"),
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"force",
+				},
 			},
 		},
 	})
 }
 
-func getGitlabGroupLdapLinkImportID(resourceName string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", resourceName)
-		}
+func TestAccGitlabGroupLdapLink_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
 
-		groupID := rs.Primary.Attributes["group_id"]
-		if groupID == "" {
-			return "", fmt.Errorf("No group ID is set")
-		}
-		ldapProvider := rs.Primary.Attributes["ldap_provider"]
-		if ldapProvider == "" {
-			return "", fmt.Errorf("No LDAP provider is set")
-		}
-		ldapCN := rs.Primary.Attributes["cn"]
-		if ldapCN == "" {
-			return "", fmt.Errorf("No LDAP CN is set")
-		}
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Project With ID and CN",
+			givenV0State: map[string]interface{}{
+				"group_id":      "99",
+				"cn":            "mainScreenTurnOn",
+				"ldap_provider": "allYourBase",
+				"filter":        "",
+				"id":            "allYourBase:mainScreenTurnOn",
+			},
+			expectedV1State: map[string]interface{}{
+				"group_id":      "99",
+				"cn":            "mainScreenTurnOn",
+				"ldap_provider": "allYourBase",
+				"filter":        "",
+				"id":            "99:allYourBase:mainScreenTurnOn:",
+			},
+		},
+		{
+			name: "Project With ID and Filter",
+			givenV0State: map[string]interface{}{
+				"group_id":      "99",
+				"cn":            "",
+				"filter":        "thisIsAFilter",
+				"ldap_provider": "allYourBase",
+				"id":            "allYourBase:mainScreenTurnOn",
+			},
+			expectedV1State: map[string]interface{}{
+				"group_id":      "99",
+				"cn":            "",
+				"filter":        "thisIsAFilter",
+				"ldap_provider": "allYourBase",
+				"id":            "99:allYourBase::thisIsAFilter",
+			},
+		},
+	}
 
-		return fmt.Sprintf("%s:%s:%s", groupID, ldapProvider, ldapCN), nil
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabGroupLDAPLinkStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
 	}
 }
 
