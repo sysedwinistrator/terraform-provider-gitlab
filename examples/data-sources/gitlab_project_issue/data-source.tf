@@ -1,5 +1,5 @@
 data "gitlab_project" "foo" {
-  id = "foo/bar/baz"
+  path_with_namespace = "foo/bar/baz"
 }
 
 data "gitlab_project_issue" "welcome_issue" {
