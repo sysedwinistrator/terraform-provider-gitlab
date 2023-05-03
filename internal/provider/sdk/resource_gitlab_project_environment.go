@@ -2,12 +2,15 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
@@ -172,6 +175,53 @@ func resourceGitlabProjectEnvironmentUpdate(ctx context.Context, d *schema.Resou
 	return resourceGitlabProjectEnvironmentRead(ctx, d, meta)
 }
 
+func resourceGitlabProjectEnvironmentStop(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client := meta.(*gitlab.Client)
+	project, environmentID, err := resourceGitlabProjectEnvironmentParseID(d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	log.Printf("[DEBUG] Stopping environment %d for Project %s", environmentID, project)
+	if _, err = client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx)); err != nil {
+		return diag.Errorf("error while stopping gitlab environment %q for project %s: %v", environmentID, project, err)
+	}
+
+	// Wait for the environment to be stopped, before we destroy it
+	stateConf := &retry.StateChangeConf{
+		Pending:    []string{"stopping", "unknown"}, // "unknown" happens when we fail to get the state
+		Target:     []string{"stopped"},
+		Timeout:    d.Timeout(schema.TimeoutDelete),
+		MinTimeout: 3 * time.Second,
+		Delay:      5 * time.Second,
+		Refresh: func() (interface{}, string, error) {
+			resp, err := client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx))
+			// ignore the error here, as we'll be doing this until we succeed or timeout
+			if err != nil {
+				return resp, "unknown", err
+			}
+
+			// TODO: The manual parsing of the body should be moved to go-gitlab instead
+			// https://github.com/xanzy/go-gitlab/pull/1709
+			body, err := io.ReadAll(resp.Body)
+			// ignore the error here, as we'll be doing this until we succeed or timeout
+			if err != nil {
+				return resp, "unknown", err
+			}
+			var respObject struct {
+				State string `json:"state"`
+			}
+			err = json.Unmarshal(body, &respObject)
+			return resp, respObject.State, err
+		},
+	}
+	if _, err = stateConf.WaitForStateContext(ctx); err != nil {
+		return diag.Errorf("error waiting for gitlab project %s to stop in environment %q: %v", project, environmentID, err)
+	}
+
+	return nil
+}
+
 func resourceGitlabProjectEnvironmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project, environmentID, err := resourceGitlabProjectEnvironmentParseID(d)
@@ -180,31 +230,28 @@ func resourceGitlabProjectEnvironmentDelete(ctx context.Context, d *schema.Resou
 	}
 
 	stopBeforeDestroy := d.Get("stop_before_destroy").(bool)
-
 	if stopBeforeDestroy {
-		log.Printf("[DEBUG] Stopping environment %d for Project %s before destruction", environmentID, project)
-		_, err = client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx))
-		if err != nil {
-			return diag.Errorf("error stopping gitlab project %s environment %q: %v", project, environmentID, err)
-		}
-	} else {
-		environment, _, err := client.Environments.GetEnvironment(project, environmentID, gitlab.WithContext(ctx))
-		if err != nil {
-			if api.Is404(err) {
-				log.Printf("[DEBUG] Project %s gitlab environment %d not found, removing from state", project, environmentID)
-				d.SetId("")
-				return nil
-			}
-			return diag.Errorf("error getting gitlab project %s environment %d: %v", project, environmentID, err)
-		}
-
-		if environment.State != "stopped" {
-			return diag.Errorf("[ERROR] cannot destroy gitlab project %s environment %d: Environment must be in a stopped state before deletion. Set stop_before_destroy flag to attempt to auto stop the environment on destruction", project, environmentID)
+		// resourceGitlabProjectEnvironmentStop waits for the environment to actually be stopped
+		if err := resourceGitlabProjectEnvironmentStop(ctx, d, meta); err != nil {
+			return err
 		}
 	}
 
-	_, err = client.Environments.DeleteEnvironment(project, environmentID, gitlab.WithContext(ctx))
+	environment, _, err := client.Environments.GetEnvironment(project, environmentID, gitlab.WithContext(ctx))
 	if err != nil {
+		if api.Is404(err) {
+			log.Printf("[DEBUG] Project %s gitlab environment %d not found, removing from state", project, environmentID)
+			d.SetId("")
+			return nil
+		}
+		return diag.Errorf("error getting gitlab project %s environment %d: %v", project, environmentID, err)
+	}
+
+	if environment.State != "stopped" {
+		return diag.Errorf("[ERROR] cannot destroy gitlab project %s environment %d: Environment must be in a stopped state before deletion. Set stop_before_destroy flag to attempt to auto stop the environment on destruction", project, environmentID)
+	}
+
+	if _, err = client.Environments.DeleteEnvironment(project, environmentID, gitlab.WithContext(ctx)); err != nil {
 		return diag.Errorf("error deleting gitlab project %s environment %d: %v", project, environmentID, err)
 	}
 
