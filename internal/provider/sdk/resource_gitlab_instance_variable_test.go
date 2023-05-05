@@ -153,6 +153,7 @@ type testAccGitlabInstanceVariableExpectedAttributes struct {
 	Value     string
 	Protected bool
 	Masked    bool
+	Raw       bool
 }
 
 func testAccCheckGitlabInstanceVariableAttributes(variable *gitlab.InstanceVariable, want *testAccGitlabInstanceVariableExpectedAttributes) resource.TestCheckFunc {

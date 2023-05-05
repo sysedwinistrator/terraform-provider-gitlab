@@ -42,6 +42,12 @@ func gitlabInstanceVariableGetSchema() map[string]*schema.Schema {
 			Optional:    true,
 			Default:     false,
 		},
+		"raw": {
+			Description: "Whether the variable is treated as a raw string. Default: false. When true, variables in the value are not expanded.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
+		},
 	}
 }
 
@@ -52,5 +58,6 @@ func gitlabInstanceVariableToStateMap(variable *gitlab.InstanceVariable) map[str
 	stateMap["variable_type"] = variable.VariableType
 	stateMap["protected"] = variable.Protected
 	stateMap["masked"] = variable.Masked
+	stateMap["raw"] = variable.Raw
 	return stateMap
 }
