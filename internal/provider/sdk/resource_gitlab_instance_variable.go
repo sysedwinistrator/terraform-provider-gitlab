@@ -36,6 +36,7 @@ func resourceGitlabInstanceVariableCreate(ctx context.Context, d *schema.Resourc
 	variableType := stringToVariableType(d.Get("variable_type").(string))
 	protected := d.Get("protected").(bool)
 	masked := d.Get("masked").(bool)
+	raw := d.Get("raw").(bool)
 
 	options := gitlab.CreateInstanceVariableOptions{
 		Key:          &key,
@@ -43,6 +44,7 @@ func resourceGitlabInstanceVariableCreate(ctx context.Context, d *schema.Resourc
 		VariableType: variableType,
 		Protected:    &protected,
 		Masked:       &masked,
+		Raw:          &raw,
 	}
 	log.Printf("[DEBUG] create gitlab instance level CI variable %s", key)
 
@@ -77,6 +79,7 @@ func resourceGitlabInstanceVariableRead(ctx context.Context, d *schema.ResourceD
 	d.Set("variable_type", v.VariableType)
 	d.Set("protected", v.Protected)
 	d.Set("masked", v.Masked)
+	d.Set("raw", v.Raw)
 
 	stateMap := gitlabInstanceVariableToStateMap(v)
 	if err = setStateMapInResourceData(stateMap, d); err != nil {
@@ -93,12 +96,14 @@ func resourceGitlabInstanceVariableUpdate(ctx context.Context, d *schema.Resourc
 	variableType := stringToVariableType(d.Get("variable_type").(string))
 	protected := d.Get("protected").(bool)
 	masked := d.Get("masked").(bool)
+	raw := d.Get("raw").(bool)
 
 	options := &gitlab.UpdateInstanceVariableOptions{
 		Value:        &value,
 		Protected:    &protected,
 		VariableType: variableType,
 		Masked:       &masked,
+		Raw:          &raw,
 	}
 	log.Printf("[DEBUG] update gitlab instance level CI variable %s", key)
 

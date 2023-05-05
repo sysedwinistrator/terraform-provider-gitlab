@@ -41,6 +41,7 @@ func resourceGitlabGroupVariableCreate(ctx context.Context, d *schema.ResourceDa
 	protected := d.Get("protected").(bool)
 	masked := d.Get("masked").(bool)
 	environmentScope := d.Get("environment_scope").(string)
+	raw := d.Get("raw").(bool)
 
 	options := gitlab.CreateGroupVariableOptions{
 		Key:              &key,
@@ -49,6 +50,7 @@ func resourceGitlabGroupVariableCreate(ctx context.Context, d *schema.ResourceDa
 		Protected:        &protected,
 		Masked:           &masked,
 		EnvironmentScope: &environmentScope,
+		Raw:              &raw,
 	}
 	log.Printf("[DEBUG] create gitlab group variable %s/%s", group, key)
 
@@ -112,6 +114,7 @@ func resourceGitlabGroupVariableUpdate(ctx context.Context, d *schema.ResourceDa
 	protected := d.Get("protected").(bool)
 	masked := d.Get("masked").(bool)
 	environmentScope := d.Get("environment_scope").(string)
+	raw := d.Get("raw").(bool)
 
 	options := &gitlab.UpdateGroupVariableOptions{
 		Value:            &value,
@@ -119,6 +122,7 @@ func resourceGitlabGroupVariableUpdate(ctx context.Context, d *schema.ResourceDa
 		VariableType:     variableType,
 		Masked:           &masked,
 		EnvironmentScope: &environmentScope,
+		Raw:              &raw,
 	}
 	log.Printf("[DEBUG] update gitlab group variable %s/%s/%s", group, key, environmentScope)
 

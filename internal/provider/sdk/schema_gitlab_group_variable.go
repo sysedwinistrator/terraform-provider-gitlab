@@ -56,6 +56,12 @@ func gitlabGroupVariableGetSchema() map[string]*schema.Schema {
 			// Versions of GitLab prior to 13.4 cannot update environment_scope.
 			ForceNew: true,
 		},
+		"raw": {
+			Description: "Whether the variable is treated as a raw string. Default: false. When true, variables in the value are not expanded.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
+		},
 	}
 }
 
@@ -68,5 +74,6 @@ func gitlabGroupVariableToStateMap(group string, variable *gitlab.GroupVariable)
 	stateMap["protected"] = variable.Protected
 	stateMap["masked"] = variable.Masked
 	stateMap["environment_scope"] = variable.EnvironmentScope
+	stateMap["raw"] = variable.Raw
 	return stateMap
 }
