@@ -29,7 +29,7 @@ resource "gitlab_group_ldap_link" "test" {
 
 ### Required
 
-- `group_id` (String) The id of the GitLab group.
+- `group` (String) The ID or URL-encoded path of the group
 - `ldap_provider` (String) The name of the LDAP provider as stored in the GitLab database. Note that this is NOT the value of the `label` attribute as shown in the web UI. In most cases this will be `ldapmain` but you may use the [LDAP check rake task](https://docs.gitlab.com/ee/administration/raketasks/ldap.html#check) for receiving the LDAP server name: `LDAP: ... Server: ldapmain`
 
 ### Optional

@@ -90,7 +90,7 @@ func TestAccGitlabGroupLdapLink_basicFilter(t *testing.T) {
 			{
 				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
-					group_id 		= "%d"
+					group 		= "%d"
 					filter          = "(&(objectClass=person)(objectClass=user))"
 					group_access 	= "developer"
 					ldap_provider   = "default"
@@ -124,7 +124,7 @@ func TestAccGitlabGroupLdapLink_conflictingArguments(t *testing.T) {
 			{
 				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
-					group_id 		= "%d"
+					group 		= "%d"
 					cn              = "default"
 					filter          = "(&(objectClass=person)(objectClass=user))"
 					group_access 	= "developer"
@@ -135,7 +135,7 @@ func TestAccGitlabGroupLdapLink_conflictingArguments(t *testing.T) {
 			{
 				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
-					group_id 		= "%d"
+					group 		= "%d"
 					cn              = "default"
 					filter          = "(&(objectClass=person)(objectClass=user))"
 					group_access 	= "developer"
@@ -161,7 +161,7 @@ func TestAccGitlabGroupLdapLink_recreatedWhenRemoved(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
           resource "gitlab_group_ldap_link" "test" {
-            group_id      = "%[1]d"
+            group         = "%[1]d"
             cn            = "%[2]s"
             group_access  = "developer"
             ldap_provider = "%[2]s"
@@ -186,7 +186,7 @@ func TestAccGitlabGroupLdapLink_recreatedWhenRemoved(t *testing.T) {
 				},
 				Config: fmt.Sprintf(`
           resource "gitlab_group_ldap_link" "test" {
-            group_id      = "%[1]d"
+            group         = "%[1]d"
             cn            = "%[2]s"
             group_access  = "developer"
             ldap_provider = "%[2]s"
@@ -201,6 +201,17 @@ func TestAccGitlabGroupLdapLink_recreatedWhenRemoved(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"force",
 				},
+			},
+			// Create an LDAP group link with a namespace instead of ID
+			{
+				Config: fmt.Sprintf(`
+          resource "gitlab_group_ldap_link" "test" {
+            group         = "%s"
+            cn            = "%[2]s"
+            group_access  = "developer"
+            ldap_provider = "%[2]s"
+          }
+          `, testGroup.Path, ldapName),
 			},
 		},
 	})
@@ -217,14 +228,14 @@ func TestAccGitlabGroupLdapLink_StateUpgradeV0(t *testing.T) {
 		{
 			name: "Project With ID and CN",
 			givenV0State: map[string]interface{}{
-				"group_id":      "99",
+				"group":         "99",
 				"cn":            "mainScreenTurnOn",
 				"ldap_provider": "allYourBase",
 				"filter":        "",
 				"id":            "allYourBase:mainScreenTurnOn",
 			},
 			expectedV1State: map[string]interface{}{
-				"group_id":      "99",
+				"group":         "99",
 				"cn":            "mainScreenTurnOn",
 				"ldap_provider": "allYourBase",
 				"filter":        "",
@@ -233,6 +244,23 @@ func TestAccGitlabGroupLdapLink_StateUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "Project With ID and Filter",
+			givenV0State: map[string]interface{}{
+				"group":         "99",
+				"cn":            "",
+				"filter":        "thisIsAFilter",
+				"ldap_provider": "allYourBase",
+				"id":            "allYourBase:mainScreenTurnOn",
+			},
+			expectedV1State: map[string]interface{}{
+				"group":         "99",
+				"cn":            "",
+				"filter":        "thisIsAFilter",
+				"ldap_provider": "allYourBase",
+				"id":            "99:allYourBase::thisIsAFilter",
+			},
+		},
+		{
+			name: "Project With ID and Filter using old group_id",
 			givenV0State: map[string]interface{}{
 				"group_id":      "99",
 				"cn":            "",
@@ -261,7 +289,6 @@ func TestAccGitlabGroupLdapLink_StateUpgradeV0(t *testing.T) {
 				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
 			}
 		})
-
 	}
 }
 
@@ -326,8 +353,8 @@ func testAccCheckGitlabGroupLdapLinkDestroy(s *terraform.State) error {
 }
 
 func testAccGetGitlabGroupLdapLink(ldapLink *gitlab.LDAPGroupLink, resourceState *terraform.ResourceState) error {
-	groupId := resourceState.Primary.Attributes["group_id"]
-	if groupId == "" {
+	group := resourceState.Primary.Attributes["group"]
+	if group == "" {
 		return fmt.Errorf("No group ID is set")
 	}
 
@@ -341,7 +368,7 @@ func testAccGetGitlabGroupLdapLink(ldapLink *gitlab.LDAPGroupLink, resourceState
 	desiredLdapLinkId := utils.BuildTwoPartID(&desiredLdapLink.Provider, &desiredLdapLink.CN)
 
 	// Try to fetch all group links from GitLab
-	currentLdapLinks, _, err := testutil.TestGitlabClient.Groups.ListGroupLDAPLinks(groupId, nil)
+	currentLdapLinks, _, err := testutil.TestGitlabClient.Groups.ListGroupLDAPLinks(group, nil)
 	if err != nil {
 		// The read/GET API wasn't implemented in GitLab until version 12.8 (March 2020, well after the add and delete APIs).
 		// If we 404, assume GitLab is at an older version and take things on faith.
@@ -389,7 +416,7 @@ resource "gitlab_group" "foo" {
 }
 
 resource "gitlab_group_ldap_link" "foo" {
-    group_id 		= "${gitlab_group.foo.id}"
+    group 		    = "${gitlab_group.foo.id}"
     cn				= "%s"
 	group_access 	= "developer"
 	ldap_provider   = "%s"
@@ -406,7 +433,7 @@ resource "gitlab_group" "foo" {
 }
 
 resource "gitlab_group_ldap_link" "foo" {
-    group_id 		= "${gitlab_group.foo.id}"
+    group 		    = "${gitlab_group.foo.id}"
     cn				= "%s"
 	group_access 	= "maintainer"
 	ldap_provider   = "%s"

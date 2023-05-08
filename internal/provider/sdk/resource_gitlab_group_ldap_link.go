@@ -42,8 +42,8 @@ var _ = registerResource("gitlab_group_ldap_link", func() *schema.Resource {
 
 func gitlabGroupLDAPLinkSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"group_id": {
-			Description: "The id of the GitLab group.",
+		"group": {
+			Description: "The ID or URL-encoded path of the group",
 			Type:        schema.TypeString,
 			Required:    true,
 			ForceNew:    true,
@@ -106,7 +106,15 @@ func resourceGitlabGroupLDAPLinkResourceV0() *schema.Resource {
 
 // resourceGitlabProjectLabelStateUpgradeV0 performs the state migration from V0 to V1.
 func resourceGitlabGroupLDAPLinkStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
-	group := rawState["group_id"].(string)
+	group := ""
+	// check to determine if "group_id" is present. If it is, use that, otherwise use "group". This is because
+	// "group_id" changed to "group" in 16.0, so the previous state may use either.
+	if rawState["group_id"] != nil {
+		group = rawState["group_id"].(string)
+	} else {
+		group = rawState["group"].(string)
+	}
+
 	ldap := rawState["ldap_provider"].(string)
 	cn := rawState["cn"].(string)
 
@@ -139,7 +147,7 @@ func resourceGitLabGroupLDAPLinkParseId(id string) (string, string, string, stri
 func resourceGitlabGroupLdapLinkCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
-	groupId := d.Get("group_id").(string)
+	group := d.Get("group").(string)
 	cn := d.Get("cn").(string)
 	filter := d.Get("filter").(string)
 
@@ -173,26 +181,25 @@ func resourceGitlabGroupLdapLinkCreate(ctx context.Context, d *schema.ResourceDa
 	}
 
 	log.Printf("[DEBUG] Create GitLab group LdapLink %s", d.Id())
-	LdapLink, _, err := client.Groups.AddGroupLDAPLink(groupId, options, gitlab.WithContext(ctx))
+	ldapLink, _, err := client.Groups.AddGroupLDAPLink(group, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(resourceGitLabGroupLDAPLinkBuildId(groupId, LdapLink.Provider, LdapLink.CN, LdapLink.Filter))
-
+	d.SetId(resourceGitLabGroupLDAPLinkBuildId(group, ldapLink.Provider, ldapLink.CN, ldapLink.Filter))
 	return resourceGitlabGroupLdapLinkRead(ctx, d, meta)
 }
 
 func resourceGitlabGroupLdapLinkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	groupId, ldapProvider, cn, filter, err := resourceGitLabGroupLDAPLinkParseId(d.Id())
+	group, ldapProvider, cn, filter, err := resourceGitLabGroupLDAPLinkParseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Try to fetch all group links from GitLab
-	log.Printf("[DEBUG] Read GitLab group LdapLinks %s", groupId)
-	ldapLinks, _, err := client.Groups.ListGroupLDAPLinks(groupId, nil, gitlab.WithContext(ctx))
+	log.Printf("[DEBUG] Read GitLab group LdapLinks %s", group)
+	ldapLinks, _, err := client.Groups.ListGroupLDAPLinks(group, nil, gitlab.WithContext(ctx))
 	if err != nil {
 		// NOTE: the LDAP list API returns a 404 if there are no LDAP links present.
 		if !api.Is404(err) {
@@ -207,7 +214,7 @@ func resourceGitlabGroupLdapLinkRead(ctx context.Context, d *schema.ResourceData
 			cn == ldapLink.CN &&
 			filter == ldapLink.Filter {
 
-			d.Set("group_id", groupId)
+			d.Set("group", group)
 			d.Set("cn", ldapLink.CN)
 			d.Set("group_access", api.AccessLevelValueToName[ldapLink.GroupAccess])
 			d.Set("ldap_provider", ldapLink.Provider)
@@ -228,7 +235,7 @@ func resourceGitlabGroupLdapLinkRead(ctx context.Context, d *schema.ResourceData
 
 func resourceGitlabGroupLdapLinkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	groupId, ldap_provider, cn, filter, err := resourceGitLabGroupLDAPLinkParseId(d.Id())
+	group, ldap_provider, cn, filter, err := resourceGitLabGroupLDAPLinkParseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -244,7 +251,7 @@ func resourceGitlabGroupLdapLinkDelete(ctx context.Context, d *schema.ResourceDa
 		options.Filter = &filter
 	}
 
-	_, err = client.Groups.DeleteGroupLDAPLinkWithCNOrFilter(groupId, &options, gitlab.WithContext(ctx))
+	_, err = client.Groups.DeleteGroupLDAPLinkWithCNOrFilter(group, &options, gitlab.WithContext(ctx))
 	if err != nil {
 
 		switch err.(type) { // nolint // TODO: Resolve this golangci-lint issue: S1034: assigning the result of this type assertion to a variable (switch err := err.(type)) could eliminate type assertions in switch cases (gosimple)
