@@ -7,7 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.52.2
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
 	golang.org/x/tools v0.7.0
-	mvdan.cc/sh/v3 v3.5.1
+	mvdan.cc/sh/v3 v3.6.0
 )
 
 require (
@@ -74,7 +74,7 @@ require (
 	github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/renameio v1.0.1 // indirect
+	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gordonklaus/ineffassign v0.0.0-20230107090616-13ace0543b28 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
