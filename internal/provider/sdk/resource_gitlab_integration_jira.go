@@ -11,16 +11,30 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
+var _ = registerResource("gitlab_integration_jira", func() *schema.Resource {
+	return resourceGitlabIntegrationJiraSchema(`The ` + "`gitlab_integration_jira`" + ` resource allows to manage the lifecycle of a project integration with Jira.
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/services.html#jira)`)
+})
+
 var _ = registerResource("gitlab_service_jira", func() *schema.Resource {
+	schema := resourceGitlabIntegrationJiraSchema(`The ` + "`gitlab_service_jira`" + ` resource allows to manage the lifecycle of a project integration with Jira.
+
+~> This resource is deprecated. use ` + "`gitlab_integration_jira`" + `instead!
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/services.html#jira)`)
+	schema.DeprecationMessage = `This resource is deprecated. use ` + "`gitlab_integration_jira`" + `instead!`
+	return schema
+})
+
+func resourceGitlabIntegrationJiraSchema(description string) *schema.Resource {
 	return &schema.Resource{
-		Description: `The ` + "`gitlab_service_jira`" + ` resource allows to manage the lifecycle of a project integration with Jira.
+		Description: description,
 
-**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/services.html#jira)`,
-
-		CreateContext: resourceGitlabServiceJiraCreate,
-		ReadContext:   resourceGitlabServiceJiraRead,
-		UpdateContext: resourceGitlabServiceJiraUpdate,
-		DeleteContext: resourceGitlabServiceJiraDelete,
+		CreateContext: resourceGitlabIntegrationJiraCreate,
+		ReadContext:   resourceGitlabIntegrationJiraRead,
+		UpdateContext: resourceGitlabIntegrationJiraUpdate,
+		DeleteContext: resourceGitlabIntegrationJiraDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -143,9 +157,9 @@ var _ = registerResource("gitlab_service_jira", func() *schema.Resource {
 			},
 		},
 	}
-})
+}
 
-func resourceGitlabServiceJiraCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationJiraCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
 	project := d.Get("project").(string)
@@ -155,7 +169,7 @@ func resourceGitlabServiceJiraCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] Create Gitlab Jira service")
+	log.Printf("[DEBUG] Create Gitlab Jira integration")
 
 	if _, err := client.Services.SetJiraService(project, jiraOptions, gitlab.WithContext(ctx)); err != nil {
 		return diag.Errorf("couldn't create Gitlab Jira service: %v", err)
@@ -163,19 +177,19 @@ func resourceGitlabServiceJiraCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(project)
 
-	return resourceGitlabServiceJiraRead(ctx, d, meta)
+	return resourceGitlabIntegrationJiraRead(ctx, d, meta)
 }
 
-func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationJiraRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
-	log.Printf("[DEBUG] Read Gitlab Jira service %s", project)
+	log.Printf("[DEBUG] Read Gitlab Jira integration %s", project)
 
 	jiraService, _, err := client.Services.GetJiraService(project, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
-			log.Printf("[DEBUG] gitlab jira service not found %s, removing from state", project)
+			log.Printf("[DEBUG] gitlab jira integration not found %s, removing from state", project)
 			d.SetId("")
 			return nil
 		}
@@ -187,14 +201,6 @@ func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, 
 	d.Set("api_url", jiraService.Properties.APIURL)
 	d.Set("username", jiraService.Properties.Username)
 	d.Set("project_key", jiraService.Properties.ProjectKey)
-
-	hasJiraIssueTransitionIDFixed, err := api.IsGitLabVersionAtLeast(ctx, client, "15.2")()
-	if err != nil {
-		return diag.Errorf("failed to check if `jira_issue_transition_id` is properly supported in GitLab version: %v", err)
-	}
-	if hasJiraIssueTransitionIDFixed || jiraService.Properties.JiraIssueTransitionID != "" {
-		d.Set("jira_issue_transition_id", jiraService.Properties.JiraIssueTransitionID)
-	}
 	d.Set("title", jiraService.Title)
 	d.Set("created_at", jiraService.CreatedAt.String())
 	d.Set("updated_at", jiraService.UpdatedAt.String())
@@ -209,19 +215,23 @@ func resourceGitlabServiceJiraRead(ctx context.Context, d *schema.ResourceData, 
 	d.Set("pipeline_events", jiraService.PipelineEvents)
 	d.Set("job_events", jiraService.JobEvents)
 
+	// Note for support - if someone is using provider version 16.0+, it's not compatible with GitLab 15.2-, because there
+	// was an issue with how the JIRA transition IDs were formatted in the API. Support for that was removed in 16.0.
+	d.Set("jira_issue_transition_id", jiraService.Properties.JiraIssueTransitionID)
+
 	return nil
 }
 
-func resourceGitlabServiceJiraUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceGitlabServiceJiraCreate(ctx, d, meta)
+func resourceGitlabIntegrationJiraUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceGitlabIntegrationJiraCreate(ctx, d, meta)
 }
 
-func resourceGitlabServiceJiraDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationJiraDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
 	project := d.Get("project").(string)
 
-	log.Printf("[DEBUG] Delete Gitlab Jira service %s", d.Id())
+	log.Printf("[DEBUG] Delete Gitlab Jira integration %s", d.Id())
 
 	_, err := client.Services.DeleteJiraService(project, gitlab.WithContext(ctx))
 	if err != nil {

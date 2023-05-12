@@ -12,16 +12,32 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
-var _ = registerResource("gitlab_service_external_wiki", func() *schema.Resource {
-	return &schema.Resource{
-		Description: `The ` + "`gitlab_service_external_wiki`" + ` resource allows to manage the lifecycle of a project integration with External Wiki Service.
+var _ = registerResource("gitlab_integration_external_wiki", func() *schema.Resource {
+	return resourceGitlabIntegrationEmailsOnPushResource(`The ` + "`gitlab_integration_external_wiki`" + ` resource allows to manage the lifecycle of a project integration with External Wiki Service.
 
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#external-wiki)`,
+	)
+})
 
-		CreateContext: resourceGitlabServiceExternalWikiCreate,
-		ReadContext:   resourceGitlabServiceExternalWikiRead,
-		UpdateContext: resourceGitlabServiceExternalWikiCreate,
-		DeleteContext: resourceGitlabServiceExternalWikiDelete,
+var _ = registerResource("gitlab_service_external_wiki", func() *schema.Resource {
+	resource := resourceGitlabIntegrationEmailsOnPushResource(`The ` + "`gitlab_service_external_wiki`" + ` resource allows to manage the lifecycle of a project integration with External Wiki Service.
+
+~> This resource is deprecated. use ` + "`gitlab_integration_external_wiki`" + `instead!
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#external-wiki)`,
+	)
+	resource.DeprecationMessage = `This resource is deprecated. use ` + "`gitlab_integration_external_wiki`" + `instead!`
+	return resource
+})
+
+func resourceGitlabIntegrationEmailsOnPushResource(description string) *schema.Resource {
+	return &schema.Resource{
+		Description: description,
+
+		CreateContext: resourceGitlabIntegrationExternalWikiCreate,
+		ReadContext:   resourceGitlabIntegrationExternalWikiRead,
+		UpdateContext: resourceGitlabIntegrationExternalWikiCreate,
+		DeleteContext: resourceGitlabIntegrationExternalWikiDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -67,9 +83,9 @@ var _ = registerResource("gitlab_service_external_wiki", func() *schema.Resource
 			},
 		},
 	}
-})
+}
 
-func resourceGitlabServiceExternalWikiCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationExternalWikiCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Get("project").(string)
 	d.SetId(project)
@@ -85,10 +101,10 @@ func resourceGitlabServiceExternalWikiCreate(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	return resourceGitlabServiceExternalWikiRead(ctx, d, meta)
+	return resourceGitlabIntegrationExternalWikiRead(ctx, d, meta)
 }
 
-func resourceGitlabServiceExternalWikiRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationExternalWikiRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
@@ -117,7 +133,7 @@ func resourceGitlabServiceExternalWikiRead(ctx context.Context, d *schema.Resour
 	return nil
 }
 
-func resourceGitlabServiceExternalWikiDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationExternalWikiDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 

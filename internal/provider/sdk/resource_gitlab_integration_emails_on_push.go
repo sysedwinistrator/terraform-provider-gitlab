@@ -18,16 +18,34 @@ var validBranchesToBeNotified = []string{
 	"all", "default", "protected", "default_and_protected",
 }
 
-var _ = registerResource("gitlab_service_emails_on_push", func() *schema.Resource {
-	return &schema.Resource{
-		Description: `The ` + "`gitlab_service_emails_on_push`" + ` resource allows to manage the lifecycle of a project integration with Emails on Push Service.
+var _ = registerResource("gitlab_integration_emails_on_push", func() *schema.Resource {
+	return resourceGitLabIntegrationEmailOnPushResource(
+		`The ` + "`gitlab_integration_emails_on_push`" + ` resource allows to manage the lifecycle of a project integration with Emails on Push Service.
 
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#emails-on-push)`,
+	)
+})
 
-		CreateContext: resourceGitlabServiceEmailsOnPushCreate,
-		ReadContext:   resourceGitlabServiceEmailsOnPushRead,
-		UpdateContext: resourceGitlabServiceEmailsOnPushCreate,
-		DeleteContext: resourceGitlabServiceEmailsOnPushDelete,
+// Support the pre-16.0 syntax for several releases.
+var _ = registerResource("gitlab_service_emails_on_push", func() *schema.Resource {
+	resource := resourceGitLabIntegrationEmailOnPushResource(
+		`The ` + "`gitlab_service_emails_on_push`" + ` resource allows to manage the lifecycle of a project integration with Emails on Push Service.
+
+~> This resource is deprecated. Please use ` + "`gitlab_integration_emails_on_push`" + ` instead!
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#emails-on-push)`,
+	)
+	resource.DeprecationMessage = `This resource is deprecated. Please use ` + "`gitlab_integration_emails_on_push`" + ` instead!`
+	return resource
+})
+
+func resourceGitLabIntegrationEmailOnPushResource(description string) *schema.Resource {
+	return &schema.Resource{
+		Description:   description,
+		CreateContext: resourceGitlabIntegrationEmailsOnPushCreate,
+		ReadContext:   resourceGitlabIntegrationEmailsOnPushRead,
+		UpdateContext: resourceGitlabIntegrationEmailsOnPushCreate,
+		DeleteContext: resourceGitlabIntegrationEmailsOnPushDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -100,9 +118,9 @@ var _ = registerResource("gitlab_service_emails_on_push", func() *schema.Resourc
 			},
 		},
 	}
-})
+}
 
-func resourceGitlabServiceEmailsOnPushCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationEmailsOnPushCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
 	options := &gitlab.SetEmailsOnPushServiceOptions{
@@ -133,10 +151,10 @@ func resourceGitlabServiceEmailsOnPushCreate(ctx context.Context, d *schema.Reso
 	}
 	d.SetId(project)
 
-	return resourceGitlabServiceEmailsOnPushRead(ctx, d, meta)
+	return resourceGitlabIntegrationEmailsOnPushRead(ctx, d, meta)
 }
 
-func resourceGitlabServiceEmailsOnPushRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationEmailsOnPushRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
@@ -170,7 +188,7 @@ func resourceGitlabServiceEmailsOnPushRead(ctx context.Context, d *schema.Resour
 	return nil
 }
 
-func resourceGitlabServiceEmailsOnPushDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationEmailsOnPushDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
