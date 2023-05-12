@@ -242,11 +242,6 @@ var _ = registerDataSource("gitlab_project", func() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"operations_access_level": {
-				Description: fmt.Sprintf("Set the operations access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 			"public_builds": {
 				Description: "If true, jobs can be viewed by non-project members.",
 				Type:        schema.TypeBool,
@@ -538,7 +533,6 @@ func dataSourceGitlabProjectRead(ctx context.Context, d *schema.ResourceData, me
 	d.Set("forking_access_level", string(found.ForkingAccessLevel))
 	d.Set("issues_access_level", string(found.IssuesAccessLevel))
 	d.Set("merge_requests_access_level", string(found.MergeRequestsAccessLevel))
-	d.Set("operations_access_level", string(found.OperationsAccessLevel))
 
 	// Map PublicJobs -> PublicBuild until we have a breaking version.
 	d.Set("public_builds", found.PublicJobs)

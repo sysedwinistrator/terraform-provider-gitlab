@@ -559,13 +559,6 @@ var resourceGitLabProjectSchema = map[string]*schema.Schema{
 		Computed:         true,
 		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
 	},
-	"operations_access_level": {
-		Description:      fmt.Sprintf("Set the operations access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
-		Type:             schema.TypeString,
-		Optional:         true,
-		Computed:         true,
-		ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validProjectAccessLevels, false)),
-	},
 	"public_builds": {
 		Description: "If true, jobs can be viewed by non-project members.",
 		Type:        schema.TypeBool,
@@ -874,7 +867,6 @@ func resourceGitlabProjectSetToState(ctx context.Context, client *gitlab.Client,
 	d.Set("forking_access_level", string(project.ForkingAccessLevel))
 	d.Set("issues_access_level", string(project.IssuesAccessLevel))
 	d.Set("merge_requests_access_level", string(project.MergeRequestsAccessLevel))
-	d.Set("operations_access_level", string(project.OperationsAccessLevel))
 
 	//(PatrickRice): In 16.0, we need to rename this to "public_jobs"
 	d.Set("public_builds", project.PublicJobs)
@@ -1077,10 +1069,6 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 
 		if v, ok := d.GetOk("merge_requests_access_level"); ok {
 			options.MergeRequestsAccessLevel = stringToAccessControlValue(v.(string))
-		}
-
-		if v, ok := d.GetOk("operations_access_level"); ok {
-			options.OperationsAccessLevel = stringToAccessControlValue(v.(string))
 		}
 
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
@@ -1684,10 +1672,6 @@ func resourceGitlabProjectCreate(ctx context.Context, d *schema.ResourceData, me
 			editProjectOptions.MergeRequestsAccessLevel = stringToAccessControlValue(v.(string))
 		}
 
-		if v, ok := d.GetOk("operations_access_level"); ok {
-			editProjectOptions.OperationsAccessLevel = stringToAccessControlValue(v.(string))
-		}
-
 		// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 		// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 		if v, ok := d.GetOkExists("public_builds"); ok {
@@ -2097,10 +2081,6 @@ func resourceGitlabProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if d.HasChange("merge_requests_access_level") {
 		options.MergeRequestsAccessLevel = stringToAccessControlValue(d.Get("merge_requests_access_level").(string))
-	}
-
-	if d.HasChange("operations_access_level") {
-		options.OperationsAccessLevel = stringToAccessControlValue(d.Get("operations_access_level").(string))
 	}
 
 	if d.HasChange("public_builds") {

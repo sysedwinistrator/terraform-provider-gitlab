@@ -187,7 +187,6 @@ func flattenProjects(projects []*gitlab.Project) (values []map[string]interface{
 				"forking_access_level":                             string(project.ForkingAccessLevel),
 				"issues_access_level":                              string(project.IssuesAccessLevel),
 				"merge_requests_access_level":                      string(project.MergeRequestsAccessLevel),
-				"operations_access_level":                          string(project.OperationsAccessLevel),
 				"repository_access_level":                          string(project.RepositoryAccessLevel),
 				"repository_storage":                               project.RepositoryStorage,
 				"requirements_access_level":                        string(project.RequirementsAccessLevel),
@@ -926,11 +925,6 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 						},
 						"merge_requests_access_level": {
 							Description: fmt.Sprintf("Set the merge requests access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
-							Type:        schema.TypeString,
-							Computed:    true,
-						},
-						"operations_access_level": {
-							Description: fmt.Sprintf("Set the operations access level. Valid values are %s.", utils.RenderValueListForDocs(validProjectAccessLevels)),
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
