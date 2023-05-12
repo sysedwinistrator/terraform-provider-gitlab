@@ -11,20 +11,37 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
+var _ = registerResource("gitlab_integration_github", func() *schema.Resource {
+	return resourceGitlabIntegrationGithubResource(`The ` + "`gitlab_integration_github`" + ` resource allows to manage the lifecycle of a project integration with GitHub.
+
+-> This resource requires a GitLab Enterprise instance.
+	
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#github)`)
+})
+
 var _ = registerResource("gitlab_service_github", func() *schema.Resource {
-	return &schema.Resource{
-		Description: `The ` + "`gitlab_service_github`" + ` resource allows to manage the lifecycle of a project integration with GitHub.
+	resource := resourceGitlabIntegrationGithubResource(`The ` + "`gitlab_service_github`" + ` resource allows to manage the lifecycle of a project integration with GitHub.
 
 -> This resource requires a GitLab Enterprise instance.
 
+~> This resource is deprecated. use ` + "`gitlab_integration_github`" + `instead!
+	
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#github)`,
+	)
+	resource.DeprecationMessage = `This resource is deprecated. use ` + "`gitlab_integration_github`" + `instead!`
+	return resource
+})
 
-		CreateContext: resourceGitlabServiceGithubCreate,
-		ReadContext:   resourceGitlabServiceGithubRead,
-		UpdateContext: resourceGitlabServiceGithubUpdate,
-		DeleteContext: resourceGitlabServiceGithubDelete,
+func resourceGitlabIntegrationGithubResource(description string) *schema.Resource {
+	return &schema.Resource{
+		Description: description,
+
+		CreateContext: resourceGitlabIntegrationGithubCreate,
+		ReadContext:   resourceGitlabIntegrationGithubRead,
+		UpdateContext: resourceGitlabIntegrationGithubUpdate,
+		DeleteContext: resourceGitlabIntegrationGithubDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceGitlabServiceGithubImportState,
+			StateContext: resourceGitlabIntegrationGithubImportState,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -75,9 +92,9 @@ var _ = registerResource("gitlab_service_github", func() *schema.Resource {
 			},
 		},
 	}
-})
+}
 
-func resourceGitlabServiceGithubSetToState(d *schema.ResourceData, service *gitlab.GithubService) {
+func resourceGitlabIntegrationGithubSetToState(d *schema.ResourceData, service *gitlab.GithubService) {
 	d.SetId(fmt.Sprintf("%d", service.ID))
 	d.Set("repository_url", service.Properties.RepositoryURL)
 	d.Set("static_context", service.Properties.StaticContext)
@@ -88,7 +105,7 @@ func resourceGitlabServiceGithubSetToState(d *schema.ResourceData, service *gitl
 	d.Set("active", service.Active)
 }
 
-func resourceGitlabServiceGithubCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationGithubCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Get("project").(string)
 
@@ -105,10 +122,10 @@ func resourceGitlabServiceGithubCreate(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	return resourceGitlabServiceGithubRead(ctx, d, meta)
+	return resourceGitlabIntegrationGithubRead(ctx, d, meta)
 }
 
-func resourceGitlabServiceGithubRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationGithubRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Get("project").(string)
 
@@ -127,16 +144,16 @@ func resourceGitlabServiceGithubRead(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	resourceGitlabServiceGithubSetToState(d, service)
+	resourceGitlabIntegrationGithubSetToState(d, service)
 
 	return nil
 }
 
-func resourceGitlabServiceGithubUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceGitlabServiceGithubCreate(ctx, d, meta)
+func resourceGitlabIntegrationGithubUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceGitlabIntegrationGithubCreate(ctx, d, meta)
 }
 
-func resourceGitlabServiceGithubDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationGithubDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Get("project").(string)
 
@@ -150,7 +167,7 @@ func resourceGitlabServiceGithubDelete(ctx context.Context, d *schema.ResourceDa
 	return nil
 }
 
-func resourceGitlabServiceGithubImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+func resourceGitlabIntegrationGithubImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	d.Set("project", d.Id())
 
 	return []*schema.ResourceData{d}, nil

@@ -10,16 +10,30 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
+var _ = registerResource("gitlab_integration_slack", func() *schema.Resource {
+	return resourceGitlabIntegrationSlackSchema(`The ` + "`gitlab_integration_slack`" + ` resource allows to manage the lifecycle of a project integration with Slack.
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#slack-notifications)`)
+})
+
 var _ = registerResource("gitlab_service_slack", func() *schema.Resource {
+	schema := resourceGitlabIntegrationSlackSchema(`The ` + "`gitlab_service_slack`" + ` resource allows to manage the lifecycle of a project integration with Slack.
+
+~> This resource is deprecated. use ` + "`gitlab_integration_slack`" + `instead!
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#slack-notifications)`)
+	schema.DeprecationMessage = `This resource is deprecated. use ` + "`gitlab_integration_slack`" + `instead!`
+	return schema
+})
+
+func resourceGitlabIntegrationSlackSchema(description string) *schema.Resource {
 	return &schema.Resource{
-		Description: `The ` + "`gitlab_service_slack`" + ` resource allows to manage the lifecycle of a project integration with Slack.
+		Description: description,
 
-**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#slack-notifications)`,
-
-		CreateContext: resourceGitlabServiceSlackCreate,
-		ReadContext:   resourceGitlabServiceSlackRead,
-		UpdateContext: resourceGitlabServiceSlackUpdate,
-		DeleteContext: resourceGitlabServiceSlackDelete,
+		CreateContext: resourceGitlabIntegrationSlackCreate,
+		ReadContext:   resourceGitlabIntegrationSlackRead,
+		UpdateContext: resourceGitlabIntegrationSlackUpdate,
+		DeleteContext: resourceGitlabIntegrationSlackDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -193,14 +207,14 @@ var _ = registerResource("gitlab_service_slack", func() *schema.Resource {
 			},
 		},
 	}
-})
+}
 
-func resourceGitlabServiceSlackCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationSlackCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Get("project").(string)
 	d.SetId(project)
 
-	log.Printf("[DEBUG] create gitlab slack service for project %s", project)
+	log.Printf("[DEBUG] create gitlab slack integration for project %s", project)
 
 	opts := &gitlab.SetSlackServiceOptions{
 		WebHook: gitlab.String(d.Get("webhook").(string)),
@@ -248,19 +262,19 @@ func resourceGitlabServiceSlackCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	return resourceGitlabServiceSlackRead(ctx, d, meta)
+	return resourceGitlabIntegrationSlackRead(ctx, d, meta)
 }
 
-func resourceGitlabServiceSlackRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationSlackRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
-	log.Printf("[DEBUG] read gitlab slack service for project %s", project)
+	log.Printf("[DEBUG] read gitlab slack integration for project %s", project)
 
 	service, _, err := client.Services.GetSlackService(project, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
-			log.Printf("[DEBUG] gitlab slack service not found %s", project)
+			log.Printf("[DEBUG] gitlab slack integration not found %s", project)
 			d.SetId("")
 			return nil
 		}
@@ -310,11 +324,11 @@ func resourceGitlabServiceSlackRead(ctx context.Context, d *schema.ResourceData,
 	return nil
 }
 
-func resourceGitlabServiceSlackUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceGitlabServiceSlackCreate(ctx, d, meta)
+func resourceGitlabIntegrationSlackUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceGitlabIntegrationSlackCreate(ctx, d, meta)
 }
 
-func resourceGitlabServiceSlackDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationSlackDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 

@@ -15,20 +15,20 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
-func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
+// Remove when we remove `service` alias.
+func TestAccGitlabIntegrationEmailsOnPush_backwardsCompatibleToService(t *testing.T) {
 	testProject := testutil.CreateProject(t)
 
 	var emailsOnPushService gitlab.EmailsOnPushService
 
 	var recipients1 = "mynumberonerecipient@example.com"
-	var recipients2 = "mynumbertworecipient@example.com"
 	var emailsOnPushResourceName = "gitlab_service_emails_on_push.this"
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabServiceEmailsOnPushDestroy,
+		CheckDestroy:             testAccCheckGitlabIntegrationEmailsOnPushDestroy,
 		Steps: []resource.TestStep{
-			// Create an Emails on Push service
+			// Create an Emails on Push integration
 			{
 				Config: fmt.Sprintf(`
 				resource "gitlab_service_emails_on_push" "this" {
@@ -37,7 +37,7 @@ func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
 				}
 				`, testProject.ID, recipients1),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceEmailsOnPushExists(emailsOnPushResourceName, &emailsOnPushService),
+					testAccCheckGitlabIntegrationEmailsOnPushExists(emailsOnPushResourceName, &emailsOnPushService),
 					resource.TestCheckResourceAttr(emailsOnPushResourceName, "recipients", recipients1),
 					resource.TestCheckResourceAttr(emailsOnPushResourceName, "active", "true"),
 					resource.TestCheckResourceAttrWith(emailsOnPushResourceName, "created_at", func(value string) error {
@@ -55,16 +55,60 @@ func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// Update the Emails on Push service
+		},
+	})
+}
+
+func TestAccGitlabIntegrationEmailsOnPush_basic(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+
+	var emailsOnPushService gitlab.EmailsOnPushService
+
+	var recipients1 = "mynumberonerecipient@example.com"
+	var recipients2 = "mynumbertworecipient@example.com"
+	var emailsOnPushResourceName = "gitlab_integration_emails_on_push.this"
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabIntegrationEmailsOnPushDestroy,
+		Steps: []resource.TestStep{
+			// Create an Emails on Push integration
 			{
 				Config: fmt.Sprintf(`
-				resource "gitlab_service_emails_on_push" "this" {
+				resource "gitlab_integration_emails_on_push" "this" {
+					project    = %[1]d
+					recipients = "%[2]s"
+				}
+				`, testProject.ID, recipients1),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabIntegrationEmailsOnPushExists(emailsOnPushResourceName, &emailsOnPushService),
+					resource.TestCheckResourceAttr(emailsOnPushResourceName, "recipients", recipients1),
+					resource.TestCheckResourceAttr(emailsOnPushResourceName, "active", "true"),
+					resource.TestCheckResourceAttrWith(emailsOnPushResourceName, "created_at", func(value string) error {
+						expectedValue := emailsOnPushService.CreatedAt.Format(time.RFC3339)
+						if value != expectedValue {
+							return fmt.Errorf("should be equal to %s", expectedValue)
+						}
+						return nil
+					}),
+				),
+			},
+			// Verify import
+			{
+				ResourceName:      "gitlab_integration_emails_on_push.this",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update the Emails on Push integration
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_integration_emails_on_push" "this" {
 					project    = %[1]d
 					recipients = "%[2]s"
 				}
 				`, testProject.ID, recipients2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceEmailsOnPushExists(emailsOnPushResourceName, &emailsOnPushService),
+					testAccCheckGitlabIntegrationEmailsOnPushExists(emailsOnPushResourceName, &emailsOnPushService),
 					resource.TestCheckResourceAttr(emailsOnPushResourceName, "recipients", recipients2),
 					resource.TestCheckResourceAttrWith(emailsOnPushResourceName, "created_at", func(value string) error {
 						expectedValue := emailsOnPushService.CreatedAt.Format(time.RFC3339)
@@ -84,14 +128,14 @@ func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
 			},
 			// Verify import
 			{
-				ResourceName:      "gitlab_service_emails_on_push.this",
+				ResourceName:      "gitlab_integration_emails_on_push.this",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// Update the Emails on Push service to get back to previous settings
+			// Update the Emails on Push integration to get back to previous settings
 			{
 				Config: fmt.Sprintf(`
-				resource "gitlab_service_emails_on_push" "this" {
+				resource "gitlab_integration_emails_on_push" "this" {
 					project    = %[1]d
 					recipients = "%[2]s"
 				}
@@ -99,7 +143,7 @@ func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
 			},
 			// Verify import
 			{
-				ResourceName:      "gitlab_service_emails_on_push.this",
+				ResourceName:      "gitlab_integration_emails_on_push.this",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -107,7 +151,7 @@ func TestAccGitlabServiceEmailsOnPush_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckGitlabServiceEmailsOnPushExists(resourceIdentifier string, service *gitlab.EmailsOnPushService) resource.TestCheckFunc {
+func testAccCheckGitlabIntegrationEmailsOnPushExists(resourceIdentifier string, service *gitlab.EmailsOnPushService) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceIdentifier]
 		if !ok {
@@ -129,11 +173,11 @@ func testAccCheckGitlabServiceEmailsOnPushExists(resourceIdentifier string, serv
 	}
 }
 
-func testAccCheckGitlabServiceEmailsOnPushDestroy(s *terraform.State) error {
+func testAccCheckGitlabIntegrationEmailsOnPushDestroy(s *terraform.State) error {
 	var project string
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type == "gitlab_service_emails_on_push" {
+		if rs.Type == "gitlab_integration_emails_on_push" {
 			project = rs.Primary.ID
 
 			emailsOnPushService, _, err := testutil.TestGitlabClient.Services.GetEmailsOnPushService(project)

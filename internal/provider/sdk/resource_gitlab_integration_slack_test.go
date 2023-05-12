@@ -16,20 +16,20 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
-func TestAccGitlabServiceSlack_basic(t *testing.T) {
+func TestAccGitlabIntegrationSlack_basic(t *testing.T) {
 	var slackService gitlab.SlackService
 	rInt := acctest.RandInt()
-	slackResourceName := "gitlab_service_slack.slack"
+	slackResourceName := "gitlab_integration_slack.slack"
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		CheckDestroy:             testAccCheckGitlabServiceSlackDestroy,
 		Steps: []resource.TestStep{
-			// Create a project and a slack service with minimal settings
+			// Create a project and a slack integration with minimal settings
 			{
-				Config: testAccGitlabServiceSlackMinimalConfig(rInt),
+				Config: testAccGitlabIntegrationSlackMinimalConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceExists(slackResourceName, &slackService),
+					testAccCheckGitlabIntegrationExists(slackResourceName, &slackService),
 					resource.TestCheckResourceAttr(slackResourceName, "webhook", "https://test.com"),
 				),
 			},
@@ -44,11 +44,11 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 					"webhook",
 				},
 			},
-			// Update slack service with more settings
+			// Update slack integration with more settings
 			{
-				Config: testAccGitlabServiceSlackConfig(rInt),
+				Config: testAccGitlabIntegrationSlackConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceExists(slackResourceName, &slackService),
+					testAccCheckGitlabIntegrationExists(slackResourceName, &slackService),
 					resource.TestCheckResourceAttr(slackResourceName, "webhook", "https://test.com"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_events", "true"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_channel", "test"),
@@ -71,11 +71,11 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 					"webhook",
 				},
 			},
-			// Update the slack service
+			// Update the slack integration
 			{
-				Config: testAccGitlabServiceSlackUpdateConfig(rInt),
+				Config: testAccGitlabIntegrationSlackUpdateConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceExists(slackResourceName, &slackService),
+					testAccCheckGitlabIntegrationExists(slackResourceName, &slackService),
 					resource.TestCheckResourceAttr(slackResourceName, "webhook", "https://testwebhook.com"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_events", "false"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_channel", "test push_channel"),
@@ -93,11 +93,11 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 					"webhook",
 				},
 			},
-			// Update the slack service to get back to previous settings
+			// Update the slack integration to get back to previous settings
 			{
-				Config: testAccGitlabServiceSlackConfig(rInt),
+				Config: testAccGitlabIntegrationSlackConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceExists(slackResourceName, &slackService),
+					testAccCheckGitlabIntegrationExists(slackResourceName, &slackService),
 					resource.TestCheckResourceAttr(slackResourceName, "webhook", "https://test.com"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_events", "true"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_channel", "test"),
@@ -115,11 +115,11 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 					"webhook",
 				},
 			},
-			// Update the slack service to get back to minimal settings
+			// Update the slack integration to get back to minimal settings
 			{
-				Config: testAccGitlabServiceSlackMinimalConfig(rInt),
+				Config: testAccGitlabIntegrationSlackMinimalConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceExists(slackResourceName, &slackService),
+					testAccCheckGitlabIntegrationExists(slackResourceName, &slackService),
 					resource.TestCheckResourceAttr(slackResourceName, "webhook", "https://test.com"),
 					resource.TestCheckResourceAttr(slackResourceName, "push_channel", ""),
 				),
@@ -140,7 +140,50 @@ func TestAccGitlabServiceSlack_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckGitlabServiceExists(n string, service *gitlab.SlackService) resource.TestCheckFunc {
+func TestAccGitlabIntegrationSlack_backwardsCompatibility(t *testing.T) {
+	var slackService gitlab.SlackService
+	rInt := acctest.RandInt()
+	slackResourceName := "gitlab_service_slack.slack"
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabServiceSlackDestroy,
+		Steps: []resource.TestStep{
+			// Create a project and a slack integration with minimal settings
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name        = "foo-%d"
+				  description = "Terraform acceptance tests"
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_service_slack" "slack" {
+				  project                      = "${gitlab_project.foo.id}"
+				  webhook                      = "https://test.com"
+				}
+				`, rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabIntegrationExists(slackResourceName, &slackService),
+					resource.TestCheckResourceAttr(slackResourceName, "webhook", "https://test.com"),
+				),
+			},
+			{
+				ResourceName:      slackResourceName,
+				ImportStateIdFunc: getSlackProjectID(slackResourceName),
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"notify_only_broken_pipelines",
+					"notify_only_default_branch",
+					"webhook",
+				},
+			},
+		},
+	})
+}
+
+func testAccCheckGitlabIntegrationExists(n string, service *gitlab.SlackService) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -153,7 +196,7 @@ func testAccCheckGitlabServiceExists(n string, service *gitlab.SlackService) res
 		}
 		slackService, _, err := testutil.TestGitlabClient.Services.GetSlackService(project)
 		if err != nil {
-			return fmt.Errorf("Slack service does not exist in project %s: %v", project, err)
+			return fmt.Errorf("Slack integration does not exist in project %s: %v", project, err)
 		}
 		*service = *slackService
 
@@ -163,7 +206,7 @@ func testAccCheckGitlabServiceExists(n string, service *gitlab.SlackService) res
 
 func testAccCheckGitlabServiceSlackDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "gitlab_service_slack" {
+		if rs.Type != "gitlab_integration_slack" {
 			continue
 		}
 
@@ -171,7 +214,7 @@ func testAccCheckGitlabServiceSlackDestroy(s *terraform.State) error {
 
 		_, _, err := testutil.TestGitlabClient.Services.GetSlackService(project)
 		if err == nil {
-			return fmt.Errorf("Slack Service Integration in project %s still exists", project)
+			return fmt.Errorf("Slack Integration in project %s still exists", project)
 		}
 		if !api.Is404(err) {
 			return err
@@ -197,36 +240,30 @@ func getSlackProjectID(n string) resource.ImportStateIdFunc {
 	}
 }
 
-func testAccGitlabServiceSlackMinimalConfig(rInt int) string {
+func testAccGitlabIntegrationSlackMinimalConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "foo" {
   name        = "foo-%d"
   description = "Terraform acceptance tests"
-
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
   visibility_level = "public"
 }
 
-resource "gitlab_service_slack" "slack" {
+resource "gitlab_integration_slack" "slack" {
   project                      = "${gitlab_project.foo.id}"
   webhook                      = "https://test.com"
 }
 `, rInt)
 }
 
-func testAccGitlabServiceSlackConfig(rInt int) string {
+func testAccGitlabIntegrationSlackConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "foo" {
   name        = "foo-%d"
   description = "Terraform acceptance tests"
-
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
   visibility_level = "public"
 }
 
-resource "gitlab_service_slack" "slack" {
+resource "gitlab_integration_slack" "slack" {
   project                      = "${gitlab_project.foo.id}"
   webhook                      = "https://test.com"
   username                     = "test"
@@ -258,18 +295,15 @@ resource "gitlab_service_slack" "slack" {
 `, rInt)
 }
 
-func testAccGitlabServiceSlackUpdateConfig(rInt int) string {
+func testAccGitlabIntegrationSlackUpdateConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "foo" {
   name        = "foo-%d"
   description = "Terraform acceptance tests"
-
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
   visibility_level = "public"
 }
 
-resource "gitlab_service_slack" "slack" {
+resource "gitlab_integration_slack" "slack" {
   project                      = "${gitlab_project.foo.id}"
   webhook                      = "https://testwebhook.com"
   username                     = "test username"

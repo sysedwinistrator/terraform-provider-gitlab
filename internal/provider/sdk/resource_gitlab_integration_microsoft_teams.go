@@ -10,16 +10,30 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
+var _ = registerResource("gitlab_integration_microsoft_teams", func() *schema.Resource {
+	return resourceGitlabIntegrationMicrosoftTeamsSchema(`The ` + "`gitlab_integration_microsoft_teams`" + ` resource allows to manage the lifecycle of a project integration with Microsoft Teams.
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#microsoft-teams)`)
+})
+
 var _ = registerResource("gitlab_service_microsoft_teams", func() *schema.Resource {
+	schema := resourceGitlabIntegrationMicrosoftTeamsSchema(`The ` + "`gitlab_service_microsoft_teams`" + ` resource allows to manage the lifecycle of a project integration with Microsoft Teams.
+
+~> This resource is deprecated. use ` + "`gitlab_integration_microsoft_teams`" + `instead!
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#microsoft-teams)`)
+	schema.DeprecationMessage = `This resource is deprecated. use ` + "`gitlab_integration_microsoft_teams`" + `instead!`
+	return schema
+})
+
+func resourceGitlabIntegrationMicrosoftTeamsSchema(description string) *schema.Resource {
 	return &schema.Resource{
-		Description: `The ` + "`gitlab_service_microsoft_teams`" + ` resource allows to manage the lifecycle of a project integration with Microsoft Teams.
+		Description: description,
 
-**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/integrations.html#microsoft-teams)`,
-
-		CreateContext: resourceGitlabServiceMicrosoftTeamsCreate,
-		ReadContext:   resourceGitlabServiceMicrosoftTeamsRead,
-		UpdateContext: resourceGitlabServiceMicrosoftTeamsUpdate,
-		DeleteContext: resourceGitlabServiceMicrosoftTeamsDelete,
+		CreateContext: resourceGitlabIntegrationMicrosoftTeamsCreate,
+		ReadContext:   resourceGitlabIntegrationMicrosoftTeamsRead,
+		UpdateContext: resourceGitlabIntegrationMicrosoftTeamsUpdate,
+		DeleteContext: resourceGitlabIntegrationMicrosoftTeamsDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -109,9 +123,9 @@ var _ = registerResource("gitlab_service_microsoft_teams", func() *schema.Resour
 			},
 		},
 	}
-})
+}
 
-func resourceGitlabServiceMicrosoftTeamsCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationMicrosoftTeamsCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Get("project").(string)
 	d.SetId(project)
@@ -131,25 +145,25 @@ func resourceGitlabServiceMicrosoftTeamsCreate(ctx context.Context, d *schema.Re
 		WikiPageEvents:            gitlab.Bool(d.Get("wiki_page_events").(bool)),
 	}
 
-	log.Printf("[DEBUG] Create Gitlab Microsoft Teams service")
+	log.Printf("[DEBUG] Create Gitlab Microsoft Teams integration")
 
 	if _, err := client.Services.SetMicrosoftTeamsService(project, options, gitlab.WithContext(ctx)); err != nil {
-		return diag.Errorf("couldn't create Gitlab Microsoft Teams service: %v", err)
+		return diag.Errorf("couldn't create Gitlab Microsoft Teams integration: %v", err)
 	}
 
-	return resourceGitlabServiceMicrosoftTeamsRead(ctx, d, meta)
+	return resourceGitlabIntegrationMicrosoftTeamsRead(ctx, d, meta)
 }
 
-func resourceGitlabServiceMicrosoftTeamsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationMicrosoftTeamsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
-	log.Printf("[DEBUG] Read Gitlab Microsoft Teams service for project %s", d.Id())
+	log.Printf("[DEBUG] Read Gitlab Microsoft Teams integration for project %s", d.Id())
 
 	teamsService, _, err := client.Services.GetMicrosoftTeamsService(project, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
-			log.Printf("[DEBUG] Unable to find Gitlab Microsoft Teams service in project %s, removing from state", project)
+			log.Printf("[DEBUG] Unable to find Gitlab Microsoft Teams integration in project %s, removing from state", project)
 			d.SetId("")
 			return nil
 		}
@@ -180,15 +194,15 @@ func resourceGitlabServiceMicrosoftTeamsRead(ctx context.Context, d *schema.Reso
 	return nil
 }
 
-func resourceGitlabServiceMicrosoftTeamsUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceGitlabServiceMicrosoftTeamsCreate(ctx, d, meta)
+func resourceGitlabIntegrationMicrosoftTeamsUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceGitlabIntegrationMicrosoftTeamsCreate(ctx, d, meta)
 }
 
-func resourceGitlabServiceMicrosoftTeamsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceGitlabIntegrationMicrosoftTeamsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 	project := d.Id()
 
-	log.Printf("[DEBUG] Delete Gitlab Microsoft Teams service for project %s", d.Id())
+	log.Printf("[DEBUG] Delete Gitlab Microsoft Teams integration for project %s", d.Id())
 
 	_, err := client.Services.DeleteMicrosoftTeamsService(project, gitlab.WithContext(ctx))
 	if err != nil {

@@ -18,17 +18,17 @@ import (
 func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
 	var teamsService gitlab.MicrosoftTeamsService
 	rInt := acctest.RandInt()
-	teamsResourceName := "gitlab_service_microsoft_teams.teams"
+	teamsResourceName := "gitlab_integration_microsoft_teams.teams"
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabServiceMicrosoftTeamsDestroy,
+		CheckDestroy:             testAccCheckGitlabIntegrationMicrosoftTeamsDestroy,
 		Steps: []resource.TestStep{
-			// Create a project and a teams service
+			// Create a project and a teams integration
 			{
-				Config: testAccGitlabServiceMicrosoftTeamsConfig(rInt),
+				Config: testAccGitlabIntegrationMicrosoftTeamsConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceMicrosoftTeamsExists(teamsResourceName, &teamsService),
+					testAccCheckGitlabIntegrationMicrosoftTeamsExists(teamsResourceName, &teamsService),
 					resource.TestCheckResourceAttr(teamsResourceName, "webhook", "https://test.com/?token=4"),
 					resource.TestCheckResourceAttr(teamsResourceName, "notify_only_broken_pipelines", "false"),
 					resource.TestCheckResourceAttr(teamsResourceName, "branches_to_be_notified", "all"),
@@ -43,11 +43,11 @@ func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(teamsResourceName, "wiki_page_events", "false"),
 				),
 			},
-			// Update the teams service
+			// Update the teams integration
 			{
-				Config: testAccGitlabServiceMicrosoftTeamsUpdateConfig(rInt),
+				Config: testAccGitlabIntegrationMicrosoftTeamsUpdateConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceMicrosoftTeamsExists(teamsResourceName, &teamsService),
+					testAccCheckGitlabIntegrationMicrosoftTeamsExists(teamsResourceName, &teamsService),
 					resource.TestCheckResourceAttr(teamsResourceName, "webhook", "https://testurl.com/?token=5"),
 					resource.TestCheckResourceAttr(teamsResourceName, "notify_only_broken_pipelines", "true"),
 					resource.TestCheckResourceAttr(teamsResourceName, "branches_to_be_notified", "default"),
@@ -62,11 +62,11 @@ func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(teamsResourceName, "wiki_page_events", "true"),
 				),
 			},
-			// Update the teams service to get back to previous settings
+			// Update the teams integration to get back to previous settings
 			{
-				Config: testAccGitlabServiceMicrosoftTeamsConfig(rInt),
+				Config: testAccGitlabIntegrationMicrosoftTeamsConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceMicrosoftTeamsExists(teamsResourceName, &teamsService),
+					testAccCheckGitlabIntegrationMicrosoftTeamsExists(teamsResourceName, &teamsService),
 					resource.TestCheckResourceAttr(teamsResourceName, "webhook", "https://test.com/?token=4"),
 					resource.TestCheckResourceAttr(teamsResourceName, "notify_only_broken_pipelines", "false"),
 					resource.TestCheckResourceAttr(teamsResourceName, "branches_to_be_notified", "all"),
@@ -93,7 +93,69 @@ func TestAccGitlabServiceMicrosoftTeams_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckGitlabServiceMicrosoftTeamsExists(n string, service *gitlab.MicrosoftTeamsService) resource.TestCheckFunc {
+func TestAccGitlabServiceMicrosoftTeams_backwardsCompatibility(t *testing.T) {
+	var teamsService gitlab.MicrosoftTeamsService
+	rInt := acctest.RandInt()
+	teamsResourceName := "gitlab_service_microsoft_teams.teams"
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabIntegrationMicrosoftTeamsDestroy,
+		Steps: []resource.TestStep{
+			// Create a project and a teams integration
+			{
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name        = "foo-%d"
+				  description = "Terraform acceptance tests"
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_service_microsoft_teams" "teams" {
+				  project  = "${gitlab_project.foo.id}"
+				  webhook = "https://test.com/?token=4"
+				  notify_only_broken_pipelines = false
+				  branches_to_be_notified = "all"
+				  push_events = false
+				  issues_events = false
+				  confidential_issues_events = false
+				  merge_requests_events = false
+				  tag_push_events = false
+				  note_events = false
+				  confidential_note_events = false
+				  pipeline_events = false
+				  wiki_page_events = false
+				}
+				`, rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabIntegrationMicrosoftTeamsExists(teamsResourceName, &teamsService),
+					resource.TestCheckResourceAttr(teamsResourceName, "webhook", "https://test.com/?token=4"),
+					resource.TestCheckResourceAttr(teamsResourceName, "notify_only_broken_pipelines", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "branches_to_be_notified", "all"),
+					resource.TestCheckResourceAttr(teamsResourceName, "push_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "issues_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "confidential_issues_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "merge_requests_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "tag_push_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "note_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "confidential_note_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "pipeline_events", "false"),
+					resource.TestCheckResourceAttr(teamsResourceName, "wiki_page_events", "false"),
+				),
+			},
+			{
+				ResourceName:      teamsResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"webhook",
+				},
+			},
+		},
+	})
+}
+
+func testAccCheckGitlabIntegrationMicrosoftTeamsExists(n string, service *gitlab.MicrosoftTeamsService) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -106,7 +168,7 @@ func testAccCheckGitlabServiceMicrosoftTeamsExists(n string, service *gitlab.Mic
 		}
 		teamsService, _, err := testutil.TestGitlabClient.Services.GetMicrosoftTeamsService(project)
 		if err != nil {
-			return fmt.Errorf("Microsoft Teams service does not exist in project %s: %v", project, err)
+			return fmt.Errorf("Microsoft Teams integration does not exist in project %s: %v", project, err)
 		}
 		*service = *teamsService
 
@@ -114,7 +176,7 @@ func testAccCheckGitlabServiceMicrosoftTeamsExists(n string, service *gitlab.Mic
 	}
 }
 
-func testAccCheckGitlabServiceMicrosoftTeamsDestroy(s *terraform.State) error {
+func testAccCheckGitlabIntegrationMicrosoftTeamsDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "gitlab_project" {
 			continue
@@ -136,17 +198,15 @@ func testAccCheckGitlabServiceMicrosoftTeamsDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccGitlabServiceMicrosoftTeamsConfig(rInt int) string {
+func testAccGitlabIntegrationMicrosoftTeamsConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "foo" {
   name        = "foo-%d"
   description = "Terraform acceptance tests"
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
   visibility_level = "public"
 }
 
-resource "gitlab_service_microsoft_teams" "teams" {
+resource "gitlab_integration_microsoft_teams" "teams" {
   project  = "${gitlab_project.foo.id}"
   webhook = "https://test.com/?token=4"
   notify_only_broken_pipelines = false
@@ -164,17 +224,15 @@ resource "gitlab_service_microsoft_teams" "teams" {
 `, rInt)
 }
 
-func testAccGitlabServiceMicrosoftTeamsUpdateConfig(rInt int) string {
+func testAccGitlabIntegrationMicrosoftTeamsUpdateConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project" "foo" {
   name        = "foo-%d"
   description = "Terraform acceptance tests"
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
   visibility_level = "public"
 }
 
-resource "gitlab_service_microsoft_teams" "teams" {
+resource "gitlab_integration_microsoft_teams" "teams" {
   project  = "${gitlab_project.foo.id}"
   webhook = "https://testurl.com/?token=5"
   notify_only_broken_pipelines = true

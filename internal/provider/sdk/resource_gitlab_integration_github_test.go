@@ -15,7 +15,7 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
-func TestAccGitlabServiceGithub_basic(t *testing.T) {
+func TestAccGitlabIntegrationGithub_backwardsCompatibleToService(t *testing.T) {
 	testutil.SkipIfCE(t)
 
 	var githubService gitlab.GithubService
@@ -23,7 +23,7 @@ func TestAccGitlabServiceGithub_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
-		CheckDestroy:             testAccCheckGitlabServiceGithubDestroy,
+		CheckDestroy:             testAccCheckGitlabIntegrationGithubDestroy,
 		Steps: []resource.TestStep{
 			// Create a project and a github service
 			{
@@ -35,58 +35,7 @@ func TestAccGitlabServiceGithub_basic(t *testing.T) {
 					}
 				`, testProject.ID),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceGithubExists("gitlab_service_github.github", &githubService),
-					resource.TestCheckResourceAttr("gitlab_service_github.github", "repository_url", "https://github.com/gitlabhq/terraform-provider-gitlab"),
-					resource.TestCheckResourceAttr("gitlab_service_github.github", "static_context", "true"),
-				),
-			},
-			// Verify Import
-			{
-				ResourceName:      "gitlab_service_github.github",
-				ImportStateIdFunc: getGithubProjectID("gitlab_service_github.github"),
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"token",
-				},
-			},
-			// Update the github service
-			{
-				Config: fmt.Sprintf(`
-					resource "gitlab_service_github" "github" {
-						project        = "%d"
-						token          = "test"
-						repository_url = "https://github.com/terraform-providers/terraform-provider-github"
-						static_context = false
-					}
-				`, testProject.ID),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceGithubExists("gitlab_service_github.github", &githubService),
-					resource.TestCheckResourceAttr("gitlab_service_github.github", "repository_url", "https://github.com/terraform-providers/terraform-provider-github"),
-					resource.TestCheckResourceAttr("gitlab_service_github.github", "static_context", "false"),
-				),
-			},
-			// Verify Import
-			{
-				ResourceName:      "gitlab_service_github.github",
-				ImportStateIdFunc: getGithubProjectID("gitlab_service_github.github"),
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"token",
-				},
-			},
-			// Update the github service to get back to previous settings
-			{
-				Config: fmt.Sprintf(`
-					resource "gitlab_service_github" "github" {
-						project        = "%d"
-						token          = "test"
-						repository_url = "https://github.com/gitlabhq/terraform-provider-gitlab"
-					}
-				`, testProject.ID),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabServiceGithubExists("gitlab_service_github.github", &githubService),
+					testAccCheckGitlabIntegrationGithubExists("gitlab_service_github.github", &githubService),
 					resource.TestCheckResourceAttr("gitlab_service_github.github", "repository_url", "https://github.com/gitlabhq/terraform-provider-gitlab"),
 					resource.TestCheckResourceAttr("gitlab_service_github.github", "static_context", "true"),
 				),
@@ -105,7 +54,97 @@ func TestAccGitlabServiceGithub_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckGitlabServiceGithubExists(n string, service *gitlab.GithubService) resource.TestCheckFunc {
+func TestAccGitlabIntegrationGithub_basic(t *testing.T) {
+	testutil.SkipIfCE(t)
+
+	var githubService gitlab.GithubService
+	testProject := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabIntegrationGithubDestroy,
+		Steps: []resource.TestStep{
+			// Create a project and a github service
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_integration_github" "github" {
+						project        = "%d"
+						token          = "test"
+						repository_url = "https://github.com/gitlabhq/terraform-provider-gitlab"
+					}
+				`, testProject.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabIntegrationGithubExists("gitlab_integration_github.github", &githubService),
+					resource.TestCheckResourceAttr("gitlab_integration_github.github", "repository_url", "https://github.com/gitlabhq/terraform-provider-gitlab"),
+					resource.TestCheckResourceAttr("gitlab_integration_github.github", "static_context", "true"),
+				),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_integration_github.github",
+				ImportStateIdFunc: getGithubProjectID("gitlab_integration_github.github"),
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"token",
+				},
+			},
+			// Update the github integration
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_integration_github" "github" {
+						project        = "%d"
+						token          = "test"
+						repository_url = "https://github.com/terraform-providers/terraform-provider-github"
+						static_context = false
+					}
+				`, testProject.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabIntegrationGithubExists("gitlab_integration_github.github", &githubService),
+					resource.TestCheckResourceAttr("gitlab_integration_github.github", "repository_url", "https://github.com/terraform-providers/terraform-provider-github"),
+					resource.TestCheckResourceAttr("gitlab_integration_github.github", "static_context", "false"),
+				),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_integration_github.github",
+				ImportStateIdFunc: getGithubProjectID("gitlab_integration_github.github"),
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"token",
+				},
+			},
+			// Update the github integration to get back to previous settings
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_integration_github" "github" {
+						project        = "%d"
+						token          = "test"
+						repository_url = "https://github.com/gitlabhq/terraform-provider-gitlab"
+					}
+				`, testProject.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabIntegrationGithubExists("gitlab_integration_github.github", &githubService),
+					resource.TestCheckResourceAttr("gitlab_integration_github.github", "repository_url", "https://github.com/gitlabhq/terraform-provider-gitlab"),
+					resource.TestCheckResourceAttr("gitlab_integration_github.github", "static_context", "true"),
+				),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_integration_github.github",
+				ImportStateIdFunc: getGithubProjectID("gitlab_integration_github.github"),
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"token",
+				},
+			},
+		},
+	})
+}
+
+func testAccCheckGitlabIntegrationGithubExists(n string, service *gitlab.GithubService) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -118,7 +157,7 @@ func testAccCheckGitlabServiceGithubExists(n string, service *gitlab.GithubServi
 		}
 		githubService, _, err := testutil.TestGitlabClient.Services.GetGithubService(project)
 		if err != nil {
-			return fmt.Errorf("Github service does not exist in project %s: %v", project, err)
+			return fmt.Errorf("Github integration does not exist in project %s: %v", project, err)
 		}
 		*service = *githubService
 
@@ -126,7 +165,7 @@ func testAccCheckGitlabServiceGithubExists(n string, service *gitlab.GithubServi
 	}
 }
 
-func testAccCheckGitlabServiceGithubDestroy(s *terraform.State) error {
+func testAccCheckGitlabIntegrationGithubDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "gitlab_project" {
 			continue
