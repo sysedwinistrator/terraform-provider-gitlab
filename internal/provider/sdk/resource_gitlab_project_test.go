@@ -2299,7 +2299,6 @@ resource "gitlab_project" "foo" {
   forking_access_level = "enabled"
   issues_access_level = "enabled"
   merge_requests_access_level = "enabled"
-  operations_access_level = "enabled"
   public_builds = false
   repository_access_level = "enabled"
   repository_storage = "default"
@@ -2407,7 +2406,6 @@ resource "gitlab_project" "foo" {
   forking_access_level = "disabled"
   issues_access_level = "disabled"
   merge_requests_access_level = "disabled"
-  operations_access_level = "disabled"
   public_builds = false
   repository_access_level = "disabled"
   repository_storage = "default"
@@ -2554,7 +2552,6 @@ resource "gitlab_project" "foo" {
   forking_access_level = "enabled"
   issues_access_level = "enabled"
   merge_requests_access_level = "enabled"
-  operations_access_level = "enabled"
   public_builds = false
   repository_access_level = "enabled"
   repository_storage = "default"
@@ -2740,7 +2737,6 @@ resource "gitlab_project" "foo" {
   forking_access_level = "enabled"
   issues_access_level = "enabled"
   merge_requests_access_level = "enabled"
-  operations_access_level = "enabled"
   public_builds = false
   repository_access_level = "enabled"
   repository_storage = "default"
