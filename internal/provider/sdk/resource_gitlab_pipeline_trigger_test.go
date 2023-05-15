@@ -4,8 +4,9 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -16,6 +17,53 @@ import (
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabPipelineTrigger_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Project With ID",
+			givenV0State: map[string]interface{}{
+				"project": "99",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "99",
+				"id":      "99:42",
+			},
+		},
+		{
+			name: "Project With Namespace",
+			givenV0State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "foo/bar:42",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabPipelineTriggerStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
+	}
+}
 
 func TestAccGitlabPipelineTrigger_basic(t *testing.T) {
 	var trigger gitlab.PipelineTrigger
@@ -38,7 +86,6 @@ func TestAccGitlabPipelineTrigger_basic(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_pipeline_trigger.trigger",
-				ImportStateIdFunc: getPipelineTriggerImportID("gitlab_pipeline_trigger.trigger"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -55,7 +102,6 @@ func TestAccGitlabPipelineTrigger_basic(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_pipeline_trigger.trigger",
-				ImportStateIdFunc: getPipelineTriggerImportID("gitlab_pipeline_trigger.trigger"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -72,32 +118,11 @@ func TestAccGitlabPipelineTrigger_basic(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_pipeline_trigger.trigger",
-				ImportStateIdFunc: getPipelineTriggerImportID("gitlab_pipeline_trigger.trigger"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 		},
 	})
-}
-
-func getPipelineTriggerImportID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", n)
-		}
-
-		pipelineTriggerID := rs.Primary.ID
-		if pipelineTriggerID == "" {
-			return "", fmt.Errorf("No pipeline trigger ID is set")
-		}
-		projectID := rs.Primary.Attributes["project"]
-		if projectID == "" {
-			return "", fmt.Errorf("No project ID is set")
-		}
-
-		return fmt.Sprintf("%s:%s", projectID, pipelineTriggerID), nil
-	}
 }
 
 func testAccCheckGitlabPipelineTriggerExists(n string, trigger *gitlab.PipelineTrigger) resource.TestCheckFunc {
@@ -107,23 +132,20 @@ func testAccCheckGitlabPipelineTriggerExists(n string, trigger *gitlab.PipelineT
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		triggerID := rs.Primary.ID
-		repoName := rs.Primary.Attributes["project"]
-		if repoName == "" {
-			return fmt.Errorf("No project ID is set")
-		}
-
-		triggers, _, err := testutil.TestGitlabClient.PipelineTriggers.ListPipelineTriggers(repoName, nil)
+		project, pipelineTriggerId, err := resourceGitlabPipelineTriggerParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
-		for _, gotTrigger := range triggers {
-			if strconv.Itoa(gotTrigger.ID) == triggerID {
-				*trigger = *gotTrigger
-				return nil
+
+		t, _, err := testutil.TestGitlabClient.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerId)
+		if err != nil {
+			if api.Is404(err) {
+				return fmt.Errorf("Pipeline Trigger %q does not exist", rs.Primary.ID)
 			}
+			return err
 		}
-		return fmt.Errorf("Pipeline Trigger does not exist")
+		*trigger = *t
+		return nil
 	}
 }
 
@@ -147,15 +169,14 @@ func testAccCheckGitlabPipelineTriggerDestroy(s *terraform.State) error {
 			continue
 		}
 
-		project := rs.Primary.Attributes["project"]
-		pipelineTriggerID, err := strconv.Atoi(rs.Primary.ID)
+		project, pipelineTriggerId, err := resourceGitlabPipelineTriggerParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, _, err = testutil.TestGitlabClient.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerID)
+		_, _, err = testutil.TestGitlabClient.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerId)
 		if err == nil {
-			return fmt.Errorf("Pipeline Trigger %d in project %s still exists", pipelineTriggerID, project)
+			return fmt.Errorf("the Pipeline Trigger %d in project %s still exists", pipelineTriggerId, project)
 		}
 		if !api.Is404(err) {
 			return err

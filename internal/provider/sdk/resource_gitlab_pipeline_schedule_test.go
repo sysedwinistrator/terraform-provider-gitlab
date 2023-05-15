@@ -4,8 +4,9 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -16,6 +17,53 @@ import (
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabPipelineSchedule_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Project With ID",
+			givenV0State: map[string]interface{}{
+				"project": "99",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "99",
+				"id":      "99:42",
+			},
+		},
+		{
+			name: "Project With Namespace",
+			givenV0State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "42",
+			},
+			expectedV1State: map[string]interface{}{
+				"project": "foo/bar",
+				"id":      "foo/bar:42",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabPipelineScheduleStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
+	}
+}
 
 func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
 	var schedule gitlab.PipelineSchedule
@@ -42,7 +90,6 @@ func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_pipeline_schedule.schedule",
-				ImportStateIdFunc: getPipelineScheduleImportID("gitlab_pipeline_schedule.schedule"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -63,7 +110,6 @@ func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_pipeline_schedule.schedule",
-				ImportStateIdFunc: getPipelineScheduleImportID("gitlab_pipeline_schedule.schedule"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -84,32 +130,11 @@ func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
 			// Verify Import
 			{
 				ResourceName:      "gitlab_pipeline_schedule.schedule",
-				ImportStateIdFunc: getPipelineScheduleImportID("gitlab_pipeline_schedule.schedule"),
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 		},
 	})
-}
-
-func getPipelineScheduleImportID(n string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", n)
-		}
-
-		pipelineScheduleID := rs.Primary.ID
-		if pipelineScheduleID == "" {
-			return "", fmt.Errorf("No pipeline schedule ID is set")
-		}
-		projectID := rs.Primary.Attributes["project"]
-		if projectID == "" {
-			return "", fmt.Errorf("No project ID is set")
-		}
-
-		return fmt.Sprintf("%s:%s", projectID, pipelineScheduleID), nil
-	}
 }
 
 func testAccCheckGitlabPipelineScheduleExists(n string, schedule *gitlab.PipelineSchedule) resource.TestCheckFunc {
@@ -119,23 +144,20 @@ func testAccCheckGitlabPipelineScheduleExists(n string, schedule *gitlab.Pipelin
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		scheduleID := rs.Primary.ID
-		repoName := rs.Primary.Attributes["project"]
-		if repoName == "" {
-			return fmt.Errorf("No project ID is set")
-		}
-
-		schedules, _, err := testutil.TestGitlabClient.PipelineSchedules.ListPipelineSchedules(repoName, nil)
+		project, pipelineScheduleId, err := resourceGitlabPipelineTriggerParseId(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
-		for _, gotSchedule := range schedules {
-			if strconv.Itoa(gotSchedule.ID) == scheduleID {
-				*schedule = *gotSchedule
-				return nil
+
+		sc, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(project, pipelineScheduleId)
+		if err != nil {
+			if api.Is404(err) {
+				return fmt.Errorf("Pipeline Schedule %q does not exist", rs.Primary.ID)
 			}
+			return err
 		}
-		return fmt.Errorf("Pipeline Schedule does not exist")
+		*schedule = *sc
+		return nil
 	}
 }
 
@@ -178,16 +200,14 @@ func testAccCheckGitlabPipelineScheduleDestroy(s *terraform.State) error {
 			continue
 		}
 
-		id, err := strconv.Atoi(rs.Primary.ID)
+		project, pipelineScheduleId, err := resourceGitlabPipelineTriggerParseId(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("could not convert pipeline schedule id to integer: %s", err)
+			return err
 		}
 
-		gotPS, _, err := testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(rs.Primary.Attributes["project"], id)
+		_, _, err = testutil.TestGitlabClient.PipelineSchedules.GetPipelineSchedule(project, pipelineScheduleId)
 		if err == nil {
-			if gotPS != nil && fmt.Sprintf("%d", gotPS.ID) == rs.Primary.ID {
-				return fmt.Errorf("pipeline schedule still exists")
-			}
+			return fmt.Errorf("the Pipeline Schedule %d in project %s still exists", pipelineScheduleId, project)
 		}
 		if !api.Is404(err) {
 			return err

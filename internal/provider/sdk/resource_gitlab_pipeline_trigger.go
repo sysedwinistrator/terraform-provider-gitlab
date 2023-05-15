@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_pipeline_trigger", func() *schema.Resource {
@@ -24,29 +25,89 @@ var _ = registerResource("gitlab_pipeline_trigger", func() *schema.Resource {
 		UpdateContext: resourceGitlabPipelineTriggerUpdate,
 		DeleteContext: resourceGitlabPipelineTriggerDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceGitlabPipelineTriggerStateImporter,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
-
-		Schema: map[string]*schema.Schema{
-			"project": {
-				Description: "The name or id of the project to add the trigger to.",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"description": {
-				Description: "The description of the pipeline trigger.",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"token": {
-				Description: "The pipeline trigger token.",
-				Type:        schema.TypeString,
-				Computed:    true,
-				Sensitive:   true,
+		Schema:        gitlabPipelineTriggerSchema(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabPipelineTriggerResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabPipelineTriggerStateUpgradeV0,
+				Version: 0,
 			},
 		},
 	}
 })
+
+func gitlabPipelineTriggerSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"pipeline_trigger_id": {
+			Description: "The pipeline trigger id.",
+			Type:        schema.TypeInt,
+			Computed:    true,
+		},
+		"project": {
+			Description: "The name or id of the project to add the trigger to.",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"description": {
+			Description: "The description of the pipeline trigger.",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"token": {
+			Description: "The pipeline trigger token.",
+			Type:        schema.TypeString,
+			Computed:    true,
+			Sensitive:   true,
+		},
+	}
+}
+
+// resourceGitlabPipelineTriggerResourceV0 returns the V0 schema definition.
+// From V0-V1 the `id` attribute value format changed from `<pipeline-trigger-id>` to `<project-id>:<pipeline-trigger-id>:<key>`,
+// which means that the actual schema definition was not impacted and we can just return the
+// V1 schema as V0 schema.
+func resourceGitlabPipelineTriggerResourceV0() *schema.Resource {
+	return &schema.Resource{Schema: gitlabPipelineTriggerSchema()}
+}
+
+// resourceGitlabPipelineTriggerStateUpgradeV0 performs the state migration from V0 to V1.
+func resourceGitlabPipelineTriggerStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	project := rawState["project"].(string)
+	oldId := rawState["id"].(string)
+
+	pipelineTriggerId, err := strconv.Atoi(oldId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert pipeline trigger id %q to integer to migrate to new schema: %w", oldId, err)
+	}
+
+	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `id` attribute format", map[string]interface{}{"project": project, "v0-id": oldId})
+	rawState["id"] = resourceGitlabPipelineTriggerBuildId(project, pipelineTriggerId)
+	tflog.Debug(ctx, "migrated `id` attribute for V0 to V1", map[string]interface{}{"v0-id": oldId, "v1-id": rawState["id"]})
+	return rawState, nil
+}
+
+func resourceGitlabPipelineTriggerBuildId(project string, pipelineTriggerId int) string {
+	id := fmt.Sprintf("%d", pipelineTriggerId)
+	return utils.BuildTwoPartID(&project, &id)
+}
+
+func resourceGitlabPipelineTriggerParseId(id string) (string, int, error) {
+	project, rawPipelineTriggerId, err := utils.ParseTwoPartID(id)
+	e := fmt.Errorf("unabel to parse id %q. Expected format <project>:<pipeline-trigger-id>", id)
+	if err != nil {
+		return "", 0, e
+	}
+
+	pipelineTriggerId, err := strconv.Atoi(rawPipelineTriggerId)
+	if err != nil {
+		return "", 0, e
+	}
+
+	return project, pipelineTriggerId, nil
+}
 
 func resourceGitlabPipelineTriggerCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
@@ -57,37 +118,36 @@ func resourceGitlabPipelineTriggerCreate(ctx context.Context, d *schema.Resource
 
 	log.Printf("[DEBUG] create gitlab PipelineTrigger %s", *options.Description)
 
-	PipelineTrigger, _, err := client.PipelineTriggers.AddPipelineTrigger(project, options, gitlab.WithContext(ctx))
+	pipelineTrigger, _, err := client.PipelineTriggers.AddPipelineTrigger(project, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(PipelineTrigger.ID))
-
+	d.SetId(resourceGitlabPipelineTriggerBuildId(project, pipelineTrigger.ID))
 	return resourceGitlabPipelineTriggerRead(ctx, d, meta)
 }
 
 func resourceGitlabPipelineTriggerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
-	pipelineTriggerID, err := strconv.Atoi(d.Id())
-
+	project, pipelineTriggerId, err := resourceGitlabPipelineTriggerParseId(d.Id())
 	if err != nil {
-		return diag.Errorf("%s cannot be converted to int", d.Id())
+		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] read gitlab PipelineTrigger %s/%d", project, pipelineTriggerID)
+	log.Printf("[DEBUG] read gitlab PipelineTrigger %s/%d", project, pipelineTriggerId)
 
-	pipelineTrigger, _, err := client.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerID, gitlab.WithContext(ctx))
+	pipelineTrigger, _, err := client.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerId, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
-			log.Printf("[DEBUG] gitlab pipeline trigger not found %s/%d", project, pipelineTriggerID)
+			log.Printf("[DEBUG] gitlab pipeline trigger not found %s/%d", project, pipelineTriggerId)
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
+	d.Set("pipeline_trigger_id", pipelineTrigger.ID)
+	d.Set("project", project)
 	d.Set("description", pipelineTrigger.Description)
 	d.Set("token", pipelineTrigger.Token)
 
@@ -96,15 +156,13 @@ func resourceGitlabPipelineTriggerRead(ctx context.Context, d *schema.ResourceDa
 
 func resourceGitlabPipelineTriggerUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
-	options := &gitlab.EditPipelineTriggerOptions{
-		Description: gitlab.String(d.Get("description").(string)),
+	project, pipelineTriggerId, err := resourceGitlabPipelineTriggerParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	pipelineTriggerID, err := strconv.Atoi(d.Id())
-
-	if err != nil {
-		return diag.Errorf("%s cannot be converted to int", d.Id())
+	options := &gitlab.EditPipelineTriggerOptions{
+		Description: gitlab.String(d.Get("description").(string)),
 	}
 
 	if d.HasChange("description") {
@@ -113,7 +171,7 @@ func resourceGitlabPipelineTriggerUpdate(ctx context.Context, d *schema.Resource
 
 	log.Printf("[DEBUG] update gitlab PipelineTrigger %s", d.Id())
 
-	_, _, err = client.PipelineTriggers.EditPipelineTrigger(project, pipelineTriggerID, options, gitlab.WithContext(ctx))
+	_, _, err = client.PipelineTriggers.EditPipelineTrigger(project, pipelineTriggerId, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,33 +181,16 @@ func resourceGitlabPipelineTriggerUpdate(ctx context.Context, d *schema.Resource
 
 func resourceGitlabPipelineTriggerDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
+	project, pipelineTriggerId, err := resourceGitlabPipelineTriggerParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	log.Printf("[DEBUG] Delete gitlab PipelineTrigger %s", d.Id())
 
-	pipelineTriggerID, err := strconv.Atoi(d.Id())
-
-	if err != nil {
-		return diag.Errorf("%s cannot be converted to int", d.Id())
-	}
-
-	_, err = client.PipelineTriggers.DeletePipelineTrigger(project, pipelineTriggerID, gitlab.WithContext(ctx))
+	_, err = client.PipelineTriggers.DeletePipelineTrigger(project, pipelineTriggerId, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	return nil
-}
-
-func resourceGitlabPipelineTriggerStateImporter(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	s := strings.Split(d.Id(), ":")
-	if len(s) != 2 {
-		d.SetId("")
-		return nil, fmt.Errorf("Invalid Pipeline Trigger import format; expected '{project_id}:{pipeline_trigger_id}'")
-	}
-	project, id := s[0], s[1]
-
-	d.SetId(id)
-	d.Set("project", project)
-
-	return []*schema.ResourceData{d}, nil
 }

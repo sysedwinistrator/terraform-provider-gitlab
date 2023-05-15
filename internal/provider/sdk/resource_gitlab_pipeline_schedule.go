@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
 var _ = registerResource("gitlab_pipeline_schedule", func() *schema.Resource {
@@ -24,46 +25,106 @@ var _ = registerResource("gitlab_pipeline_schedule", func() *schema.Resource {
 		UpdateContext: resourceGitlabPipelineScheduleUpdate,
 		DeleteContext: resourceGitlabPipelineScheduleDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceGitlabPipelineScheduleStateImporter,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
-
-		Schema: map[string]*schema.Schema{
-			"project": {
-				Description: "The name or id of the project to add the schedule to.",
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-			},
-			"description": {
-				Description: "The description of the pipeline schedule.",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"ref": {
-				Description: "The branch/tag name to be triggered.",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"cron": {
-				Description: "The cron (e.g. `0 1 * * *`).",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"cron_timezone": {
-				Description: "The timezone.",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "UTC",
-			},
-			"active": {
-				Description: "The activation of pipeline schedule. If false is set, the pipeline schedule will deactivated initially.",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
+		Schema:        gitlabPipelineScheduleSchema(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabPipelineScheduleResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabPipelineScheduleStateUpgradeV0,
+				Version: 0,
 			},
 		},
 	}
 })
+
+func gitlabPipelineScheduleSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"pipeline_schedule_id": {
+			Description: "The pipeline schedule id.",
+			Type:        schema.TypeInt,
+			Computed:    true,
+		},
+		"project": {
+			Description: "The name or id of the project to add the schedule to.",
+			Type:        schema.TypeString,
+			Required:    true,
+			ForceNew:    true,
+		},
+		"description": {
+			Description: "The description of the pipeline schedule.",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"ref": {
+			Description: "The branch/tag name to be triggered.",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"cron": {
+			Description: "The cron (e.g. `0 1 * * *`).",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"cron_timezone": {
+			Description: "The timezone.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Default:     "UTC",
+		},
+		"active": {
+			Description: "The activation of pipeline schedule. If false is set, the pipeline schedule will deactivated initially.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+		},
+	}
+}
+
+// resourceGitlabPipelineScheduleResourceV0 returns the V0 schema definition.
+// From V0-V1 the `id` attribute value format changed from `<pipeline-schedule-id>` to `<project-id>:<pipeline-schedule-id>:<key>`,
+// which means that the actual schema definition was not impacted and we can just return the
+// V1 schema as V0 schema.
+func resourceGitlabPipelineScheduleResourceV0() *schema.Resource {
+	return &schema.Resource{Schema: gitlabPipelineScheduleSchema()}
+}
+
+// resourceGitlabPipelineScheduleStateUpgradeV0 performs the state migration from V0 to V1.
+func resourceGitlabPipelineScheduleStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	project := rawState["project"].(string)
+	oldId := rawState["id"].(string)
+
+	pipelineScheduleId, err := strconv.Atoi(oldId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert pipeline schedule id %q to integer to migrate to new schema: %w", oldId, err)
+	}
+
+	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `id` attribute format", map[string]interface{}{"project": project, "v0-id": oldId})
+	rawState["id"] = resourceGitlabPipelineScheduleBuildId(project, pipelineScheduleId)
+	tflog.Debug(ctx, "migrated `id` attribute for V0 to V1", map[string]interface{}{"v0-id": oldId, "v1-id": rawState["id"]})
+	return rawState, nil
+}
+
+func resourceGitlabPipelineScheduleBuildId(project string, pipelineScheduleId int) string {
+	id := fmt.Sprintf("%d", pipelineScheduleId)
+	return utils.BuildTwoPartID(&project, &id)
+}
+
+func resourceGitlabPipelineScheduleParseId(id string) (string, int, error) {
+	project, rawPipelineScheduleId, err := utils.ParseTwoPartID(id)
+	e := fmt.Errorf("unabel to parse id %q. Expected format <project>:<pipeline-schedule-id>", id)
+	if err != nil {
+		return "", 0, e
+	}
+
+	pipelineScheduleId, err := strconv.Atoi(rawPipelineScheduleId)
+	if err != nil {
+		return "", 0, e
+	}
+
+	return project, pipelineScheduleId, nil
+}
 
 func resourceGitlabPipelineScheduleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
@@ -78,37 +139,36 @@ func resourceGitlabPipelineScheduleCreate(ctx context.Context, d *schema.Resourc
 
 	log.Printf("[DEBUG] create gitlab PipelineSchedule %s", *options.Description)
 
-	PipelineSchedule, _, err := client.PipelineSchedules.CreatePipelineSchedule(project, options, gitlab.WithContext(ctx))
+	pipelineSchedule, _, err := client.PipelineSchedules.CreatePipelineSchedule(project, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(PipelineSchedule.ID))
-
+	d.SetId(resourceGitlabPipelineScheduleBuildId(project, pipelineSchedule.ID))
 	return resourceGitlabPipelineScheduleRead(ctx, d, meta)
 }
 
 func resourceGitlabPipelineScheduleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
-	pipelineScheduleID, err := strconv.Atoi(d.Id())
-
+	project, pipelineScheduleId, err := resourceGitlabPipelineScheduleParseId(d.Id())
 	if err != nil {
-		return diag.Errorf("%s cannot be converted to int", d.Id())
+		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] read gitlab PipelineSchedule %s/%d", project, pipelineScheduleID)
+	log.Printf("[DEBUG] read gitlab PipelineSchedule %s/%d", project, pipelineScheduleId)
 
-	pipelineSchedule, _, err := client.PipelineSchedules.GetPipelineSchedule(project, pipelineScheduleID, gitlab.WithContext(ctx))
+	pipelineSchedule, _, err := client.PipelineSchedules.GetPipelineSchedule(project, pipelineScheduleId, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
-			log.Printf("[DEBUG] PipelineSchedule %d in project %s does not exist, removing from state", pipelineScheduleID, project)
+			log.Printf("[DEBUG] PipelineSchedule %d in project %s does not exist, removing from state", pipelineScheduleId, project)
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
+	d.Set("pipeline_schedule_id", pipelineSchedule.ID)
+	d.Set("project", project)
 	d.Set("description", pipelineSchedule.Description)
 	d.Set("ref", pipelineSchedule.Ref)
 	d.Set("cron", pipelineSchedule.Cron)
@@ -119,19 +179,17 @@ func resourceGitlabPipelineScheduleRead(ctx context.Context, d *schema.ResourceD
 
 func resourceGitlabPipelineScheduleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
+	project, pipelineScheduleId, err := resourceGitlabPipelineScheduleParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	options := &gitlab.EditPipelineScheduleOptions{
 		Description:  gitlab.String(d.Get("description").(string)),
 		Ref:          gitlab.String(d.Get("ref").(string)),
 		Cron:         gitlab.String(d.Get("cron").(string)),
 		CronTimezone: gitlab.String(d.Get("cron_timezone").(string)),
 		Active:       gitlab.Bool(d.Get("active").(bool)),
-	}
-
-	pipelineScheduleID, err := strconv.Atoi(d.Id())
-
-	if err != nil {
-		return diag.Errorf("%s cannot be converted to int", d.Id())
 	}
 
 	if d.HasChange("description") {
@@ -156,7 +214,7 @@ func resourceGitlabPipelineScheduleUpdate(ctx context.Context, d *schema.Resourc
 
 	log.Printf("[DEBUG] update gitlab PipelineSchedule %s", d.Id())
 
-	_, _, err = client.PipelineSchedules.EditPipelineSchedule(project, pipelineScheduleID, options, gitlab.WithContext(ctx))
+	_, _, err = client.PipelineSchedules.EditPipelineSchedule(project, pipelineScheduleId, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -166,31 +224,14 @@ func resourceGitlabPipelineScheduleUpdate(ctx context.Context, d *schema.Resourc
 
 func resourceGitlabPipelineScheduleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	project := d.Get("project").(string)
+	project, pipelineScheduleId, err := resourceGitlabPipelineScheduleParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	log.Printf("[DEBUG] Delete gitlab PipelineSchedule %s", d.Id())
 
-	pipelineScheduleID, err := strconv.Atoi(d.Id())
-
-	if err != nil {
-		return diag.Errorf("%s cannot be converted to int", d.Id())
-	}
-
-	if _, err = client.PipelineSchedules.DeletePipelineSchedule(project, pipelineScheduleID, gitlab.WithContext(ctx)); err != nil {
+	if _, err = client.PipelineSchedules.DeletePipelineSchedule(project, pipelineScheduleId, gitlab.WithContext(ctx)); err != nil {
 		return diag.Errorf("failed to delete pipeline schedule %q: %v", d.Id(), err)
 	}
 	return nil
-}
-
-func resourceGitlabPipelineScheduleStateImporter(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	s := strings.Split(d.Id(), ":")
-	if len(s) != 2 {
-		d.SetId("")
-		return nil, fmt.Errorf("Invalid Pipeline Schedule import format; expected '{project_id}:{pipeline_schedule_id}'")
-	}
-	project, id := s[0], s[1]
-
-	d.SetId(id)
-	d.Set("project", project)
-
-	return []*schema.ResourceData{d}, nil
 }
