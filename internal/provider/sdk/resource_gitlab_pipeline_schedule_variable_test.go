@@ -194,7 +194,7 @@ resource "gitlab_pipeline_schedule" "schedule" {
 
 resource "gitlab_pipeline_schedule_variable" "schedule_var" {
 	project = "${gitlab_project.foo.id}"
-	pipeline_schedule_id = "${gitlab_pipeline_schedule.schedule.id}"
+	pipeline_schedule_id = "${gitlab_pipeline_schedule.schedule.pipeline_schedule_id}"
 	key = "TERRAFORMED_TEST_VALUE"
 	value = "test"
 }
@@ -221,7 +221,7 @@ resource "gitlab_pipeline_schedule" "schedule" {
 
 resource "gitlab_pipeline_schedule_variable" "schedule_var" {
 	project = "${gitlab_project.foo.id}"
-	pipeline_schedule_id = "${gitlab_pipeline_schedule.schedule.id}"
+	pipeline_schedule_id = "${gitlab_pipeline_schedule.schedule.pipeline_schedule_id}"
 	key = "TERRAFORMED_TEST_VALUE"
 	value = "test_updated"
 }
