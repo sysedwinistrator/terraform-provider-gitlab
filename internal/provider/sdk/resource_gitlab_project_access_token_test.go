@@ -38,7 +38,6 @@ func TestAccGitlabProjectAccessToken_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("gitlab_project_access_token.foo", "token"),
 					resource.TestCheckResourceAttrSet("gitlab_project_access_token.foo", "created_at"),
 					resource.TestCheckResourceAttrSet("gitlab_project_access_token.foo", "user_id"),
-					resource.TestCheckNoResourceAttr("gitlab_project_access_token.foo", "expires_at"),
 				),
 			},
 			// Verify upstream resource with an import.
