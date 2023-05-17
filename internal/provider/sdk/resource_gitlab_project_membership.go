@@ -32,8 +32,8 @@ var _ = registerResource("gitlab_project_membership", func() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project_id": {
-				Description: "The id of the project.",
+			"project": {
+				Description: "The ID or URL-encoded path of the project.",
 				Type:        schema.TypeString,
 				ForceNew:    true,
 				Required:    true,
@@ -64,7 +64,7 @@ func resourceGitlabProjectMembershipCreate(ctx context.Context, d *schema.Resour
 	client := meta.(*gitlab.Client)
 
 	userId := d.Get("user_id").(int)
-	projectId := d.Get("project_id").(string)
+	project := d.Get("project").(string)
 	expiresAt := d.Get("expires_at").(string)
 	accessLevelId := api.AccessLevelNameToValue[d.Get("access_level").(string)]
 
@@ -73,14 +73,14 @@ func resourceGitlabProjectMembershipCreate(ctx context.Context, d *schema.Resour
 		AccessLevel: &accessLevelId,
 		ExpiresAt:   &expiresAt,
 	}
-	log.Printf("[DEBUG] create gitlab project membership for %d in %s", options.UserID, projectId)
+	log.Printf("[DEBUG] create gitlab project membership for %d in %s", options.UserID, project)
 
-	_, _, err := client.ProjectMembers.AddProjectMember(projectId, options, gitlab.WithContext(ctx))
+	_, _, err := client.ProjectMembers.AddProjectMember(project, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	userIdString := strconv.Itoa(userId)
-	d.SetId(utils.BuildTwoPartID(&projectId, &userIdString))
+	d.SetId(utils.BuildTwoPartID(&project, &userIdString))
 	return resourceGitlabProjectMembershipRead(ctx, d, meta)
 }
 
@@ -89,12 +89,12 @@ func resourceGitlabProjectMembershipRead(ctx context.Context, d *schema.Resource
 	id := d.Id()
 	log.Printf("[DEBUG] read gitlab project projectMember %s", id)
 
-	projectId, userId, err := projectIdAndUserIdFromId(id)
+	project, userId, err := projectAndUserIdFromId(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	projectMember, _, err := client.ProjectMembers.GetProjectMember(projectId, userId, gitlab.WithContext(ctx))
+	projectMember, _, err := client.ProjectMembers.GetProjectMember(project, userId, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
 			log.Printf("[DEBUG] gitlab project membership for %s not found so removing from state", d.Id())
@@ -104,12 +104,12 @@ func resourceGitlabProjectMembershipRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	resourceGitlabProjectMembershipSetToState(d, projectMember, &projectId)
+	resourceGitlabProjectMembershipSetToState(d, projectMember, &project)
 	return nil
 }
 
-func projectIdAndUserIdFromId(id string) (string, int, error) {
-	projectId, userIdString, err := utils.ParseTwoPartID(id)
+func projectAndUserIdFromId(id string) (string, int, error) {
+	project, userIdString, err := utils.ParseTwoPartID(id)
 	userId, e := strconv.Atoi(userIdString)
 	if err != nil {
 		e = err
@@ -117,14 +117,14 @@ func projectIdAndUserIdFromId(id string) (string, int, error) {
 	if e != nil {
 		log.Printf("[WARN] cannot get project member id from input: %v", id)
 	}
-	return projectId, userId, e
+	return project, userId, e
 }
 
 func resourceGitlabProjectMembershipUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
 	userId := d.Get("user_id").(int)
-	projectId := d.Get("project_id").(string)
+	project := d.Get("project").(string)
 	expiresAt := d.Get("expires_at").(string)
 	accessLevelId := api.AccessLevelNameToValue[strings.ToLower(d.Get("access_level").(string))]
 
@@ -132,9 +132,9 @@ func resourceGitlabProjectMembershipUpdate(ctx context.Context, d *schema.Resour
 		AccessLevel: &accessLevelId,
 		ExpiresAt:   &expiresAt,
 	}
-	log.Printf("[DEBUG] update gitlab project membership %v for %s", userId, projectId)
+	log.Printf("[DEBUG] update gitlab project membership %v for %s", userId, project)
 
-	_, _, err := client.ProjectMembers.EditProjectMember(projectId, userId, &options, gitlab.WithContext(ctx))
+	_, _, err := client.ProjectMembers.EditProjectMember(project, userId, &options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -145,14 +145,14 @@ func resourceGitlabProjectMembershipDelete(ctx context.Context, d *schema.Resour
 	client := meta.(*gitlab.Client)
 
 	id := d.Id()
-	projectId, userId, err := projectIdAndUserIdFromId(id)
+	project, userId, err := projectAndUserIdFromId(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] Delete gitlab project membership %v for %s", userId, projectId)
+	log.Printf("[DEBUG] Delete gitlab project membership %v for %s", userId, project)
 
-	_, err = client.ProjectMembers.DeleteProjectMember(projectId, userId, gitlab.WithContext(ctx))
+	_, err = client.ProjectMembers.DeleteProjectMember(project, userId, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -162,7 +162,7 @@ func resourceGitlabProjectMembershipDelete(ctx context.Context, d *schema.Resour
 
 func resourceGitlabProjectMembershipSetToState(d *schema.ResourceData, projectMember *gitlab.ProjectMember, projectId *string) {
 
-	d.Set("project_id", projectId)
+	d.Set("project", projectId)
 	d.Set("user_id", projectMember.ID)
 	d.Set("access_level", api.AccessLevelValueToName[projectMember.AccessLevel])
 	if projectMember.ExpiresAt != nil {

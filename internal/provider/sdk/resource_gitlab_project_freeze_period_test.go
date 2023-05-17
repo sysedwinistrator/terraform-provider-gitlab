@@ -88,7 +88,7 @@ func testAccCheckGitlabProjectFreezePeriodExists(n string, freezePeriod *gitlab.
 			return fmt.Errorf("Not Found: %s", n)
 		}
 
-		projectID, freezePeriodID, err := projectIDAndFreezePeriodIDFromID(rs.Primary.ID)
+		projectID, freezePeriodID, err := projectAndFreezePeriodIDFromID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ resource "gitlab_project" "foo" {
 }
 
 resource "gitlab_project_freeze_period" "schedule" {
-	project_id = gitlab_project.foo.id
+	project = gitlab_project.foo.id
 	freeze_start = "0 23 * * 5"
 	freeze_end =  "0 7 * * 1"
 	cron_timezone = "UTC"
@@ -159,7 +159,7 @@ resource "gitlab_project" "foo" {
 }
 
 resource "gitlab_project_freeze_period" "schedule" {
-  project_id = gitlab_project.foo.id
+	project = gitlab_project.foo.id
   freeze_start = "0 20 * * 6"
   freeze_end =  "0 7 * * 3"
   cron_timezone = "EST"

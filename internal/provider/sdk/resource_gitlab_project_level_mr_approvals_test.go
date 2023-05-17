@@ -27,7 +27,7 @@ func TestAccGitlabProjectLevelMRApprovals_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project_level_mr_approvals" "foo" {
-						project_id                                     = "%d"
+						project                                        = "%d"
 						reset_approvals_on_push                        = true
 						disable_overriding_approvers_per_merge_request = true
 						merge_requests_author_approval                 = true
@@ -55,7 +55,7 @@ func TestAccGitlabProjectLevelMRApprovals_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project_level_mr_approvals" "foo" {
-						project_id                                     = "%d"
+						project                                     = "%d"
 						reset_approvals_on_push                        = false
 						disable_overriding_approvers_per_merge_request = false
 						merge_requests_author_approval                 = false
@@ -83,7 +83,7 @@ func TestAccGitlabProjectLevelMRApprovals_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 					resource "gitlab_project_level_mr_approvals" "foo" {
-						project_id                                     = "%d"
+						project                                     = "%d"
 						reset_approvals_on_push                        = true
 						disable_overriding_approvers_per_merge_request = true
 						merge_requests_author_approval                 = true
@@ -91,6 +91,48 @@ func TestAccGitlabProjectLevelMRApprovals_basic(t *testing.T) {
 						require_password_to_approve                    = true
 					}
 				`, testProject.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabProjectLevelMRApprovalsExists("gitlab_project_level_mr_approvals.foo", &projectApprovals),
+					testAccCheckGitlabProjectLevelMRApprovalsAttributes(&projectApprovals, &testAccGitlabProjectLevelMRApprovalsExpectedAttributes{
+						resetApprovalsOnPush:                      true,
+						disableOverridingApproversPerMergeRequest: true,
+						mergeRequestsAuthorApproval:               true,
+						mergeRequestsDisableCommittersApproval:    true,
+						requirePasswordToApprove:                  true,
+					}),
+				),
+			},
+			// Verify Import
+			{
+				ResourceName:      "gitlab_project_level_mr_approvals.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccGitlabProjectLevelMRApprovals_basicWithNamespace(t *testing.T) {
+	testutil.SkipIfCE(t)
+
+	var projectApprovals gitlab.ProjectApprovals
+	testProject := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabProjectLevelMRApprovalsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_project_level_mr_approvals" "foo" {
+						project                                        = "%s"
+						reset_approvals_on_push                        = true
+						disable_overriding_approvers_per_merge_request = true
+						merge_requests_author_approval                 = true
+						merge_requests_disable_committers_approval     = true
+						require_password_to_approve                    = true
+					}
+				`, testProject.PathWithNamespace),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectLevelMRApprovalsExists("gitlab_project_level_mr_approvals.foo", &projectApprovals),
 					testAccCheckGitlabProjectLevelMRApprovalsAttributes(&projectApprovals, &testAccGitlabProjectLevelMRApprovalsExpectedAttributes{

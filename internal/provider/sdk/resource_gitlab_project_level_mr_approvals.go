@@ -3,7 +3,6 @@ package sdk
 import (
 	"context"
 	"log"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -27,9 +26,9 @@ var _ = registerResource("gitlab_project_level_mr_approvals", func() *schema.Res
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
-			"project_id": {
-				Description: "The ID of the project to change MR approval configuration.",
-				Type:        schema.TypeInt,
+			"project": {
+				Description: "The ID or URL-encoded path of a project to change MR approval configuration.",
+				Type:        schema.TypeString,
 				ForceNew:    true,
 				Required:    true,
 			},
@@ -65,7 +64,7 @@ var _ = registerResource("gitlab_project_level_mr_approvals", func() *schema.Res
 func resourceGitlabProjectLevelMRApprovalsCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
-	projectId := d.Get("project_id").(int)
+	project := d.Get("project").(string)
 
 	options := &gitlab.ChangeApprovalConfigurationOptions{
 		ResetApprovalsOnPush:                      gitlab.Bool(d.Get("reset_approvals_on_push").(bool)),
@@ -75,37 +74,34 @@ func resourceGitlabProjectLevelMRApprovalsCreate(ctx context.Context, d *schema.
 		RequirePasswordToApprove:                  gitlab.Bool(d.Get("require_password_to_approve").(bool)),
 	}
 
-	log.Printf("[DEBUG] Creating new MR approval configuration for project %d:", projectId)
+	log.Printf("[DEBUG] Creating new MR approval configuration for project %s:", project)
 
-	if _, _, err := client.Projects.ChangeApprovalConfiguration(projectId, options, gitlab.WithContext(ctx)); err != nil {
+	if _, _, err := client.Projects.ChangeApprovalConfiguration(project, options, gitlab.WithContext(ctx)); err != nil {
 		return diag.Errorf("couldn't create approval configuration: %v", err)
 	}
 
-	d.SetId(strconv.Itoa(projectId))
+	d.SetId(project)
 	return resourceGitlabProjectLevelMRApprovalsRead(ctx, d, meta)
 }
 
 func resourceGitlabProjectLevelMRApprovalsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
-	projectId, err := strconv.Atoi(d.Id())
-	if err != nil {
-		return diag.Errorf("project ID must be an integer (was %q): %v", d.Id(), err)
-	}
+	project := d.Id()
 
-	log.Printf("[DEBUG] Reading gitlab approval configuration for project %q", projectId)
+	log.Printf("[DEBUG] Reading gitlab approval configuration for project %s", project)
 
-	approvalConfig, _, err := client.Projects.GetApprovalConfiguration(projectId, gitlab.WithContext(ctx))
+	approvalConfig, _, err := client.Projects.GetApprovalConfiguration(project, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
-			log.Printf("[DEBUG] gitlab project approval configuration not found for project %d", projectId)
+			log.Printf("[DEBUG] gitlab project approval configuration not found for project %s", project)
 			d.SetId("")
 			return nil
 		}
 		return diag.Errorf("couldn't read approval configuration: %v", err)
 	}
 
-	d.Set("project_id", projectId)
+	d.Set("project", project)
 	d.Set("reset_approvals_on_push", approvalConfig.ResetApprovalsOnPush)
 	d.Set("disable_overriding_approvers_per_merge_request", approvalConfig.DisableOverridingApproversPerMergeRequest)
 	d.Set("merge_requests_author_approval", approvalConfig.MergeRequestsAuthorApproval)

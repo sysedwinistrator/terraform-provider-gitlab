@@ -28,8 +28,8 @@ var _ = registerResource("gitlab_project_share_group", func() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project_id": {
-				Description: "The id of the project.",
+			"project": {
+				Description: "The ID or URL-encoded path of the project.",
 				Type:        schema.TypeString,
 				ForceNew:    true,
 				Required:    true,
@@ -73,7 +73,7 @@ func resourceGitlabProjectShareGroupCreate(ctx context.Context, d *schema.Resour
 	client := meta.(*gitlab.Client)
 
 	groupId := d.Get("group_id").(int)
-	projectId := d.Get("project_id").(string)
+	project := d.Get("project").(string)
 
 	var groupAccess gitlab.AccessLevelValue
 	if v, ok := d.GetOk("group_access"); ok {
@@ -88,14 +88,14 @@ func resourceGitlabProjectShareGroupCreate(ctx context.Context, d *schema.Resour
 		GroupID:     &groupId,
 		GroupAccess: &groupAccess,
 	}
-	log.Printf("[DEBUG] create gitlab project membership for %d in %s", options.GroupID, projectId)
+	log.Printf("[DEBUG] create gitlab project membership for %d in %s", options.GroupID, project)
 
-	_, err := client.Projects.ShareProjectWithGroup(projectId, options, gitlab.WithContext(ctx))
+	_, err := client.Projects.ShareProjectWithGroup(project, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	groupIdString := strconv.Itoa(groupId)
-	d.SetId(utils.BuildTwoPartID(&projectId, &groupIdString))
+	d.SetId(utils.BuildTwoPartID(&project, &groupIdString))
 	return resourceGitlabProjectShareGroupRead(ctx, d, meta)
 }
 
@@ -104,12 +104,12 @@ func resourceGitlabProjectShareGroupRead(ctx context.Context, d *schema.Resource
 	id := d.Id()
 	log.Printf("[DEBUG] read gitlab project projectMember %s", id)
 
-	projectId, groupId, err := projectIdAndGroupIdFromId(id)
+	project, groupId, err := projectAndGroupIdFromId(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	projectInformation, _, err := client.Projects.GetProject(projectId, nil, gitlab.WithContext(ctx))
+	projectInformation, _, err := client.Projects.GetProject(project, nil, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
 			log.Printf("[DEBUG] failed to read gitlab project %s: %s", id, err)
@@ -122,22 +122,22 @@ func resourceGitlabProjectShareGroupRead(ctx context.Context, d *schema.Resource
 	foundGroup := false
 	for _, v := range projectInformation.SharedWithGroups {
 		if groupId == v.GroupID {
-			resourceGitlabProjectShareGroupSetToState(d, v, &projectId)
+			resourceGitlabProjectShareGroupSetToState(d, v, &project)
 			foundGroup = true
 			break
 		}
 	}
 	// If we didn't find our group, we need to remove it from state
 	if !foundGroup {
-		log.Printf("[DEBUG] Gitlab project group share not found for group %v and project %s; removing from state.", groupId, projectId)
+		log.Printf("[DEBUG] Gitlab project group share not found for group %v and project %s; removing from state.", groupId, project)
 		d.SetId("")
 	}
 
 	return nil
 }
 
-func projectIdAndGroupIdFromId(id string) (string, int, error) {
-	projectId, groupIdString, err := utils.ParseTwoPartID(id)
+func projectAndGroupIdFromId(id string) (string, int, error) {
+	project, groupIdString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, fmt.Errorf("Error parsing ID: %s", id)
 	}
@@ -147,14 +147,14 @@ func projectIdAndGroupIdFromId(id string) (string, int, error) {
 		return "", 0, fmt.Errorf("Can not determine group id: %v", id)
 	}
 
-	return projectId, groupId, nil
+	return project, groupId, nil
 }
 
 func resourceGitlabProjectShareGroupDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
 	id := d.Id()
-	projectId, groupId, err := projectIdAndGroupIdFromId(id)
+	projectId, groupId, err := projectAndGroupIdFromId(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -180,7 +180,7 @@ func resourceGitlabProjectShareGroupSetToState(d *schema.ResourceData, group str
 	//GroupAccessLevel is returned as an int but the map we lookup is sorted by the int alias AccessLevelValue
 	convertedAccessLevel := gitlab.AccessLevelValue(group.GroupAccessLevel)
 
-	d.Set("project_id", projectId)
+	d.Set("project", projectId)
 	d.Set("group_id", group.GroupID)
 	d.Set("group_access", api.AccessLevelValueToName[convertedAccessLevel])
 
@@ -191,6 +191,8 @@ func resourceGitlabProjectShareGroupSetToState(d *schema.ResourceData, group str
 func resourceGitlabProjectShareGroupResourceV0() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
+			// This should explicitly be left as "project_id" instead of "project",
+			// as it's meant to be a point-in-time of the schema at the time.
 			"project_id": {
 				Description: "The id of the project.",
 				Type:        schema.TypeString,

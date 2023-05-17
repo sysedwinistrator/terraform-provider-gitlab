@@ -61,7 +61,7 @@ func testAccCheckGitlabProjectMembershipExists(n string, membership *gitlab.Proj
 			return fmt.Errorf("Not found: %s", n)
 		}
 
-		projectID := rs.Primary.Attributes["project_id"]
+		projectID := rs.Primary.Attributes["project"]
 		if projectID == "" {
 			return fmt.Errorf("No project ID is set")
 		}
@@ -107,7 +107,7 @@ func testAccCheckGitlabProjectMembershipDestroy(s *terraform.State) error {
 			continue
 		}
 
-		projectID := rs.Primary.Attributes["project_id"]
+		projectID := rs.Primary.Attributes["project"]
 		userID := rs.Primary.Attributes["user_id"]
 
 		// GetProjectMember needs int type for userID
@@ -131,7 +131,7 @@ func testAccCheckGitlabProjectMembershipDestroy(s *terraform.State) error {
 func testAccGitlabProjectMembershipConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project_membership" "foo" {
-  project_id = "${gitlab_project.foo.id}"
+  project = "${gitlab_project.foo.id}"
   user_id = "${gitlab_user.test.id}"
   access_level = "developer"
 }
@@ -154,7 +154,7 @@ resource "gitlab_user" "test" {
 func testAccGitlabProjectMembershipUpdateConfig(rInt int) string {
 	return fmt.Sprintf(`
 resource "gitlab_project_membership" "foo" {
-  project_id = "${gitlab_project.foo.id}"
+  project = "${gitlab_project.foo.id}"
   user_id = "${gitlab_user.test.id}"
   expires_at = "2099-01-01"
   access_level = "guest"
