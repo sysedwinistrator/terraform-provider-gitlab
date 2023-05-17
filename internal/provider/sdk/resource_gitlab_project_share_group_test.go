@@ -19,6 +19,7 @@ import (
 )
 
 func testResourceGitlabProjectShareGroupStateDataV0() map[string]interface{} {
+	// Explicitly left as "project_id" as opposed to "project" for backwards compatibility.
 	return map[string]interface{}{
 		"project_id":   "1",
 		"group_id":     "2",
@@ -87,13 +88,13 @@ func TestAccGitlabProjectShareGroup_modifiedOutsideTerraform(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 				  resource "gitlab_project_share_group" "test" {
-					project_id = %d
+					project  = %d
 					group_id = %d
 					group_access = "reporter"
 				  }
 				`, project.ID, group.ID),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("gitlab_project_share_group.test", "project_id"),
+					resource.TestCheckResourceAttrSet("gitlab_project_share_group.test", "project"),
 				),
 			},
 			{
@@ -109,7 +110,7 @@ func TestAccGitlabProjectShareGroup_modifiedOutsideTerraform(t *testing.T) {
 				// Then run our plan
 				Config: fmt.Sprintf(`
 				  resource "gitlab_project_share_group" "test" {
-					project_id = %d
+					project  = %d
 					group_id = %d
 					group_access = "reporter"
 				  }
@@ -168,7 +169,7 @@ func testAccCheckGitlabProjectShareGroupDestroy(s *terraform.State) error {
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type == "gitlab_project_share_group" {
-			projectId, groupId, err = projectIdAndGroupIdFromId(rs.Primary.ID)
+			projectId, groupId, err = projectAndGroupIdFromId(rs.Primary.ID)
 			if err != nil {
 				return fmt.Errorf("[ERROR] cannot get project ID and group ID from input: %v", rs.Primary.ID)
 			}
@@ -204,7 +205,7 @@ resource "gitlab_group" "test" {
 }
 
 resource "gitlab_project_share_group" "test" {
-  project_id = gitlab_project.test.id
+  project  = gitlab_project.test.id
   group_id = gitlab_group.test.id
   group_access = "%[2]s"
 }

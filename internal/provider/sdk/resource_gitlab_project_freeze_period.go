@@ -27,8 +27,8 @@ var _ = registerResource("gitlab_project_freeze_period", func() *schema.Resource
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
-			"project_id": {
-				Description: "The id of the project to add the schedule to.",
+			"project": {
+				Description: "The ID or URL-encoded path of the project to add the schedule to.",
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
@@ -54,7 +54,7 @@ var _ = registerResource("gitlab_project_freeze_period", func() *schema.Resource
 })
 
 func resourceGitlabProjectFreezePeriodCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	projectID := d.Get("project_id").(string)
+	project := d.Get("project").(string)
 
 	options := gitlab.CreateFreezePeriodOptions{
 		FreezeStart:  gitlab.String(d.Get("freeze_start").(string)),
@@ -62,30 +62,30 @@ func resourceGitlabProjectFreezePeriodCreate(ctx context.Context, d *schema.Reso
 		CronTimezone: gitlab.String(d.Get("cron_timezone").(string)),
 	}
 
-	log.Printf("[DEBUG] Project %s create gitlab project-level freeze period %+v", projectID, options)
+	log.Printf("[DEBUG] Project %s create gitlab project-level freeze period %+v", project, options)
 
 	client := meta.(*gitlab.Client)
-	FreezePeriod, _, err := client.FreezePeriods.CreateFreezePeriodOptions(projectID, &options, gitlab.WithContext(ctx))
+	FreezePeriod, _, err := client.FreezePeriods.CreateFreezePeriodOptions(project, &options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	FreezePeriodIDString := fmt.Sprintf("%d", FreezePeriod.ID)
-	d.SetId(utils.BuildTwoPartID(&projectID, &FreezePeriodIDString))
+	d.SetId(utils.BuildTwoPartID(&project, &FreezePeriodIDString))
 
 	return resourceGitlabProjectFreezePeriodRead(ctx, d, meta)
 }
 
 func resourceGitlabProjectFreezePeriodRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	projectID, freezePeriodID, err := projectIDAndFreezePeriodIDFromID(d.Id())
+	project, freezePeriodID, err := projectAndFreezePeriodIDFromID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] read gitlab FreezePeriod %s/%d", projectID, freezePeriodID)
+	log.Printf("[DEBUG] read gitlab FreezePeriod %s/%d", project, freezePeriodID)
 
-	freezePeriod, _, err := client.FreezePeriods.GetFreezePeriod(projectID, freezePeriodID, gitlab.WithContext(ctx))
+	freezePeriod, _, err := client.FreezePeriods.GetFreezePeriod(project, freezePeriodID, gitlab.WithContext(ctx))
 	if err != nil {
 		if api.Is404(err) {
 			log.Printf("[DEBUG] project freeze period for %s not found so removing it from state", d.Id())
@@ -98,14 +98,14 @@ func resourceGitlabProjectFreezePeriodRead(ctx context.Context, d *schema.Resour
 	d.Set("freeze_start", freezePeriod.FreezeStart)
 	d.Set("freeze_end", freezePeriod.FreezeEnd)
 	d.Set("cron_timezone", freezePeriod.CronTimezone)
-	d.Set("project_id", projectID)
+	d.Set("project", project)
 
 	return nil
 }
 
 func resourceGitlabProjectFreezePeriodUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	projectID, freezePeriodID, err := projectIDAndFreezePeriodIDFromID(d.Id())
+	project, freezePeriodID, err := projectAndFreezePeriodIDFromID(d.Id())
 	options := &gitlab.UpdateFreezePeriodOptions{}
 
 	if err != nil {
@@ -126,7 +126,7 @@ func resourceGitlabProjectFreezePeriodUpdate(ctx context.Context, d *schema.Reso
 
 	log.Printf("[DEBUG] update gitlab FreezePeriod %s", d.Id())
 
-	_, _, err = client.FreezePeriods.UpdateFreezePeriodOptions(projectID, freezePeriodID, options, gitlab.WithContext(ctx))
+	_, _, err = client.FreezePeriods.UpdateFreezePeriodOptions(project, freezePeriodID, options, gitlab.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -136,21 +136,21 @@ func resourceGitlabProjectFreezePeriodUpdate(ctx context.Context, d *schema.Reso
 
 func resourceGitlabProjectFreezePeriodDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
-	projectID, freezePeriodID, err := projectIDAndFreezePeriodIDFromID(d.Id())
+	project, freezePeriodID, err := projectAndFreezePeriodIDFromID(d.Id())
 	log.Printf("[DEBUG] Delete gitlab FreezePeriod %s", d.Id())
 
 	if err != nil {
 		return diag.Errorf("%s cannot be converted to int", d.Id())
 	}
 
-	if _, err = client.FreezePeriods.DeleteFreezePeriod(projectID, freezePeriodID, gitlab.WithContext(ctx)); err != nil {
+	if _, err = client.FreezePeriods.DeleteFreezePeriod(project, freezePeriodID, gitlab.WithContext(ctx)); err != nil {
 		return diag.Errorf("failed to delete pipeline schedule %q: %v", d.Id(), err)
 	}
 
 	return nil
 }
 
-func projectIDAndFreezePeriodIDFromID(id string) (string, int, error) {
+func projectAndFreezePeriodIDFromID(id string) (string, int, error) {
 	project, freezePeriodIDString, err := utils.ParseTwoPartID(id)
 	if err != nil {
 		return "", 0, err
