@@ -28,8 +28,10 @@ func TestAccGitlabProjectAccessToken_basic(t *testing.T) {
 					project = %d
 					name    = "foo"
 					scopes  = ["api"]
+
+					expires_at = "%s"
 				}
-				`, project.ID),
+				`, project.ID, time.Now().Add(time.Hour*48).Format(iso8601)),
 				// Check computed and default attributes.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("gitlab_project_access_token.foo", "active", "true"),
@@ -58,7 +60,7 @@ func TestAccGitlabProjectAccessToken_basic(t *testing.T) {
 					access_level = "developer"
 					expires_at = %q
 				}
-				`, project.ID, time.Now().Add(time.Hour*48).Format("2006-01-02")),
+				`, project.ID, time.Now().Add(time.Hour*48).Format(iso8601)),
 				// Check computed and default attributes.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("gitlab_project_access_token.foo", "active", "true"),

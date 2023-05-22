@@ -54,10 +54,10 @@ var _ = registerResource("gitlab_project_access_token", func() *schema.Resource 
 				},
 			},
 			"expires_at": {
-				Description:      "Time the token will expire it, YYYY-MM-DD format. Will not expire per default.",
+				Description:      "Time the token will expire it, YYYY-MM-DD format.",
 				Type:             schema.TypeString,
-				Optional:         true,
 				ValidateDiagFunc: isISO6801Date,
+				Required:         true,
 				ForceNew:         true,
 			},
 			"token": {
