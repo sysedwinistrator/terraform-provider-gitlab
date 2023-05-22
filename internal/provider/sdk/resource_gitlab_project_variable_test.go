@@ -6,6 +6,7 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"testing"
@@ -18,6 +19,76 @@ import (
 
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
+
+func TestAccGitlabProjectVariable_StateUpgradeV0(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name            string
+		givenV0State    map[string]interface{}
+		expectedV1State map[string]interface{}
+	}{
+		{
+			name: "Project With ID",
+			givenV0State: map[string]interface{}{
+				"project":           "99",
+				"key":               "myvar",
+				"environment_scope": "*",
+				"id":                "99:myvar",
+			},
+			expectedV1State: map[string]interface{}{
+				"project":           "99",
+				"key":               "myvar",
+				"environment_scope": "*",
+				"id":                "99:myvar:*",
+			},
+		},
+		{
+			name: "Project With Namespace",
+			givenV0State: map[string]interface{}{
+				"project":           "foo/bar",
+				"key":               "myvar",
+				"environment_scope": "*",
+				"id":                "foo/bar:myvar",
+			},
+			expectedV1State: map[string]interface{}{
+				"project":           "foo/bar",
+				"key":               "myvar",
+				"environment_scope": "*",
+				"id":                "foo/bar:myvar:*",
+			},
+		},
+		{
+			name: "Project With 3 Part ID",
+			givenV0State: map[string]interface{}{
+				"project":           "99",
+				"key":               "myvar",
+				"environment_scope": "*",
+				"id":                "99:myvar:*",
+			},
+			expectedV1State: map[string]interface{}{
+				"project":           "99",
+				"key":               "myvar",
+				"environment_scope": "*",
+				"id":                "99:myvar:*",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualV1State, err := resourceGitlabProjectVariableStateUpgradeV0(context.Background(), tc.givenV0State, nil)
+			if err != nil {
+				t.Fatalf("Error migrating state: %s", err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedV1State, actualV1State) {
+				t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", tc.expectedV1State, actualV1State)
+			}
+		})
+
+	}
+}
 
 func testAccCheckGitlabProjectVariableExists(name string) resource.TestCheckFunc {
 	var (
