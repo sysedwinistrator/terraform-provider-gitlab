@@ -77,7 +77,10 @@ func resourceGitlabPipelineScheduleVariableResourceV0() *schema.Resource {
 // resourceGitlabPipelineScheduleVariableStateUpgradeV0 performs the state migration from V0 to V1.
 func resourceGitlabPipelineScheduleVariableStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 	project := rawState["project"].(string)
-	pipelineScheduleId := rawState["pipeline_schedule_id"].(int)
+	pipelineScheduleId, ok := rawState["pipeline_schedule_id"].(int)
+	if !ok {
+		pipelineScheduleId = int(rawState["pipeline_schedule_id"].(float64))
+	}
 	key := rawState["key"].(string)
 
 	oldId := rawState["id"].(string)

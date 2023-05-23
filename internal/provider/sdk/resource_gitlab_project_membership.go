@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -30,10 +31,52 @@ var _ = registerResource("gitlab_project_membership", func() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
+		Schema:        gitlabProjectMembershipSchemaV1(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabProjectMembershipResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabProjectMembershipStateUpgradeV0,
+				Version: 0,
+			},
+		},
+	}
+})
 
+func gitlabProjectMembershipSchemaV1() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"project": {
+			Description: "The ID or URL-encoded path of the project.",
+			Type:        schema.TypeString,
+			ForceNew:    true,
+			Required:    true,
+		},
+		"user_id": {
+			Description: "The id of the user.",
+			Type:        schema.TypeInt,
+			ForceNew:    true,
+			Required:    true,
+		},
+		"access_level": {
+			Description:      fmt.Sprintf("The access level for the member. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
+			Type:             schema.TypeString,
+			ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
+			Required:         true,
+		},
+		"expires_at": {
+			Description:  "Expiration date for the project membership. Format: `YYYY-MM-DD`",
+			Type:         schema.TypeString,
+			ValidateFunc: validateDateFunc,
+			Optional:     true,
+		},
+	}
+}
+
+func resourceGitlabProjectMembershipResourceV0() *schema.Resource {
+	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"project": {
-				Description: "The ID or URL-encoded path of the project.",
+			"project_id": {
+				Description: "The ID of the project.",
 				Type:        schema.TypeString,
 				ForceNew:    true,
 				Required:    true,
@@ -58,7 +101,19 @@ var _ = registerResource("gitlab_project_membership", func() *schema.Resource {
 			},
 		},
 	}
-})
+}
+
+// resourceGitlabProjectMembershipStateUpgradeV0 performs the state migration from V0 to V1.
+func resourceGitlabProjectMembershipStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	projectId, ok := rawState["project_id"].(string)
+	if !ok {
+		projectId = strconv.FormatInt(int64(rawState["project_id"].(float64)), 10)
+	}
+	rawState["project"] = projectId
+	delete(rawState, "project_id")
+	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `project_id` attribute to `project`", map[string]interface{}{"project_id": projectId})
+	return rawState, nil
+}
 
 func resourceGitlabProjectMembershipCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)

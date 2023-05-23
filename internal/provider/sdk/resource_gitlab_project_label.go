@@ -12,6 +12,33 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
+var _ = registerResource("gitlab_label", func() *schema.Resource {
+	return &schema.Resource{
+		Description: `The ` + "`" + `gitlab_label` + "`" + ` resource allows to manage the lifecycle of a project label.
+
+~> This resource is deprecated. use ` + "`gitlab_project_label`" + `instead!
+
+**Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/labels.html#project-labels)`,
+		DeprecationMessage: "Ths resource is deprecated. Use `gitlab_project_label` instead!",
+		CreateContext:      resourceGitlabProjectLabelCreate,
+		ReadContext:        resourceGitlabProjectLabelRead,
+		UpdateContext:      resourceGitlabProjectLabelUpdate,
+		DeleteContext:      resourceGitlabProjectLabelDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+		Schema:        gitlabProjectLabelSchema(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabProjectLabelResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabProjectLabelStateUpgradeV0,
+				Version: 0,
+			},
+		},
+	}
+})
+
 var _ = registerResource("gitlab_project_label", func() *schema.Resource {
 	return &schema.Resource{
 		Description: `The ` + "`" + `gitlab_project_label` + "`" + ` resource allows to manage the lifecycle of a project label.

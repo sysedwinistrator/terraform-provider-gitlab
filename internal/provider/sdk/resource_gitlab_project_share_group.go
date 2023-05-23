@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -27,47 +28,56 @@ var _ = registerResource("gitlab_project_share_group", func() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
-		Schema: map[string]*schema.Schema{
-			"project": {
-				Description: "The ID or URL-encoded path of the project.",
-				Type:        schema.TypeString,
-				ForceNew:    true,
-				Required:    true,
-			},
-			"group_id": {
-				Description: "The id of the group.",
-				Type:        schema.TypeInt,
-				ForceNew:    true,
-				Required:    true,
-			},
-			"group_access": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
-				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
-				ForceNew:         true,
-				Optional:         true,
-				ExactlyOneOf:     []string{"access_level", "group_access"},
-			},
-			"access_level": {
-				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
-				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
-				ForceNew:         true,
-				Optional:         true,
-				Deprecated:       "Use `group_access` instead of the `access_level` attribute.",
-				ExactlyOneOf:     []string{"access_level", "group_access"},
-			},
-		},
-		SchemaVersion: 1,
+		Schema:        gitlabProjectShareGroupSchema(),
+		SchemaVersion: 2,
 		StateUpgraders: []schema.StateUpgrader{
 			{
 				Type:    resourceGitlabProjectShareGroupResourceV0().CoreConfigSchema().ImpliedType(),
 				Upgrade: resourceGitlabProjectShareGroupStateUpgradeV0,
 				Version: 0,
 			},
+			{
+				Type:    resourceGitlabProjectShareGroupResourceV1().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabProjectShareGroupStateUpgradeV1,
+				Version: 1,
+			},
 		},
 	}
 })
+
+func gitlabProjectShareGroupSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"project": {
+			Description: "The ID or URL-encoded path of the project.",
+			Type:        schema.TypeString,
+			ForceNew:    true,
+			Required:    true,
+		},
+		"group_id": {
+			Description: "The id of the group.",
+			Type:        schema.TypeInt,
+			ForceNew:    true,
+			Required:    true,
+		},
+		"group_access": {
+			Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
+			Type:             schema.TypeString,
+			ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
+			ForceNew:         true,
+			Optional:         true,
+			ExactlyOneOf:     []string{"access_level", "group_access"},
+		},
+		"access_level": {
+			Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
+			Type:             schema.TypeString,
+			ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
+			ForceNew:         true,
+			Optional:         true,
+			Deprecated:       "Use `group_access` instead of the `access_level` attribute.",
+			ExactlyOneOf:     []string{"access_level", "group_access"},
+		},
+	}
+}
 
 func resourceGitlabProjectShareGroupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
@@ -219,5 +229,53 @@ func resourceGitlabProjectShareGroupResourceV0() *schema.Resource {
 func resourceGitlabProjectShareGroupStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 	rawState["group_access"] = rawState["access_level"]
 	delete(rawState, "access_level")
+	return rawState, nil
+}
+
+func resourceGitlabProjectShareGroupResourceV1() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"project_id": {
+				Description: "The ID of the project.",
+				Type:        schema.TypeString,
+				ForceNew:    true,
+				Required:    true,
+			},
+			"group_id": {
+				Description: "The id of the group.",
+				Type:        schema.TypeInt,
+				ForceNew:    true,
+				Required:    true,
+			},
+			"group_access": {
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
+				Type:             schema.TypeString,
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
+				ForceNew:         true,
+				Optional:         true,
+				ExactlyOneOf:     []string{"access_level", "group_access"},
+			},
+			"access_level": {
+				Description:      fmt.Sprintf("The access level to grant the group for the project. Valid values are: %s", utils.RenderValueListForDocs(api.ValidProjectAccessLevelNames)),
+				Type:             schema.TypeString,
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(api.ValidProjectAccessLevelNames, false)),
+				ForceNew:         true,
+				Optional:         true,
+				Deprecated:       "Use `group_access` instead of the `access_level` attribute.",
+				ExactlyOneOf:     []string{"access_level", "group_access"},
+			},
+		},
+	}
+}
+
+// resourceGitlabProjectShareGroupStateUpgradeV1 performs the state migration from V1 to V2.
+func resourceGitlabProjectShareGroupStateUpgradeV1(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	projectId, ok := rawState["project_id"].(string)
+	if !ok {
+		projectId = strconv.FormatInt(int64(rawState["project_id"].(float64)), 10)
+	}
+	rawState["project"] = projectId
+	delete(rawState, "project_id")
+	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `project_id` attribute to `project`", map[string]interface{}{"project_id": projectId})
 	return rawState, nil
 }
