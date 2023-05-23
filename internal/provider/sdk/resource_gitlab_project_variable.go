@@ -27,9 +27,44 @@ var _ = registerResource("gitlab_project_variable", func() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
-		Schema: gitlabProjectVariableGetSchema(),
+		Schema:        gitlabProjectVariableGetSchema(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabProjectVariableResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabProjectVariableStateUpgradeV0,
+				Version: 0,
+			},
+		},
 	}
 })
+
+func resourceGitlabProjectVariableResourceV0() *schema.Resource {
+	return &schema.Resource{Schema: gitlabProjectVariableGetSchema()}
+}
+
+// Perform a state migration from v0 -> v1. In v0, the ID accepted either a 2 digit or 3 digit ID, but we removed the backwards compatibility
+// logic in 16.0. However, this meant some IDs still only had 2 values, since we previously didn't enforce 3. This migration will ensure all
+// IDs conform to a 3-part ID by building out the ID from the raw components once if the state is v0 and a length of 2. A length of 3
+// will still perform the migration, but leave the ID unchanged.
+func resourceGitlabProjectVariableStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+
+	// Parse the current ID to figure out the length
+	id := rawState["id"].(string)
+	parts := strings.Split(id, ":")
+
+	// We only need to migrate the ID if the length is 2. If the length is 3, the current logic handles it appropriately.
+	if len(parts) == 2 {
+		// Retrieve information needed to generate a new key
+		project := rawState["project"].(string)
+		key := rawState["key"].(string)
+		environmentScope := rawState["environment_scope"].(string)
+
+		rawState["id"] = strings.Join([]string{project, key, environmentScope}, ":")
+	}
+
+	return rawState, nil
+}
 
 func resourceGitlabProjectVariableCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
