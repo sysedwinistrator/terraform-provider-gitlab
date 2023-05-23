@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -110,7 +111,11 @@ func resourceGitlabGroupLDAPLinkStateUpgradeV0(ctx context.Context, rawState map
 	// check to determine if "group_id" is present. If it is, use that, otherwise use "group". This is because
 	// "group_id" changed to "group" in 16.0, so the previous state may use either.
 	if rawState["group_id"] != nil {
-		group = rawState["group_id"].(string)
+		var ok bool
+		group, ok = rawState["group_id"].(string)
+		if !ok {
+			group = strconv.FormatInt(int64(rawState["group_id"].(float64)), 10)
+		}
 	} else {
 		group = rawState["group"].(string)
 	}

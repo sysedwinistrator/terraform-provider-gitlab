@@ -130,10 +130,10 @@ func resourceGitlabDeployTokenResourceV0() *schema.Resource {
 func resourceGitlabDeployTokenStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 	var deployTokenType string
 	var typeId string
-	if project, isProject := rawState["project"]; isProject && project != "" {
+	if project, isProject := rawState["project"]; isProject && project != nil && project != "" {
 		deployTokenType = "project"
 		typeId = project.(string)
-	} else if group, isGroup := rawState["group"]; isGroup && group != "" {
+	} else if group, isGroup := rawState["group"]; isGroup && group != nil && group != "" {
 		deployTokenType = "group"
 		typeId = group.(string)
 	} else {

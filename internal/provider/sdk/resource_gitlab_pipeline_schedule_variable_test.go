@@ -29,13 +29,28 @@ func TestAccGitlabPipelineScheduleVariable_StateUpgradeV0(t *testing.T) {
 			name: "Project With ID",
 			givenV0State: map[string]interface{}{
 				"project":              "99",
-				"pipeline_schedule_id": "42",
+				"pipeline_schedule_id": 42,
 				"key":                  "some-key",
 				"id":                   "42:some-key",
 			},
 			expectedV1State: map[string]interface{}{
 				"project":              "99",
-				"pipeline_schedule_id": "42",
+				"pipeline_schedule_id": 42,
+				"key":                  "some-key",
+				"id":                   "99:42:some-key",
+			},
+		},
+		{
+			name: "Project With ID and pipeline schedule id as float",
+			givenV0State: map[string]interface{}{
+				"project":              "99",
+				"pipeline_schedule_id": 42.0,
+				"key":                  "some-key",
+				"id":                   "42:some-key",
+			},
+			expectedV1State: map[string]interface{}{
+				"project":              "99",
+				"pipeline_schedule_id": 42.0,
 				"key":                  "some-key",
 				"id":                   "99:42:some-key",
 			},
@@ -44,13 +59,13 @@ func TestAccGitlabPipelineScheduleVariable_StateUpgradeV0(t *testing.T) {
 			name: "Project With Namespace",
 			givenV0State: map[string]interface{}{
 				"project":              "foo/bar",
-				"pipeline_schedule_id": "42",
+				"pipeline_schedule_id": 42,
 				"key":                  "some-key",
 				"id":                   "42:some-key",
 			},
 			expectedV1State: map[string]interface{}{
 				"project":              "foo/bar",
-				"pipeline_schedule_id": "42",
+				"pipeline_schedule_id": 42,
 				"key":                  "some-key",
 				"id":                   "foo/bar:42:some-key",
 			},

@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
@@ -26,9 +27,50 @@ var _ = registerResource("gitlab_project_freeze_period", func() *schema.Resource
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
+		Schema:        gitlabProjectFreezePeriodSchemaV1(),
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceGitlabProjectFreezePeriodResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceGitlabProjectFreezePeriodStateUpgradeV0,
+				Version: 0,
+			},
+		},
+	}
+})
+
+func gitlabProjectFreezePeriodSchemaV1() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"project": {
+			Description: "The ID or URL-encoded path of the project to add the schedule to.",
+			Type:        schema.TypeString,
+			Required:    true,
+			ForceNew:    true,
+		},
+		"freeze_start": {
+			Description: "Start of the Freeze Period in cron format (e.g. `0 1 * * *`).",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"freeze_end": {
+			Description: "End of the Freeze Period in cron format (e.g. `0 2 * * *`).",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"cron_timezone": {
+			Description: "The timezone.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Default:     "UTC",
+		},
+	}
+}
+
+func resourceGitlabProjectFreezePeriodResourceV0() *schema.Resource {
+	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"project": {
-				Description: "The ID or URL-encoded path of the project to add the schedule to.",
+			"project_id": {
+				Description: "The ID of the project to add the schedule to.",
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
@@ -51,7 +93,19 @@ var _ = registerResource("gitlab_project_freeze_period", func() *schema.Resource
 			},
 		},
 	}
-})
+}
+
+// resourceGitlabProjectFreezePeriodStateUpgradeV0 performs the state migration from V0 to V1.
+func resourceGitlabProjectFreezePeriodStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	projectId, ok := rawState["project_id"].(string)
+	if !ok {
+		projectId = strconv.FormatInt(int64(rawState["project_id"].(float64)), 10)
+	}
+	rawState["project"] = projectId
+	delete(rawState, "project_id")
+	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `project_id` attribute to `project`", map[string]interface{}{"project_id": projectId})
+	return rawState, nil
+}
 
 func resourceGitlabProjectFreezePeriodCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	project := d.Get("project").(string)
