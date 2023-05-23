@@ -105,13 +105,15 @@ func resourceGitlabProjectMembershipResourceV0() *schema.Resource {
 
 // resourceGitlabProjectMembershipStateUpgradeV0 performs the state migration from V0 to V1.
 func resourceGitlabProjectMembershipStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
-	projectId, ok := rawState["project_id"].(string)
-	if !ok {
-		projectId = strconv.FormatInt(int64(rawState["project_id"].(float64)), 10)
+	if rawState["project_id"] != nil {
+		projectId, ok := rawState["project_id"].(string)
+		if !ok {
+			projectId = strconv.FormatInt(int64(rawState["project_id"].(float64)), 10)
+		}
+		rawState["project"] = projectId
+		delete(rawState, "project_id")
+		tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `project_id` attribute to `project`", map[string]interface{}{"project_id": projectId})
 	}
-	rawState["project"] = projectId
-	delete(rawState, "project_id")
-	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `project_id` attribute to `project`", map[string]interface{}{"project_id": projectId})
 	return rawState, nil
 }
 
