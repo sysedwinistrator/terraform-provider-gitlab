@@ -78,9 +78,10 @@ var _ = registerResource("gitlab_group_access_token", func() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(validAccessLevels, false)),
 			},
 			"expires_at": {
-				Description:      "The token expires at midnight UTC on that date. The date must be in the format YYYY-MM-DD. Default is never.",
+				Description:      "The token expires at midnight UTC on that date. The date must be in the format YYYY-MM-DD.",
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				ForceNew:         true,
 				ValidateDiagFunc: isISO6801Date,
 			},
