@@ -98,6 +98,18 @@ func SkipIfCE(t *testing.T) {
 	}
 }
 
+func SkipIfEE(t *testing.T) {
+	t.Helper()
+
+	isEE, err := IsRunningInEE()
+	if err != nil {
+		t.Fatalf("could not check GitLab version is EE: %v", err)
+	}
+	if isEE {
+		t.Skipf("Test is skipped for EE (Enterprise) version of GitLab")
+	}
+}
+
 func RunIfLessThan(t *testing.T, requiredMaxVersion string) {
 	isLessThan, err := api.IsGitLabVersionLessThan(context.TODO(), TestGitlabClient, requiredMaxVersion)()
 	if err != nil {

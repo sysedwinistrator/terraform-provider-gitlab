@@ -13,9 +13,41 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
 
+var (
+	allowedToCreateElem = &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"access_level": {
+				Description: "Level of access.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"access_level_description": {
+				Description: "Readable description of level of access.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"user_id": {
+				Description: "The ID of a GitLab user allowed to perform the relevant action. Mutually exclusive with `group_id`.",
+				Type:        schema.TypeInt,
+				ForceNew:    true,
+				Optional:    true,
+			},
+			"group_id": {
+				Description: "The ID of a GitLab group allowed to perform the relevant action. Mutually exclusive with `user_id`.",
+				Type:        schema.TypeInt,
+				ForceNew:    true,
+				Optional:    true,
+			},
+		},
+	}
+)
+
 var _ = registerResource("gitlab_tag_protection", func() *schema.Resource {
 	return &schema.Resource{
-		Description: `The ` + "`" + `gitlab_tag_protection` + "`" + ` resource allows to manage the lifecycle of a tag protection.
+		Description: `The ` + "`gitlab_tag_protection`" + ` resource allows to manage the lifecycle of a tag protection.
+
+~> As tag protections cannot be updated, they are deleted and recreated when a change is requested. This means that if the deletion succeeds but the creation fails, tags will be left unprotected.
+If this is a potential issue for you, please use the ` + "`create_before_destroy`" + ` meta-argument: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle
 
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/protected_tags.html)`,
 
@@ -25,7 +57,6 @@ var _ = registerResource("gitlab_tag_protection", func() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"project": {
 				Description: "The id of the project.",
@@ -46,9 +77,20 @@ var _ = registerResource("gitlab_tag_protection", func() *schema.Resource {
 				Required:         true,
 				ForceNew:         true,
 			},
+			"allowed_to_create": schemaAllowedToCreate(),
 		},
 	}
 })
+
+func schemaAllowedToCreate() *schema.Schema {
+	return &schema.Schema{
+		Description: "User or group which are allowed to create.",
+		Type:        schema.TypeSet,
+		Elem:        allowedToCreateElem,
+		Optional:    true,
+		ForceNew:    true,
+	}
+}
 
 func resourceGitlabTagProtectionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
@@ -56,9 +98,16 @@ func resourceGitlabTagProtectionCreate(ctx context.Context, d *schema.ResourceDa
 	tag := gitlab.String(d.Get("tag").(string))
 	createAccessLevel := tagProtectionAccessLevelID[d.Get("create_access_level").(string)]
 
+	allowedToCreate, err := expandTagPermissionOptions(d.Get("allowed_to_create").(*schema.Set).List())
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	options := &gitlab.ProtectRepositoryTagsOptions{
 		Name:              tag,
 		CreateAccessLevel: &createAccessLevel,
+		AllowedToCreate:   &allowedToCreate,
 	}
 
 	log.Printf("[DEBUG] create gitlab tag protection on %v for project %s", options.Name, project)
@@ -74,6 +123,19 @@ func resourceGitlabTagProtectionCreate(ctx context.Context, d *schema.ResourceDa
 		tp, _, err = client.ProtectedTags.ProtectRepositoryTags(project, options, gitlab.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
+		}
+	}
+
+	// If allowed_to_create has been set but didn't come back, it means it's not supported under this license
+	if len(allowedToCreate) > 0 {
+		// Fastest way to do that: sum all userId and groupIds, if the sum is still 0 at the end,
+		// then it means no rights were added to individual users or groups
+		sum := 0
+		for _, cal := range tp.CreateAccessLevels {
+			sum += cal.UserID + cal.GroupID
+		}
+		if sum == 0 {
+			return diag.Errorf("feature unavailable: `allowed_to_create`, Premium or Ultimate license required.")
 		}
 	}
 
@@ -110,6 +172,10 @@ func resourceGitlabTagProtectionRead(ctx context.Context, d *schema.ResourceData
 	d.Set("tag", pt.Name)
 	d.Set("create_access_level", accessLevel)
 
+	if err := d.Set("allowed_to_create", flattenNonZeroTagAccessDescriptions(pt.CreateAccessLevels)); err != nil {
+		return diag.Errorf("error setting allowed_to_create: %v", err)
+	}
+
 	d.SetId(utils.BuildTwoPartID(&project, &pt.Name))
 
 	return nil
@@ -137,4 +203,38 @@ func projectAndTagFromID(id string) (string, string, error) {
 		log.Printf("[WARN] cannot get group member id from input: %v", id)
 	}
 	return project, tag, err
+}
+
+func expandTagPermissionOptions(allowedTo []interface{}) ([]*gitlab.TagsPermissionOptions, error) {
+	result := make([]*gitlab.TagsPermissionOptions, 0)
+	for _, v := range allowedTo {
+		opt := &gitlab.TagsPermissionOptions{}
+		if userID, ok := v.(map[string]interface{})["user_id"]; ok && userID != 0 {
+			opt.UserID = gitlab.Int(userID.(int))
+		}
+		if groupID, ok := v.(map[string]interface{})["group_id"]; ok && groupID != 0 {
+			opt.GroupID = gitlab.Int(groupID.(int))
+		}
+		if opt.UserID != nil && opt.GroupID != nil {
+			return nil, fmt.Errorf("both user_id and group_id cannot be present in the same allowed_to_create")
+		}
+		result = append(result, opt)
+	}
+	return result, nil
+}
+
+func flattenNonZeroTagAccessDescriptions(descriptions []*gitlab.TagAccessDescription) (values []map[string]interface{}) {
+	for _, description := range descriptions {
+		if description.UserID == 0 && description.GroupID == 0 {
+			continue
+		}
+		values = append(values, map[string]interface{}{
+			"access_level":             api.AccessLevelValueToName[description.AccessLevel],
+			"access_level_description": description.AccessLevelDescription,
+			"user_id":                  description.UserID,
+			"group_id":                 description.GroupID,
+		})
+	}
+
+	return values
 }
