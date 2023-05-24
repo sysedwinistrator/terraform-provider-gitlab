@@ -138,7 +138,7 @@ func TestAccGitlabDeployToken_SchemaMigration0_1(t *testing.T) {
 	}
 	  `, testProject.ID, testGroup.ID)
 
-	  resource.ParallelTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		CheckDestroy: testAccCheckGitlabDeployTokenDestroy,
 		Steps: []resource.TestStep{
 			{
