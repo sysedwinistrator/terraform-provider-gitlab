@@ -65,6 +65,39 @@ func TestAccGitlabGroupLabel_StateUpgradeV0(t *testing.T) {
 	}
 }
 
+func TestAccGitlabGroupLabel_SchemaMigration0_1(t *testing.T) {
+	testGroup := testutil.CreateGroups(t, 1)[0]
+
+	config := fmt.Sprintf(`
+	resource "gitlab_group_label" "fixme" {
+	  group       = "%d"
+	  name        = "FIXME-%d"
+	  color       = "#ffcc00"
+	  description = "fix this test"
+	}
+	`, testGroup.ID, acctest.RandInt())
+
+	resource.ParallelTest(t, resource.TestCase{
+		CheckDestroy: testAccCheckGitlabGroupLabelDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"gitlab": {
+						VersionConstraint: "~> 15.7.0", // Earliest 15.X deployment
+						Source:            "gitlabhq/gitlab",
+					},
+				},
+				Config: config,
+			},
+			{
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config:                   config,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabGroupLabel_basic(t *testing.T) {
 	var label gitlab.GroupLabel
 	rInt := acctest.RandInt()

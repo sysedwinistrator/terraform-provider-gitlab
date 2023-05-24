@@ -65,6 +65,39 @@ func TestAccGitlabPipelineSchedule_StateUpgradeV0(t *testing.T) {
 	}
 }
 
+func TestAccGitlabPipelineSchedule_SchemaMigration0_1(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+
+	config := fmt.Sprintf(`	
+	resource "gitlab_pipeline_schedule" "schedule" {
+		project = "%d"
+		description = "Pipeline Schedule"
+		ref = "master"
+		cron = "0 1 * * *"
+	}
+		`, testProject.ID)
+
+	resource.ParallelTest(t, resource.TestCase{
+		CheckDestroy: testAccCheckGitlabPipelineScheduleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"gitlab": {
+						VersionConstraint: "~> 15.7.0", // Earliest 15.X deployment
+						Source:            "gitlabhq/gitlab",
+					},
+				},
+				Config: config,
+			},
+			{
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config:                   config,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabPipelineSchedule_basic(t *testing.T) {
 	var schedule gitlab.PipelineSchedule
 	rInt := acctest.RandInt()

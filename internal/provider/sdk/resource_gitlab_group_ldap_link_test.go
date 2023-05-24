@@ -21,7 +21,50 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
+func TestAccGitlabGroupLdapLink_SchemaMigration0_1(t *testing.T) {
+	testutil.SkipIfCE(t)
+
+	testGroup := testutil.CreateGroups(t, 1)[0]
+
+	resource.ParallelTest(t, resource.TestCase{
+		CheckDestroy: testAccCheckGitlabGroupLdapLinkDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"gitlab": {
+						VersionConstraint: "~> 15.7.0", // Earliest 15.X deployment
+						Source:            "gitlabhq/gitlab",
+					},
+				},
+				Config: fmt.Sprintf(`
+				resource "gitlab_group_ldap_link" "foo" {
+					group_id	    = "%d"
+					cn				= "default"
+					group_access 	= "developer"
+					ldap_provider   = "default"
+				
+				}`, testGroup.ID),
+			},
+			{
+				// "group_id" changed to "group" in 16.0, but apply should still work properly.
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config: fmt.Sprintf(`
+				resource "gitlab_group_ldap_link" "foo" {
+					group 		    = "%d"
+					cn				= "default"
+					group_access 	= "developer"
+					ldap_provider   = "default"
+				
+				}`, testGroup.ID),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabGroupLdapLink_basicCN(t *testing.T) {
+	testutil.SkipIfCE(t)
+
 	rInt := acctest.RandInt()
 	resourceName := "gitlab_group_ldap_link.foo"
 
@@ -39,8 +82,7 @@ func TestAccGitlabGroupLdapLink_basicCN(t *testing.T) {
 
 			// Create a group LDAP link as a developer (uses testAccGitlabGroupLdapLinkCreateConfig for Config)
 			{
-				SkipFunc: testutil.IsRunningInCE,
-				Config:   testAccGitlabGroupLdapLinkCreateConfig(rInt, &testLdapLink),
+				Config: testAccGitlabGroupLdapLinkCreateConfig(rInt, &testLdapLink),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupLdapLinkExists(resourceName, &ldapLink),
 					testAccCheckGitlabGroupLdapLinkAttributes(&ldapLink, &testAccGitlabGroupLdapLinkExpectedAttributes{
@@ -50,7 +92,6 @@ func TestAccGitlabGroupLdapLink_basicCN(t *testing.T) {
 
 			// Import the group LDAP link (re-uses testAccGitlabGroupLdapLinkCreateConfig for Config)
 			{
-				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -61,8 +102,7 @@ func TestAccGitlabGroupLdapLink_basicCN(t *testing.T) {
 
 			// Update the group LDAP link to change the access level (uses testAccGitlabGroupLdapLinkUpdateConfig for Config)
 			{
-				SkipFunc: testutil.IsRunningInCE,
-				Config:   testAccGitlabGroupLdapLinkUpdateConfig(rInt, &testLdapLink),
+				Config: testAccGitlabGroupLdapLinkUpdateConfig(rInt, &testLdapLink),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabGroupLdapLinkExists(resourceName, &ldapLink),
 					testAccCheckGitlabGroupLdapLinkAttributes(&ldapLink, &testAccGitlabGroupLdapLinkExpectedAttributes{
@@ -74,6 +114,8 @@ func TestAccGitlabGroupLdapLink_basicCN(t *testing.T) {
 }
 
 func TestAccGitlabGroupLdapLink_basicFilter(t *testing.T) {
+	testutil.SkipIfCE(t)
+
 	resourceName := "gitlab_group_ldap_link.foo"
 
 	group := testutil.CreateGroups(t, 1)[0]
@@ -88,7 +130,6 @@ func TestAccGitlabGroupLdapLink_basicFilter(t *testing.T) {
 
 			// Create a group LDAP link using a valid filter
 			{
-				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
 					group 		= "%d"
 					filter          = "(&(objectClass=person)(objectClass=user))"
@@ -99,7 +140,6 @@ func TestAccGitlabGroupLdapLink_basicFilter(t *testing.T) {
 				Check: testAccCheckGitlabGroupLdapLinkExists(resourceName, &ldapLink),
 			},
 			{
-				SkipFunc:          testutil.IsRunningInCE,
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -112,6 +152,8 @@ func TestAccGitlabGroupLdapLink_basicFilter(t *testing.T) {
 }
 
 func TestAccGitlabGroupLdapLink_conflictingArguments(t *testing.T) {
+	testutil.SkipIfCE(t)
+
 	group := testutil.CreateGroups(t, 1)[0]
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -122,7 +164,6 @@ func TestAccGitlabGroupLdapLink_conflictingArguments(t *testing.T) {
 			// Create a group LDAP link using conflicting arguments
 			// ensure both conflict errors are printed appropriately.
 			{
-				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
 					group 		= "%d"
 					cn              = "default"
@@ -133,7 +174,6 @@ func TestAccGitlabGroupLdapLink_conflictingArguments(t *testing.T) {
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`"cn": conflicts with filter`)),
 			},
 			{
-				SkipFunc: testutil.IsRunningInCE,
 				Config: fmt.Sprintf(`resource "gitlab_group_ldap_link" "foo" {
 					group 		= "%d"
 					cn              = "default"

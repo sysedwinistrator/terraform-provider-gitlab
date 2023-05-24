@@ -125,7 +125,10 @@ func resourceGitlabGroupLDAPLinkStateUpgradeV0(ctx context.Context, rawState map
 
 	// Filter was not a supported attribute prior to 16.0 where this migration was added, so it will always be empty
 	// However, we'll handle it here _just in case_.
-	filter := rawState["filter"].(string)
+	filter := ""
+	if rawState["filter"] != nil {
+		filter = rawState["filter"].(string)
+	}
 
 	oldId := rawState["id"].(string)
 	tflog.Debug(ctx, "attempting state migration from V0 to V1 - changing the `id` attribute format to include the group", map[string]interface{}{"group_id": group, "v0-id": oldId})

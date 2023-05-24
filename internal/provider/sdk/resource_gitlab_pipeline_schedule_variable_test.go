@@ -87,6 +87,59 @@ func TestAccGitlabPipelineScheduleVariable_StateUpgradeV0(t *testing.T) {
 	}
 }
 
+func TestAccGitlabPipelineScheduleVariable_SchemaMigration0_1(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+
+	resource.ParallelTest(t, resource.TestCase{
+		CheckDestroy: testAccCheckGitlabPipelineScheduleVariableDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"gitlab": {
+						VersionConstraint: "~> 15.7.0", // Earliest 15.X deployment
+						Source:            "gitlabhq/gitlab",
+					},
+				},
+				Config: fmt.Sprintf(`
+				resource "gitlab_pipeline_schedule" "schedule" {
+					project = "%d"
+					description = "Pipeline Schedule"
+					ref = "master"
+					cron = "0 1 * * *"
+				}
+				
+				resource "gitlab_pipeline_schedule_variable" "schedule_var" {
+					project = "%d"
+					pipeline_schedule_id = "${gitlab_pipeline_schedule.schedule.id}"
+					key = "TERRAFORMED_TEST_VALUE"
+					value = "test"
+				}
+				`, testProject.ID, testProject.ID),
+			},
+			{
+				// The "id" attribute is updated to "pipeline_schedule_id" in 16.0, but it should still apply properly.
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config: fmt.Sprintf(`
+				resource "gitlab_pipeline_schedule" "schedule" {
+					project = "%d"
+					description = "Pipeline Schedule"
+					ref = "master"
+					cron = "0 1 * * *"
+				}
+				
+				resource "gitlab_pipeline_schedule_variable" "schedule_var" {
+					project = "%d"
+					pipeline_schedule_id = "${gitlab_pipeline_schedule.schedule.pipeline_schedule_id}"
+					key = "TERRAFORMED_TEST_VALUE"
+					value = "test"
+				}
+				`, testProject.ID, testProject.ID),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabPipelineScheduleVariable_basic(t *testing.T) {
 	var variable gitlab.PipelineVariable
 	rInt := acctest.RandInt()
