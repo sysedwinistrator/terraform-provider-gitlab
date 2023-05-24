@@ -6,6 +6,7 @@ GOBIN = $(shell pwd)/bin
 PROVIDER_SRC_DIR := ./internal/provider/...
 TERRAFORM_PLUGIN_DIR ?= ~/.terraform.d/plugins/gitlab.local/x/gitlab/99.99.99
 TERRAFORM_PLATFORM_DIR ?= darwin_amd64
+CONTAINER_COMPOSE_ENGINE ?= docker-compose
 
 build: ## Build the provider binary.
 	go mod tidy
@@ -67,11 +68,11 @@ GITLAB_BASE_URL ?= http://127.0.0.1:8085/api/v4
 GITLAB_EARLY_AUTH_CHECK ?= false
 
 testacc-up: | certs ## Launch a GitLab instance.
-	GITLAB_TOKEN=$(GITLAB_TOKEN) docker-compose up -d $(SERVICE)
+	GITLAB_TOKEN=$(GITLAB_TOKEN) $(CONTAINER_COMPOSE_ENGINE) up -d $(SERVICE)
 	GITLAB_BASE_URL=$(GITLAB_BASE_URL) GITLAB_TOKEN=$(GITLAB_TOKEN) ./scripts/await-healthy.sh
 
 testacc-down: ## Teardown a GitLab instance.
-	docker-compose down --volumes
+	$(CONTAINER_COMPOSE_ENGINE) down --volumes
 
 testacc: ## Run acceptance tests against a GitLab instance.
 	TF_ACC=1 GITLAB_TOKEN=$(GITLAB_TOKEN) GITLAB_BASE_URL=$(GITLAB_BASE_URL) GITLAB_EARLY_AUTH_CHECK=$(GITLAB_EARLY_AUTH_CHECK) go test --tags acceptance -v $(PROVIDER_SRC_DIR) $(TESTARGS) -timeout 40m

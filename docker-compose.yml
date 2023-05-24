@@ -4,7 +4,7 @@ version: "3"
 # Only one of these services should be run at a time.
 services:
   gitlab-ce:
-    image: gitlab/gitlab-ce:${GITLAB_CE_VERSION:-latest}
+    image: docker.io/gitlab/gitlab-ce:${GITLAB_CE_VERSION:-latest}
     platform: linux/amd64
     shm_size: 256m
     ports:
@@ -28,7 +28,7 @@ services:
       timeout: 10m
 
   gitlab-ee:
-    image: gitlab/gitlab-ee:${GITLAB_EE_VERSION:-latest}
+    image: docker.io/gitlab/gitlab-ee:${GITLAB_EE_VERSION:-latest}
     platform: linux/amd64
     shm_size: 256m
     ports:
