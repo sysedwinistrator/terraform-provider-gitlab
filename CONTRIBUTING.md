@@ -334,6 +334,12 @@ make testacc
 make testacc-down
 ```
 
+> :memo: Compose v2 and podman-compose are also supported by setting the CONTAINER_ENGINE and CONTAINER_COMPOSE_ENGINE env variables:
+>
+> `CONTAINER_COMPOSE_ENGINE='docker compose' make testacc-up`
+> 
+> `CONTAINER_COMPOSE_ENGINE=podman-compose CONTAINER_ENGINE=podman make testacc-up`
+
 #### Option 2: Run tests against your own Gitlab instance
 
 If you have your own hosted Gitlab instance, you can run the tests against it directly.
