@@ -18,6 +18,37 @@ import (
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
+func TestAccGitlabProjectHook_SchemaMigration0_1(t *testing.T) {
+	testProject := testutil.CreateProject(t)
+
+	config := fmt.Sprintf(`
+	resource "gitlab_project_hook" "foo" {
+	  project = "%d"
+	  url = "https://example.com/hook-%d"
+	}
+		`, testProject.ID, acctest.RandInt())
+
+	resource.ParallelTest(t, resource.TestCase{
+		CheckDestroy: testAccCheckGitlabProjectHookDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"gitlab": {
+						VersionConstraint: "~> 15.7.0", // Earliest 15.X deployment
+						Source:            "gitlabhq/gitlab",
+					},
+				},
+				Config: config,
+			},
+			{
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config:                   config,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
 func TestAccGitlabProjectHook_basic(t *testing.T) {
 	var hook gitlab.ProjectHook
 	rInt := acctest.RandInt()
