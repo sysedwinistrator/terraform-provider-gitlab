@@ -31,6 +31,10 @@ identifiable resource ids as described in the respective docs.
 This may also affect any use of the `id` attribute (`gitlab_*.*.id`) access in
 your Terraform configuration code.
 
+For `gitlab_deploy_key` and `gitlab_pipeline_schedule` you need
+to use the `deploy_key_id` and `pipeline_schedule_id` attributes, respectively to
+refer to them in sub-resources, like `gitlab_deploy_key_enable` and `gitlab_pipeline_schedule_variable`.
+
 ## Change variable `value` attribute to non-sensitive
 
 **Affected resources**:
