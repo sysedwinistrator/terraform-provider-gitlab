@@ -175,8 +175,78 @@ func TestAccGitlabDeployToken_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabDeployTokenExists("gitlab_deploy_token.project_token", &projectDeployToken),
 					resource.TestCheckResourceAttrSet("gitlab_deploy_token.project_token", "token"),
+					resource.TestCheckResourceAttrSet("gitlab_deploy_token.project_token", "username"),
 					testAccCheckGitlabDeployTokenExists("gitlab_deploy_token.group_token", &groupDeployToken),
 					resource.TestCheckResourceAttrSet("gitlab_deploy_token.group_token", "token"),
+					resource.TestCheckResourceAttrSet("gitlab_deploy_token.group_token", "username"),
+				),
+			},
+			// Verify import
+			{
+				ResourceName:            "gitlab_deploy_token.project_token",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"token"},
+			},
+			{
+				ResourceName:            "gitlab_deploy_token.group_token",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"token"},
+			},
+		},
+	})
+}
+func TestAccGitlabDeployToken_nousername(t *testing.T) {
+	var projectDeployToken gitlab.DeployToken
+	var groupDeployToken gitlab.DeployToken
+
+	testProject := testutil.CreateProject(t)
+	testGroup := testutil.CreateGroups(t, 1)[0]
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		CheckDestroy:             testAccCheckGitlabDeployTokenDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "gitlab_deploy_token" "project_token" {
+						project = "%d"
+						name    = "project-deploy-token"
+						
+						expires_at = "2021-03-14T07:20:50.000Z"
+						
+						scopes = [
+							"read_registry",
+							"read_repository",
+							"read_package_registry",
+							"write_registry",
+							"write_package_registry",
+						]
+					}
+					
+					resource "gitlab_deploy_token" "group_token" {
+						group = "%d"
+						name  = "group-deploy-token"
+						
+						expires_at = "2021-03-14T07:20:50.000Z"
+						
+						scopes = [
+							"read_registry",
+							"read_repository",
+							"read_package_registry",
+							"write_registry",
+							"write_package_registry",
+						]
+					}
+				`, testProject.ID, testGroup.ID),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabDeployTokenExists("gitlab_deploy_token.project_token", &projectDeployToken),
+					resource.TestCheckResourceAttrSet("gitlab_deploy_token.project_token", "token"),
+					resource.TestCheckResourceAttrSet("gitlab_deploy_token.project_token", "username"),
+					testAccCheckGitlabDeployTokenExists("gitlab_deploy_token.group_token", &groupDeployToken),
+					resource.TestCheckResourceAttrSet("gitlab_deploy_token.group_token", "token"),
+					resource.TestCheckResourceAttrSet("gitlab_deploy_token.group_token", "username"),
 				),
 			},
 			// Verify import

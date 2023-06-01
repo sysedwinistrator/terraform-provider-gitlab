@@ -230,7 +230,7 @@ func resourceGitlabDeployTokenCreate(ctx context.Context, d *schema.ResourceData
 	// Token is only available on creation
 	d.Set("token", deployToken.Token)
 
-	return nil
+	return resourceGitlabDeployTokenRead(ctx, d, meta)
 }
 
 func resourceGitlabDeployTokenRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -295,5 +295,5 @@ func resourceGitlabDeployTokenDelete(ctx context.Context, d *schema.ResourceData
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return nil
+	return resourceGitlabDeployTokenRead(ctx, d, meta)
 }
