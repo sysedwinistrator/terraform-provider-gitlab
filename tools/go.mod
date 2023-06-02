@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/bflad/tfproviderlint v0.29.0
-	github.com/golangci/golangci-lint v1.53.0
+	github.com/golangci/golangci-lint v1.53.1
 	github.com/hashicorp/terraform-plugin-docs v0.14.1
 	golang.org/x/tools v0.9.2
 	mvdan.cc/sh/v3 v3.6.0
@@ -24,7 +24,6 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
-	github.com/OpenPeeDeeP/depguard/v2 v2.0.1 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.1 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
@@ -69,6 +68,7 @@ require (
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golangci/check v0.0.0-20180506172741-cfe4005ccda2 // indirect
+	github.com/golangci/depguard/v2 v2.0.2-0.20230601235138-ed68d3771f48 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
 	github.com/golangci/go-misc v0.0.0-20220329215616-d24fe342adfe // indirect
 	github.com/golangci/gofmt v0.0.0-20220901101216-f2edd75033f2 // indirect
