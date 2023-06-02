@@ -2,9 +2,7 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"strconv"
 	"time"
@@ -183,7 +181,7 @@ func resourceGitlabProjectEnvironmentStop(ctx context.Context, d *schema.Resourc
 	}
 
 	log.Printf("[DEBUG] Stopping environment %d for Project %s", environmentID, project)
-	if _, err = client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx)); err != nil {
+	if _, _, err = client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx)); err != nil {
 		return diag.Errorf("error while stopping gitlab environment %q for project %s: %v", environmentID, project, err)
 	}
 
@@ -195,24 +193,13 @@ func resourceGitlabProjectEnvironmentStop(ctx context.Context, d *schema.Resourc
 		MinTimeout: 3 * time.Second,
 		Delay:      5 * time.Second,
 		Refresh: func() (interface{}, string, error) {
-			resp, err := client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx))
+			env, resp, err := client.Environments.StopEnvironment(project, environmentID, gitlab.WithContext(ctx))
 			// ignore the error here, as we'll be doing this until we succeed or timeout
 			if err != nil {
 				return resp, "unknown", err
 			}
 
-			// TODO: The manual parsing of the body should be moved to go-gitlab instead
-			// https://github.com/xanzy/go-gitlab/pull/1709
-			body, err := io.ReadAll(resp.Body)
-			// ignore the error here, as we'll be doing this until we succeed or timeout
-			if err != nil {
-				return resp, "unknown", err
-			}
-			var respObject struct {
-				State string `json:"state"`
-			}
-			err = json.Unmarshal(body, &respObject)
-			return resp, respObject.State, err
+			return resp, env.State, nil
 		},
 	}
 	if _, err = stateConf.WaitForStateContext(ctx); err != nil {
