@@ -89,6 +89,14 @@ The `gitlab_label` resource has been deprecated in favor of the new
 Make sure to adapt to the new resource within the next 3 releases as we'll be
 removing the `gitlab_label` resource with the upcoming 16.3 release.
 
+## Remove support for unencoded test in `gitlab_repository_file`
+
+Support for non-base64 encoded text in `gitlab_repository_file` has been removed.
+If unencoded values are used, terraform will now return an error noting 
+`Invalid base64 string in "content"`. 
+Instead, use the [`base64encode()`](https://developer.hashicorp.com/terraform/language/functions/base64encode)
+function from terraform to encode any values if they are not already encoded.
+
 ## Misc removals
 
 - The `gitlab_managed_license` resource has been removed. There is no longer an upstream GitLab API for it.
