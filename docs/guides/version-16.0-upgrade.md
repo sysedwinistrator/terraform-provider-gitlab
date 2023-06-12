@@ -50,7 +50,12 @@ Therefore, you may want to use the `sensitive()` or `nonsensitive()` Terraform f
 
 ## Require `expires_at` attribute for Project Access Tokens
 
-The `expires_at` attribate for the `gitlab_project_access_token` resource is now required.
+The `expires_at` attribate for the `gitlab_project_access_token` resource is required in
+version 16.0.0.
+
+In 16.0.1 and later, this attribute is optional again due to GitLab applying a default 
+when it's empty, however setting it to a date too far in the future may cause an error
+depending on the configuration of your GitLab instance.
 
 ## Change `project_id` attribute to `project`
 
