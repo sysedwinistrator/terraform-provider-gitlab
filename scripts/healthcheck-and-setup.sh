@@ -24,7 +24,7 @@ test -f $done || {
     printf 'user_id: 1, '
     printf 'scopes: [:api, :read_user], '
     printf 'name: :terraform, '
-    printf 'expires_at: Time.now + 10.days);'
+    printf 'expires_at: Time.now + 30.days);'
     printf "terraform_token.set_token('$GITLAB_TOKEN');"
     printf 'terraform_token.save!;'
   ) | gitlab-rails console
