@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -776,10 +777,13 @@ func TestAccGitlabProject_importURLWithPassword(t *testing.T) {
 	}
 
 	// Get an access token to use for cloning a private project
+	// The expiration must be greater than 24 hours, or the token will instantly expire.
+	expiration := gitlab.ISOTime(time.Now().Add(time.Hour * 48))
 	token, _, err := testutil.TestGitlabClient.ProjectAccessTokens.CreateProjectAccessToken(baseProject.ID, &gitlab.CreateProjectAccessTokenOptions{
 		Name:        gitlab.String("clone"),
 		Scopes:      &[]string{"api", "read_repository"},
 		AccessLevel: gitlab.AccessLevel(gitlab.MaintainerPermissions),
+		ExpiresAt:   &expiration,
 	})
 	if err != nil {
 		t.Fatalf("failed to create project access token: %v", err)
