@@ -21,8 +21,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dcarbone/terraform-plugin-framework-utils/v3 v3.2.0 h1:737Jc3V9jekPlJZhSvCiab8HouZwkuAS6r7hucit154=
-github.com/dcarbone/terraform-plugin-framework-utils/v3 v3.2.0/go.mod h1:unzRbK5VxoI9uxS1CTgXOQYPxr1v7hW7voUcV08t/a0=
+github.com/dcarbone/terraform-plugin-framework-utils/v3 v3.3.0 h1:d4ZLWyVl/CnXV2H2j2MPEPzBg0FC2h00oHHn6vfaNEU=
+github.com/dcarbone/terraform-plugin-framework-utils/v3 v3.3.0/go.mod h1:MOUngn3qhjLKFxaxoTtwFWLhXfEuDDTpW4Llo1YoV2Q=
 github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
