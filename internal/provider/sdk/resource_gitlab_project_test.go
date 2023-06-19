@@ -886,10 +886,12 @@ func TestAccGitlabProject_importURL_privateRepository(t *testing.T) {
 	})
 
 	createToken := func() string {
+		expiration := gitlab.ISOTime(time.Now().Add(time.Hour * 48))
 		token, _, err := testutil.TestGitlabClient.ProjectAccessTokens.CreateProjectAccessToken(testProject.ID, &gitlab.CreateProjectAccessTokenOptions{
 			Name:        gitlab.String(acctest.RandomWithPrefix("acctest")),
 			Scopes:      &[]string{"read_api", "read_repository"},
 			AccessLevel: gitlab.AccessLevel(gitlab.MaintainerPermissions),
+			ExpiresAt:   &expiration,
 		})
 		if err != nil {
 			t.Fatalf("failed to create project access token: %v", err)
