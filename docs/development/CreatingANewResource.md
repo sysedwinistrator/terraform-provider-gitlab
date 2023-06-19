@@ -1,3 +1,7 @@
+---
+page_title: "Creating a New Resource Using the Terraform Plugin Framework"
+---
+
 # Creating a New Resource Using the Terraform Plugin Framework
 
 This tutorial is meant to help new contributors out when creating new resource. It will walk through a 
