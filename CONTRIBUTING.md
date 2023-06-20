@@ -19,6 +19,9 @@ all new resources and data sources. We consider the SDK in this provider as _leg
 The new resources and data sources are located in `internal/provider` and the _legacy_ ones
 in `internal/provider/sdk`.
 
+> If you're just getting started, and looking to create a new resource, check out the ["Creating A New Resource"
+tutorial available here](tutorials/CreatingANewResource.md)!
+
 ## Before Committing
 
 Run `make reviewable` and include any generated files in your commit. This will help ensure your PR passes automated checks.
