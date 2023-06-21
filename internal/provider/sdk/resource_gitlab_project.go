@@ -712,6 +712,7 @@ var resourceContainerExpirationPolicyAttributesSchema = &schema.Resource{
 		},
 		"name_regex": {
 			Description: "The regular expression to match image names to delete.",
+			Deprecated:  "`name_regex` has been deprecated. Use `name_regex_delete` instead.",
 			Type:        schema.TypeString,
 			ConflictsWith: []string{
 				"container_expiration_policy.0.name_regex_delete",
@@ -721,7 +722,6 @@ var resourceContainerExpirationPolicyAttributesSchema = &schema.Resource{
 		},
 		"name_regex_delete": {
 			Description: "The regular expression to match image names to delete.",
-			Deprecated:  "`name_regex_delete` has been deprecated. Use `name_regex` instead.",
 			ConflictsWith: []string{
 				"container_expiration_policy.0.name_regex",
 			},

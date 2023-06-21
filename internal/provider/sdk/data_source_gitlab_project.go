@@ -442,13 +442,13 @@ var datasourceContainerExpirationPolicyAttributesSchema = &schema.Resource{
 		},
 		"name_regex": {
 			Description: "The regular expression to match image names to delete.",
+			Deprecated:  "`name_regex` has been deprecated. Use `name_regex_delete` instead.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 		},
 		"name_regex_delete": {
 			Description: "The regular expression to match image names to delete.",
-			Deprecated:  "`name_regex_delete` has been deprecated. Use `name_regex` instead.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
