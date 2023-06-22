@@ -5,6 +5,7 @@ package sdk
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -86,8 +87,14 @@ func TestAccDataGitlabProjectBranches_UpdateHashStruct(t *testing.T) {
 				),
 			},
 			{
-				ProtoV6ProviderFactories: providerFactoriesV6,
-				Config:                   commonConfig,
+				//The version before this change was made.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"gitlab": {
+						VersionConstraint: "16.0",
+						Source:            "gitlabhq/gitlab",
+					},
+				},
+				Config: commonConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.gitlab_project_branches.this", "id"),
 
@@ -105,6 +112,32 @@ func TestAccDataGitlabProjectBranches_UpdateHashStruct(t *testing.T) {
 						}
 
 						// hashes match.
+						return nil
+					},
+				),
+			},
+			{
+				// The data source now simply uses the project as the ID, but we still want
+				// to ensure that the upgrade path doesn't cause issues, so we simply run the
+				// config one more time to ensure no terraform errors happen.
+				ProtoV6ProviderFactories: providerFactoriesV6,
+				Config:                   commonConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.gitlab_project_branches.this", "id"),
+
+					// Verify the ID os the project ID
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["data.gitlab_project_branches.this"]
+						if !ok {
+							return fmt.Errorf("data.gitlab_project_branches.this not found")
+						}
+
+						//get the new ID to check it against the project ID
+						newID := rs.Primary.ID
+						if newID != strconv.Itoa(testProject.ID) {
+							return fmt.Errorf("project ID and data source ID do not match!")
+						}
+
 						return nil
 					},
 				),

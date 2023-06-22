@@ -2,13 +2,11 @@ package sdk
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/mitchellh/hashstructure/v2"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -99,10 +97,6 @@ func dataSourceGitlabProjectBranchesRead(ctx context.Context, d *schema.Resource
 			Page:    1,
 		},
 	}
-	h, err := hashstructure.Hash(*options, hashstructure.FormatV1, nil)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	var allBranches []*gitlab.Branch
 	for options.Page != 0 {
@@ -114,7 +108,7 @@ func dataSourceGitlabProjectBranchesRead(ctx context.Context, d *schema.Resource
 		options.Page = resp.NextPage
 	}
 
-	d.SetId(fmt.Sprintf("%s:%d", project, h))
+	d.SetId(project)
 	if err := d.Set("branches", flattenBranches(allBranches)); err != nil {
 		return diag.FromErr(err)
 	}
