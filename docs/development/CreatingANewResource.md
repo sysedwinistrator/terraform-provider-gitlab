@@ -55,9 +55,6 @@ type gitlabApplicationResource struct {
 }
 ```
 
-Creating the struct alone isn't enough to ensure the interfaces are met, so for error handling reasons, a 
-block at the top of th
-
 ## Step 3: Create the Schema
 
 The schema for the resource handles multiple responsibilities during `terraform plan` and `terraform apply`:
@@ -387,7 +384,24 @@ var (
 )
 ```
 
-If any functions are missing, a compile error will provide details around which functions are missing.
+If any functions are missing, a compile error will provide details around which functions are missing. There will currently be one
+compilation error with `Resource`, noting that an `init()` function is required to register the resource with the provider.  Adding
+the `init` function is easy, and will require only several lines of code to complete the resource:
+
+```golang
+func init() {
+	registerResource(NewGitLabApplicationResource)
+}
+
+// NewGitLabApplicationResource is a helper function to simplify the provider implementation.
+func NewGitLabApplicationResource() resource.Resource {
+	return &gitlabApplicationResource{}
+}
+```
+
+This will return a new instance of the struct created earlier in the tutorial, and register it to the provider which will allow its 
+use.
+
 
 ## Step 8: Create documentation
 
