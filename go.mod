@@ -3,7 +3,7 @@ module gitlab.com/gitlab-org/terraform-provider-gitlab
 go 1.20
 
 require (
-	github.com/dcarbone/terraform-plugin-framework-utils/v3 v3.3.1
+	github.com/dcarbone/terraform-plugin-framework-utils/v3 v3.3.2
 	github.com/hashicorp/go-cty v1.4.1-0.20200723130312-85980079f637
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/hashicorp/terraform-plugin-framework v1.3.1
