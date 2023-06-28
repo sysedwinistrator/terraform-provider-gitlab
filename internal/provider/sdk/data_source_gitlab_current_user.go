@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
 )
 
 var _ = registerDataSource("gitlab_current_user", func() *schema.Resource {
@@ -70,13 +71,13 @@ var _ = registerDataSource("gitlab_current_user", func() *schema.Resource {
 func dataSourceGitlabCurrentUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*gitlab.Client)
 
-	query := GraphQLQuery{
-		`query {currentUser {name, bot, groupCount, id, namespace{id}, publicEmail, username}}`,
+	query := api.GraphQLQuery{
+		Query: `query {currentUser {name, bot, groupCount, id, namespace{id}, publicEmail, username}}`,
 	}
 	log.Printf("[DEBUG] executing GraphQL Query %s to retrieve current user", query.Query)
 
 	var response CurrentUserResponse
-	if _, err := SendGraphQLRequest(ctx, client, query, &response); err != nil {
+	if _, err := api.SendGraphQLRequest(ctx, client, query, &response); err != nil {
 		return diag.FromErr(err)
 	}
 
