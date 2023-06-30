@@ -44,6 +44,11 @@ var _ = registerDataSource("gitlab_groups", func() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
+			"top_level_only": {
+				Description: "Limit to top level groups, excluding all subgroups.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+			},
 			"groups": {
 				Description: "The list of groups.",
 				Type:        schema.TypeList,
@@ -207,6 +212,12 @@ func expandGitlabGroupsOptions(d *schema.ResourceData) (*gitlab.ListGroupsOption
 		search := data.(string)
 		listGroupsOptions.Search = &search
 		optionsHash.WriteString(search)
+	}
+	optionsHash.WriteString(",")
+	if data, ok := d.GetOk("top_level_only"); ok {
+		topLevelOnly := data.(bool)
+		listGroupsOptions.TopLevelOnly = &topLevelOnly
+		optionsHash.WriteString(fmt.Sprint(topLevelOnly))
 	}
 
 	id := schema.HashString(optionsHash.String())

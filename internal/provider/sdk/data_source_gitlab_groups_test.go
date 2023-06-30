@@ -20,6 +20,10 @@ func TestAccDataSourceGitlabGroups_basic(t *testing.T) {
 	prefixLotsOf := "acctest-group-lotsof"
 	testutil.CreateGroupsWithPrefix(t, 42, prefixLotsOf)
 
+	prefixParent := "acctest-group-parent"
+	testGroup := testutil.CreateGroupsWithPrefix(t, 1, prefixParent)[0]
+	testSubgroup := testutil.CreateSubGroupsWithPrefix(t, testGroup, 1, prefixParent)[0]
+
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactoriesV6,
 		Steps: []resource.TestStep{
@@ -49,6 +53,24 @@ func TestAccDataSourceGitlabGroups_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.gitlab_groups.lotsof", "groups.#", "42"),
 				),
 			},
+			{
+				Config: testAccDataSourceGitlabWithTopLevelOnly(prefixParent),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.gitlab_groups.toplevel", "groups.#", "1"),
+				),
+			},
+			{
+				Config: testAccDataSourceGitlabWithoutTopLevelOnly(prefixParent),
+				Check: resource.ComposeTestCheckFunc(
+					// check if all subgroups are returned
+					resource.TestCheckResourceAttr("data.gitlab_groups.sublevel", "groups.#", "2"),
+					// for each subgroup, verify basic attributes
+					resource.TestCheckTypeSetElemNestedAttrs("data.gitlab_groups.sublevel", "groups.*", map[string]string{
+						"group_id":  fmt.Sprint(testSubgroup.ID),
+						"parent_id": fmt.Sprint(testGroup.ID),
+					}),
+				),
+			},
 		},
 	})
 }
@@ -66,6 +88,24 @@ data "gitlab_groups" "foos" {
 func testAccDataSourceGitlabLotsOfGroupsSearch(prefix string) string {
 	return fmt.Sprintf(`
 data "gitlab_groups" "lotsof" {
+	search = "%s"
+}
+	`, prefix)
+}
+
+func testAccDataSourceGitlabWithTopLevelOnly(prefix string) string {
+	return fmt.Sprintf(`
+data "gitlab_groups" "toplevel" {
+	top_level_only = true
+	search = "%s"
+}
+	`, prefix)
+}
+
+func testAccDataSourceGitlabWithoutTopLevelOnly(prefix string) string {
+	return fmt.Sprintf(`
+data "gitlab_groups" "sublevel" {
+	top_level_only = false
 	search = "%s"
 }
 	`, prefix)
