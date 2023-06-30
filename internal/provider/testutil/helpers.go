@@ -282,15 +282,15 @@ func CreateGroupsWithPrefix(t *testing.T, n int, prefix string) []*gitlab.Group 
 	return groups
 }
 
-// CreateSubGroups is a test helper for creating a specified number of subgroups.
-func CreateSubGroups(t *testing.T, parentGroup *gitlab.Group, n int) []*gitlab.Group {
+// CreateSubGroupsWithPrefix is a test helper for creating a specified number of subgroups with specific prefix.
+func CreateSubGroupsWithPrefix(t *testing.T, parentGroup *gitlab.Group, n int, prefix string) []*gitlab.Group {
 	t.Helper()
 
 	groups := make([]*gitlab.Group, n)
 
 	for i := range groups {
 		var err error
-		name := acctest.RandomWithPrefix("acctest-group")
+		name := acctest.RandomWithPrefix(prefix)
 		groups[i], _, err = TestGitlabClient.Groups.CreateGroup(&gitlab.CreateGroupOptions{
 			Name: gitlab.String(name),
 			Path: gitlab.String(name),
@@ -304,6 +304,13 @@ func CreateSubGroups(t *testing.T, parentGroup *gitlab.Group, n int) []*gitlab.G
 	}
 
 	return groups
+}
+
+// CreateSubGroups is a test helper for creating a specified number of subgroups.
+func CreateSubGroups(t *testing.T, parentGroup *gitlab.Group, n int) []*gitlab.Group {
+	t.Helper()
+
+	return CreateSubGroupsWithPrefix(t, parentGroup, n, "acctest-group")
 }
 
 func CreateGroupHooks(t *testing.T, gid interface{}, n int) []*gitlab.GroupHook {
