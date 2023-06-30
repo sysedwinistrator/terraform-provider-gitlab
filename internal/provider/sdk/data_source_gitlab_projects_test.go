@@ -9,10 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	gitlab "github.com/xanzy/go-gitlab"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/testutil"
 )
 
 func TestAccDataGitlabProjects_search(t *testing.T) {
@@ -139,6 +142,120 @@ func TestAccDataGitlabProjects_searchArchivedRepository(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccDataGitlabProjects_topic(t *testing.T) {
+	topic1 := testutil.CreateTopic(t)
+	topic2 := testutil.CreateTopic(t)
+	topic3 := testutil.CreateTopic(t)
+
+	topicSlice := func(topics ...*gitlab.Topic) *[]string {
+		s := make([]string, len(topics))
+		for i, t := range topics {
+			s[i] = t.Name
+		}
+		return &s
+	}
+
+	project1 := testutil.CreateProject(t)
+	_, _, err := testutil.TestGitlabClient.Projects.EditProject(project1.ID, &gitlab.EditProjectOptions{
+		Topics: topicSlice(topic1),
+	})
+	if err != nil {
+		t.Fatalf("error adding topics to test project: %v", err)
+	}
+
+	project12 := testutil.CreateProject(t)
+	_, _, err = testutil.TestGitlabClient.Projects.EditProject(project12.ID, &gitlab.EditProjectOptions{
+		Topics: topicSlice(topic1, topic2),
+	})
+	if err != nil {
+		t.Fatalf("error adding topics to test project: %v", err)
+	}
+
+	project13 := testutil.CreateProject(t)
+	_, _, err = testutil.TestGitlabClient.Projects.EditProject(project13.ID, &gitlab.EditProjectOptions{
+		Topics: topicSlice(topic1, topic3),
+	})
+	if err != nil {
+		t.Fatalf("error adding topics to test project: %v", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactoriesV6,
+		Steps: []resource.TestStep{
+			// Match multiple projects.
+			{
+				Config: fmt.Sprintf(`
+data "gitlab_projects" "search" {
+  topic = ["%s"]
+}`, topic1.Name),
+				Check: testAccDataSourceGitlabProjectsContainsProjects("data.gitlab_projects.search", project1, project12, project13),
+			},
+			// Match one project.
+			{
+				Config: fmt.Sprintf(`
+data "gitlab_projects" "search" {
+  topic = ["%s"]
+}`, topic2.Name),
+				Check: testAccDataSourceGitlabProjectsContainsProjects("data.gitlab_projects.search", project12),
+			},
+			// Match one project using multiple topics.
+			{
+				Config: fmt.Sprintf(`
+data "gitlab_projects" "search" {
+  topic = ["%s", "%s"]
+}`, topic1.Name, topic2.Name),
+				Check: testAccDataSourceGitlabProjectsContainsProjects("data.gitlab_projects.search", project12),
+			},
+			// Match no projects.
+			{
+				Config: fmt.Sprintf(`
+data "gitlab_projects" "search" {
+  topic = ["%s", "%s"]
+}`, topic2.Name, topic3.Name),
+				Check: testAccDataSourceGitlabProjectsContainsProjects("data.gitlab_projects.search"),
+			},
+		},
+	})
+}
+
+func testAccDataSourceGitlabProjectsContainsProjects(dsPath string, projects ...*gitlab.Project) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		search := s.RootModule().Resources[dsPath]
+		searchResource := search.Primary.Attributes
+
+		projectsNumber, err := strconv.Atoi(searchResource["projects.#"])
+		if err != nil {
+			return fmt.Errorf("datasource returned no 'projects' attribute, got: %s", searchResource)
+		}
+
+		if projectsNumber != len(projects) {
+			return fmt.Errorf("datasource contains unexpected number of projects, want: %d, got: %d", len(projects), projectsNumber)
+		}
+
+		for _, p := range projects {
+			foundMatch := false
+			for i := 0; i < projectsNumber; i++ {
+				if searchResource[fmt.Sprintf("projects.%d.id", i)] != strconv.Itoa(p.ID) {
+					continue
+				}
+				if searchResource[fmt.Sprintf("projects.%d.name", i)] != p.Name {
+					continue
+				}
+				if searchResource[fmt.Sprintf("projects.%d.path", i)] != p.Path {
+					continue
+				}
+				foundMatch = true
+				break
+			}
+			if !foundMatch {
+				return fmt.Errorf("datasource did not contain expected project, want: id=%d, got: %v", p.ID, searchResource)
+			}
+		}
+
+		return nil
+	}
 }
 
 func testAccDataSourceGitlabProjects(src string, n string) resource.TestCheckFunc {

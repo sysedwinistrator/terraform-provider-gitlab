@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -296,6 +297,12 @@ var _ = registerDataSource("gitlab_projects", func() *schema.Resource {
 				Description: "Limit by projects starred by the current user.",
 				Type:        schema.TypeBool,
 				Optional:    true,
+			},
+			"topic": {
+				Description: "Limit by projects that have all of the given topics.",
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"visibility": {
 				Description: "Limit by visibility `public`, `internal`, or `private`.",
@@ -1043,6 +1050,7 @@ func dataSourceGitlabProjectsRead(ctx context.Context, d *schema.ResourceData, m
 	var simplePtr *bool
 	var sortPtr *string
 	var starredPtr *bool
+	var topicPtr *string
 	var statisticsPtr *bool
 	var visibilityPtr *gitlab.VisibilityValue
 	var withCustomAttributesPtr *bool
@@ -1105,6 +1113,15 @@ func dataSourceGitlabProjectsRead(ctx context.Context, d *schema.ResourceData, m
 		d := data.(bool)
 		starredPtr = &d
 	}
+	if data, ok := d.GetOk("topic"); ok {
+		d := data.(*schema.Set)
+		topics := make([]string, d.Len())
+		for i, t := range d.List() {
+			topics[i] = t.(string)
+		}
+		s := strings.Join(topics, ",")
+		topicPtr = &s
+	}
 	// nolint:staticcheck // SA1019 ignore deprecated GetOkExists
 	// lintignore: XR001 // TODO: replace with alternative for GetOkExists
 	if data, ok := d.GetOkExists("statistics"); ok {
@@ -1161,6 +1178,7 @@ func dataSourceGitlabProjectsRead(ctx context.Context, d *schema.ResourceData, m
 			Simple:                   simplePtr,
 			Owned:                    ownedPtr,
 			Starred:                  starredPtr,
+			Topic:                    topicPtr,
 			WithIssuesEnabled:        withIssuesEnabledPtr,
 			WithMergeRequestsEnabled: withMergeRequestsEnabledPtr,
 			WithShared:               withSharedPtr,
@@ -1205,6 +1223,7 @@ func dataSourceGitlabProjectsRead(ctx context.Context, d *schema.ResourceData, m
 			Owned:                    ownedPtr,
 			Membership:               membershipPtr,
 			Starred:                  starredPtr,
+			Topic:                    topicPtr,
 			Statistics:               statisticsPtr,
 			Visibility:               visibilityPtr,
 			WithIssuesEnabled:        withIssuesEnabledPtr,

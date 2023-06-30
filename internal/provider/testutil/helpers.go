@@ -198,6 +198,30 @@ func CreateProjectWithOptions(t *testing.T, opts *gitlab.CreateProjectOptions) *
 	return project
 }
 
+// CreateTopic is a test helper for creating a topic.
+func CreateTopic(t *testing.T) *gitlab.Topic {
+	t.Helper()
+
+	name := gitlab.String(acctest.RandomWithPrefix("acctest"))
+	options := &gitlab.CreateTopicOptions{
+		Name:  name,
+		Title: name,
+	}
+
+	topic, _, err := TestGitlabClient.Topics.CreateTopic(options)
+	if err != nil {
+		t.Fatalf("could not create test topic: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if _, err := TestGitlabClient.Topics.DeleteTopic(topic.ID); err != nil {
+			t.Fatalf("could not cleanup test topic: %v", err)
+		}
+	})
+
+	return topic
+}
+
 // CreateUsers is a test helper for creating a specified number of users.
 func CreateUsers(t *testing.T, n int) []*gitlab.User {
 	return CreateUsersWithPrefix(t, n, "acctest-user")
