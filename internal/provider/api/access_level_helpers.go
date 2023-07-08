@@ -54,7 +54,7 @@ var ValidProtectedBranchTagAccessLevelNames = []string{
 // The only access levels allowed to be configured to unprotect a protected branch
 // The API states the others are either forbidden (via 403) or invalid
 var ValidProtectedBranchUnprotectAccessLevelNames = []string{
-	"developer", "maintainer",
+	"developer", "maintainer", "owner", "admin",
 }
 
 var ValidProtectedEnvironmentDeploymentLevelNames = []string{
@@ -73,6 +73,7 @@ var AccessLevelNameToValue = map[string]gitlab.AccessLevelValue{
 	"developer":  gitlab.DeveloperPermissions,
 	"maintainer": gitlab.MaintainerPermissions,
 	"owner":      gitlab.OwnerPermissions,
+	"admin":      gitlab.AdminPermissions,
 
 	// Deprecated and should be removed in v4 of this provider
 	"master": gitlab.MaintainerPermissions,
@@ -86,4 +87,5 @@ var AccessLevelValueToName = map[gitlab.AccessLevelValue]string{
 	gitlab.DeveloperPermissions:     "developer",
 	gitlab.MaintainerPermissions:    "maintainer",
 	gitlab.OwnerPermissions:         "owner",
+	gitlab.AdminPermissions:         "admin",
 }

@@ -811,7 +811,7 @@ resource "gitlab_branch_protection" "branch_protect" {
   branch                 = "BranchProtect-%[1]d"
   push_access_level      = "developer"
   merge_access_level     = "developer"
-  unprotect_access_level = "developer"
+  unprotect_access_level = "admin"
 }
 	`, rInt)
 }
@@ -832,7 +832,7 @@ resource "gitlab_branch_protection" "branch_protect" {
   branch                 = "BranchProtect-%[1]d"
   push_access_level      = "maintainer"
   merge_access_level     = "maintainer"
-  unprotect_access_level = "maintainer"
+  unprotect_access_level = "owner"
 }
 	`, rInt)
 }
