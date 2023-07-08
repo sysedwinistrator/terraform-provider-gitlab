@@ -446,7 +446,7 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 						Name:                 fmt.Sprintf("BranchProtect-%d", rInt),
 						PushAccessLevel:      api.AccessLevelValueToName[gitlab.DeveloperPermissions],
 						MergeAccessLevel:     api.AccessLevelValueToName[gitlab.DeveloperPermissions],
-						UnprotectAccessLevel: api.AccessLevelValueToName[gitlab.DeveloperPermissions],
+						UnprotectAccessLevel: api.AccessLevelValueToName[gitlab.MaintainerPermissions],
 					}),
 				),
 			},
@@ -467,9 +467,9 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 				  branch                 = "BranchProtect-%[1]d"
 				  push_access_level      = "maintainer"
 				  merge_access_level     = "maintainer"
-				  unprotect_access_level = "%s"
+				  unprotect_access_level = "maintainer"
 				}
-					`, rInt, "maintainer"),
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -498,9 +498,9 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 				  branch                 = "BranchProtect-%[1]d"
 				  push_access_level      = "maintainer"
 				  merge_access_level     = "maintainer"
-				  unprotect_access_level = "%s"
+				  unprotect_access_level = "owner"
 				}
-					`, rInt, "owner"),
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -529,9 +529,9 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 				  branch                 = "BranchProtect-%[1]d"
 				  push_access_level      = "maintainer"
 				  merge_access_level     = "maintainer"
-				  unprotect_access_level = "%s"
+				  unprotect_access_level = "admin"
 				}
-					`, rInt, "admin"),
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
