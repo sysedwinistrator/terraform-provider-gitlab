@@ -29,7 +29,21 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create a project and Branch Protection with default options
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -59,7 +73,7 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 				  branch                 = "BranchProtect-%[1]d"
 				  push_access_level      = "developer"
 				  merge_access_level     = "developer"
-				  unprotect_access_level = "maintainer"
+				  unprotect_access_level = "developer"
 				}
 					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
@@ -90,9 +104,9 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 				  branch                 = "BranchProtect-%[1]d"
 				  push_access_level      = "maintainer"
 				  merge_access_level     = "maintainer"
-				  unprotect_access_level = "%s"
+				  unprotect_access_level = "maintainer"
 				}
-					`, rInt, "maintainer"),
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -106,7 +120,21 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 			},
 			// Update the Branch Protection to get back to initial settings
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -135,7 +163,21 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 			},
 			// Update the Branch Protection to get back to initial settings
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -165,7 +207,21 @@ func TestAccGitlabBranchProtection_basic(t *testing.T) {
 			},
 			// Update the Branch Protection to get back to initial settings
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -192,7 +248,21 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 			// Start with code owner approval required disabled
 			{
 				SkipFunc: testutil.IsRunningInEE,
-				Config:   testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -228,7 +298,21 @@ func TestAccGitlabBranchProtection_createWithCodeOwnerApproval(t *testing.T) {
 			},
 			// Update the Branch Protection to get back to initial settings
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -254,7 +338,21 @@ func TestAccGitlabBranchProtection_createWithAllowForcePush(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Start with allow force push disabled
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -283,7 +381,21 @@ func TestAccGitlabBranchProtection_createWithAllowForcePush(t *testing.T) {
 			},
 			// Update the Branch Protection to get back to initial settings
 			{
-				Config: testAccGitlabBranchProtectionConfigRequiredFields(rInt),
+				Config: fmt.Sprintf(`
+				resource "gitlab_project" "foo" {
+				  name = "foo-%[1]d"
+				  description = "Terraform acceptance tests"
+				
+				  # So that acceptance tests can be run in a gitlab organization
+				  # with no billing
+				  visibility_level = "public"
+				}
+				
+				resource "gitlab_branch_protection" "branch_protect" {
+				  project            = gitlab_project.foo.id
+				  branch             = "BranchProtect-%[1]d"
+				}
+					`, rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
 					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
@@ -905,24 +1017,6 @@ func testAccCheckGitlabBranchProtectionDestroy(s *terraform.State) error {
 		return err
 	}
 	return nil
-}
-
-func testAccGitlabBranchProtectionConfigRequiredFields(rInt int) string {
-	return fmt.Sprintf(`
-resource "gitlab_project" "foo" {
-  name = "foo-%[1]d"
-  description = "Terraform acceptance tests"
-
-  # So that acceptance tests can be run in a gitlab organization
-  # with no billing
-  visibility_level = "public"
-}
-
-resource "gitlab_branch_protection" "branch_protect" {
-  project            = gitlab_project.foo.id
-  branch             = "BranchProtect-%[1]d"
-}
-	`, rInt)
 }
 
 func testAccGitlabBranchProtectionUpdateConfigAllowForcePushTrue(rInt int) string {
