@@ -54,7 +54,7 @@ var ValidProtectedBranchTagAccessLevelNames = []string{
 // The only access levels allowed to be configured to unprotect a protected branch
 // The API states the others are either forbidden (via 403) or invalid
 var ValidProtectedBranchUnprotectAccessLevelNames = []string{
-	"developer", "maintainer", "owner", "admin",
+	"developer", "maintainer", "admin",
 }
 
 var ValidProtectedEnvironmentDeploymentLevelNames = []string{

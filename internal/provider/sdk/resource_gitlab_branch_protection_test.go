@@ -481,37 +481,6 @@ func TestAccGitlabBranchProtection_createWithUnprotectAccessLevel(t *testing.T) 
 					}),
 				),
 			},
-			// Update the Branch Protection access levels using "owner"
-			{
-				Config: fmt.Sprintf(`
-				resource "gitlab_project" "foo" {
-				  name = "foo-%[1]d"
-				  description = "Terraform acceptance tests"
-				
-				  # So that acceptance tests can be run in a gitlab organization
-				  # with no billing
-				  visibility_level = "public"
-				}
-				
-				resource "gitlab_branch_protection" "branch_protect" {
-				  project                = gitlab_project.foo.id
-				  branch                 = "BranchProtect-%[1]d"
-				  push_access_level      = "maintainer"
-				  merge_access_level     = "maintainer"
-				  unprotect_access_level = "owner"
-				}
-					`, rInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGitlabBranchProtectionExists("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionPersistsInStateCorrectly("gitlab_branch_protection.branch_protect", &pb),
-					testAccCheckGitlabBranchProtectionAttributes(&pb, &testAccGitlabBranchProtectionExpectedAttributes{
-						Name:                 fmt.Sprintf("BranchProtect-%d", rInt),
-						PushAccessLevel:      api.AccessLevelValueToName[gitlab.MaintainerPermissions],
-						MergeAccessLevel:     api.AccessLevelValueToName[gitlab.MaintainerPermissions],
-						UnprotectAccessLevel: api.AccessLevelValueToName[gitlab.OwnerPermissions],
-					}),
-				),
-			},
 			// Update the Branch Protection access levels using "admin"
 			{
 				Config: fmt.Sprintf(`
