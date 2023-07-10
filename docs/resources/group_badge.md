@@ -3,13 +3,13 @@
 page_title: "gitlab_group_badge Resource - terraform-provider-gitlab"
 subcategory: ""
 description: |-
-  The gitlab_group_badge resource allows to mange the lifecycle of group badges.
+  The gitlab_group_badge resource allows to manage the lifecycle of group badges.
   Upstream API: GitLab REST API docs https://docs.gitlab.com/ee/user/project/badges.html#group-badges
 ---
 
 # gitlab_group_badge (Resource)
 
-The `gitlab_group_badge` resource allows to mange the lifecycle of group badges.
+The `gitlab_group_badge` resource allows to manage the lifecycle of group badges.
 
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/user/project/badges.html#group-badges)
 

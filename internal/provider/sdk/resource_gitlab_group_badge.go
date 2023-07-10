@@ -15,7 +15,7 @@ import (
 
 var _ = registerResource("gitlab_group_badge", func() *schema.Resource {
 	return &schema.Resource{
-		Description: `The ` + "`gitlab_group_badge`" + ` resource allows to mange the lifecycle of group badges.
+		Description: `The ` + "`gitlab_group_badge`" + ` resource allows to manage the lifecycle of group badges.
 
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/user/project/badges.html#group-badges)`,
 
