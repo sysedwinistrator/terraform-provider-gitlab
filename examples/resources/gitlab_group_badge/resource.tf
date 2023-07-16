@@ -11,7 +11,7 @@ resource "gitlab_group_badge" "example" {
 # Pipeline status badges with placeholders will be enabled for each project
 resource "gitlab_group_badge" "gitlab_pipeline" {
   group     = gitlab_group.foo.id
-  link_url  = "https://gitlab.example.com/%%{project_path}/-/jobs/artifacts/main/browse"
+  link_url  = "https://gitlab.example.com/%%{project_path}/-/pipelines?ref=%%{default_branch}"
   image_url = "https://gitlab.example.com/%%{project_path}/badges/%%{default_branch}/pipeline.svg"
 }
 
