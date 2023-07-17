@@ -17,7 +17,15 @@ var _ = registerDataSource("gitlab_repository_file", func() *schema.Resource {
 **Upstream API**: [GitLab REST API docs](https://docs.gitlab.com/ee/api/repository_files.html)`,
 
 		ReadContext: dataSourceGitlabRepositoryFileRead,
-		Schema:      datasourceSchemaFromResourceSchema(gitlabRepositoryFileGetSchema(), []string{"project", "file_path", "ref"}, nil, "overwrite_on_create"),
+		Schema: datasourceSchemaFromResourceSchema(constructSchema(gitlabRepositoryFileGetSchema(), map[string]*schema.Schema{
+			// This is extracted from the schema because it uses different descriptions
+			// than the same attribute from the resource, and doesn't require "Optional"
+			"encoding": {
+				Description: "The file content encoding.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+		}), []string{"project", "file_path", "ref"}, nil, "overwrite_on_create"),
 	}
 })
 

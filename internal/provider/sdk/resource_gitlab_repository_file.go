@@ -13,11 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/xanzy/go-gitlab"
 	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/api"
+	"gitlab.com/gitlab-org/terraform-provider-gitlab/internal/provider/utils"
 )
-
-const encoding = "base64"
 
 // NOTE: this lock is a bit of a hack to prevent parallel calls to the GitLab Repository Files API.
 //
@@ -32,6 +32,11 @@ const encoding = "base64"
 //	this resource makes calls to the API.
 //	To mitigate this, simple retries are used.
 var resourceGitlabRepositoryFileApiLock = newLock()
+
+var validEncodingValues = []string{
+	"base64",
+	"text",
+}
 
 var _ = registerResource("gitlab_repository_file", func() *schema.Resource {
 	return &schema.Resource{
@@ -91,6 +96,13 @@ var _ = registerResource("gitlab_repository_file", func() *schema.Resource {
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
+				"encoding": {
+					Description:  fmt.Sprintf("The file content encoding. Default value is `base64`. Valid values are: %s.", utils.RenderValueListForDocs(validEncodingValues)),
+					Type:         schema.TypeString,
+					Optional:     true,
+					Default:      "base64", //for backwards compatibility purposes
+					ValidateFunc: validation.StringInSlice(validEncodingValues, false),
+				},
 			},
 			gitlabRepositoryFileGetSchema(),
 		),
@@ -110,13 +122,9 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 
 	client := meta.(*gitlab.Client)
 	content := d.Get("content").(string)
-	if _, err := base64.StdEncoding.DecodeString(content); err != nil {
-		return diag.Errorf(`Invalid base64 string in "content". Ensure the content is base64 encoded, or use the "base64encode" terraform function to encode it.`)
-	}
 
 	options := &gitlab.CreateFileOptions{
 		Branch:        gitlab.String(d.Get("branch").(string)),
-		Encoding:      gitlab.String(encoding),
 		AuthorEmail:   gitlab.String(d.Get("author_email").(string)),
 		AuthorName:    gitlab.String(d.Get("author_name").(string)),
 		Content:       gitlab.String(content),
@@ -127,6 +135,11 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 	}
 	if executeFilemode, ok := d.GetOk("execute_filemode"); ok {
 		options.ExecuteFilemode = gitlab.Bool(executeFilemode.(bool))
+	}
+
+	// check if the encoding value is provided
+	if encoding, ok := d.GetOk("encoding"); ok {
+		options.Encoding = gitlab.String(encoding.(string))
 	}
 
 	if overwriteOnCreate, ok := d.GetOk("overwrite_on_create"); ok && overwriteOnCreate.(bool) {
@@ -152,12 +165,17 @@ func resourceGitlabRepositoryFileCreate(ctx context.Context, d *schema.ResourceD
 
 				updateOptions := &gitlab.UpdateFileOptions{
 					Branch:        gitlab.String(*options.Branch),
-					Encoding:      gitlab.String(encoding),
 					AuthorEmail:   gitlab.String(d.Get("author_email").(string)),
 					AuthorName:    gitlab.String(d.Get("author_name").(string)),
 					Content:       gitlab.String(content),
 					CommitMessage: gitlab.String(d.Get("commit_message").(string)),
 				}
+
+				// check if the encoding value is provided
+				if encoding, ok := d.GetOk("encoding"); ok {
+					updateOptions.Encoding = gitlab.String(encoding.(string))
+				}
+
 				if startBranch, ok := d.GetOk("start_branch"); ok {
 					updateOptions.StartBranch = gitlab.String(startBranch.(string))
 				}
@@ -230,13 +248,18 @@ func resourceGitlabRepositoryFileRead(ctx context.Context, d *schema.ResourceDat
 
 	configContent := d.Get("content").(string)
 	log.Printf("[DEBUG] gitlab_repository_file: comparing content of %s with %s", repositoryFile.Content, configContent)
-	// NOTE: for backwards-compatibility reasons, we also support an already given base64 encoding,
-	//       otherwise we encode the `content` to base64.
-	if _, err := base64.StdEncoding.DecodeString(configContent); err != nil {
-		// if `content` is config is not a base64 encoded string, we decode the one from the API, too
-		// in case it's base64 encoded, else we don't decode it.
+
+	// check what our encoding is to determine if we need to decode the content for checking.
+	var configEncoding *string
+	if encoding, ok := d.GetOk("encoding"); ok {
+		configEncoding = gitlab.String(encoding.(string))
+	}
+
+	// If we are storing the value in plaintext, we need to decode the response from the API to store in the config
+	if configEncoding != nil && *configEncoding == "text" {
 		if decodedContent, err := base64.StdEncoding.DecodeString(repositoryFile.Content); err == nil {
 			repositoryFile.Content = string(decodedContent)
+			repositoryFile.Encoding = "text"
 		}
 	}
 
@@ -276,12 +299,17 @@ func resourceGitlabRepositoryFileUpdate(ctx context.Context, d *schema.ResourceD
 
 	updateOptions := &gitlab.UpdateFileOptions{
 		Branch:        gitlab.String(branch),
-		Encoding:      gitlab.String(encoding),
 		AuthorEmail:   gitlab.String(d.Get("author_email").(string)),
 		AuthorName:    gitlab.String(d.Get("author_name").(string)),
 		Content:       gitlab.String(content),
 		CommitMessage: gitlab.String(d.Get("commit_message").(string)),
 	}
+
+	// check if the encoding value is provided
+	if encoding, ok := d.GetOk("encoding"); ok {
+		updateOptions.Encoding = gitlab.String(encoding.(string))
+	}
+
 	if startBranch, ok := d.GetOk("start_branch"); ok {
 		updateOptions.StartBranch = gitlab.String(startBranch.(string))
 	}

@@ -279,13 +279,25 @@ func TestAccGitlabRepositoryFile_base64EncodingWithTextContent(t *testing.T) {
 						project = %d
 						file_path = "meow.txt"
 						branch = "main"
-						content = "Hello World, meow"
+
+						encoding = "text"
+						content  = "Hello World, meow"
+						
 						author_email = "meow@catnip.com"
 						author_name = "Meow Meowington"
 						commit_message = "feature: add launch codes"
 					}
 				`, testProject.ID),
-				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`Invalid base64 string in "content"`)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckGitlabRepositoryFileExists("gitlab_repository_file.this", &file),
+					testAccCheckGitlabRepositoryFileAttributes(&file, &testAccGitlabRepositoryFileAttributes{
+						FilePath: "meow.txt",
+						// This is still base64 encoded because it's from the API, not from state.
+						Content: "SGVsbG8gV29ybGQsIG1lb3c=",
+					}),
+					// This checks the explicit state to ensure it's plaintext.
+					resource.TestCheckResourceAttr("gitlab_repository_file.this", "content", "Hello World, meow"),
+				),
 			},
 			{
 				Config: fmt.Sprintf(`
@@ -293,7 +305,10 @@ func TestAccGitlabRepositoryFile_base64EncodingWithTextContent(t *testing.T) {
 						project = %d
 						file_path = "meow.txt"
 						branch = "main"
+
+						encoding = "base64"
 						content = base64encode("Hello World, meow")
+
 						author_email = "meow@catnip.com"
 						author_name = "Meow Meowington"
 						commit_message = "feature: add launch codes"
