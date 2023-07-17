@@ -44,11 +44,6 @@ func gitlabRepositoryFileGetSchema() map[string]*schema.Schema {
 			Type:        schema.TypeInt,
 			Computed:    true,
 		},
-		"encoding": {
-			Description: "The file content encoding.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
 		"content_sha256": {
 			Description: "File content sha256 digest.",
 			Type:        schema.TypeString,
