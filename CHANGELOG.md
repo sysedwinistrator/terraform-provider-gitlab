@@ -1,4 +1,4 @@
-## 16.1.1 (2023-07-14)
+## 16.1.1 (2023-07-17)
 
 This release was tested against GitLab 15.11, 16.0 and 16.1 for both CE and EE.
 
