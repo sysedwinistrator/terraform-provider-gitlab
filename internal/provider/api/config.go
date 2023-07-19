@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/xanzy/go-gitlab"
@@ -67,6 +68,10 @@ func (c *Config) NewGitLabClient(ctx context.Context) (*gitlab.Client, error) {
 			&http.Client{
 				Transport: logging.NewSubsystemLoggingHTTPTransport("GitLab", t),
 			},
+		),
+		gitlab.WithCustomRetryWaitMinMax(
+			1*time.Second,
+			10*time.Minute,
 		),
 	}
 
